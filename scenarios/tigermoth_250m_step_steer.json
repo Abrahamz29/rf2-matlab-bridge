@@ -1,0 +1,39 @@
+{
+  "batch_name": "tigermoth_250m_step_steer",
+  "scenario_defaults": {
+    "mode": "open_loop",
+    "track": {
+      "name": "TigerMoth Test Track",
+      "alias": "TigerMoth",
+      "installed_name": "ISI_TigerMoth_2014",
+      "current_name_contains": "TIGERMOTH_TESTTRACK",
+      "required": true
+    },
+    "control_hz": 20,
+    "sample_hz": 20,
+    "countdown_s": 2.0,
+    "ensure_player_control": true,
+    "require_session_match": true
+  },
+  "scenarios": [
+    {
+      "name": "stage250_step_left_020",
+      "notes": "First proving-ground validation pass on the installed TigerMoth Test Track.",
+      "segments": [
+        { "name": "launch",    "duration_s": 4.0, "throttle": 0.45, "brake": 0.0, "steer": 0.0 },
+        { "name": "stabilize", "duration_s": 3.0, "throttle": 0.35, "brake": 0.0, "steer": 0.0 },
+        { "name": "step",      "duration_s": 1.0, "throttle": 0.35, "brake": 0.0, "steer": -0.20 },
+        { "name": "recover",   "duration_s": 4.0, "throttle": 0.10, "brake": 0.0, "steer": 0.0 }
+      ]
+    },
+    {
+      "name": "stage250_step_right_020",
+      "segments": [
+        { "name": "launch",    "duration_s": 4.0, "throttle": 0.45, "brake": 0.0, "steer": 0.0 },
+        { "name": "stabilize", "duration_s": 3.0, "throttle": 0.35, "brake": 0.0, "steer": 0.0 },
+        { "name": "step",      "duration_s": 1.0, "throttle": 0.35, "brake": 0.0, "steer": 0.20 },
+        { "name": "recover",   "duration_s": 4.0, "throttle": 0.10, "brake": 0.0, "steer": 0.0 }
+      ]
+    }
+  ]
+}

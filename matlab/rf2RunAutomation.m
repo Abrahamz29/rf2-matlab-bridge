@@ -13,8 +13,8 @@ end
 projectRoot = fileparts(fileparts(mfilename("fullpath")));
 pythonExe = "C:\Users\Victor\.platformio\penv\Scripts\python.exe";
 scriptPath = fullfile(projectRoot, "python", "rf2_automation.py");
-configFullPath = fullfile(projectRoot, configPath);
-outputFullPath = fullfile(projectRoot, outputDir);
+configFullPath = localResolvePath(projectRoot, configPath);
+outputFullPath = localResolvePath(projectRoot, outputDir);
 
 command = sprintf('"%s" "%s" "%s" --out "%s"', ...
     pythonExe, scriptPath, configFullPath, outputFullPath);
@@ -24,4 +24,18 @@ end
 [code, text] = system(command);
 status = struct("exitCode", code, "output", string(strtrim(text)));
 disp(status);
+end
+
+function resolved = localResolvePath(projectRoot, pathValue)
+pathText = string(pathValue);
+if isfile(pathText) || isfolder(pathText) || localIsAbsolutePath(pathText)
+    resolved = char(pathText);
+else
+    resolved = fullfile(projectRoot, char(pathText));
+end
+end
+
+function tf = localIsAbsolutePath(pathValue)
+pathText = char(pathValue);
+tf = ~isempty(regexp(pathText, "^[A-Za-z]:[\\/]", "once")) || startsWith(pathText, "\\");
 end

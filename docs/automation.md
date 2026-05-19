@@ -55,6 +55,55 @@ logs\<batch_name>\<timestamp>_<scenario_name>\telemetry.csv
 
 - `scenarios\blacklake_step_steer_batch.json`
 - `scenarios\blacklake_sine_steer_batch.json`
+- `scenarios\tigermoth_250m_step_steer.json`
+- `scenarios\tigermoth_scaleout_open_loop.json`
+- `scenarios\tigermoth_ai_monitor.json`
+
+## Track-Preflight
+
+Der Runner kennt jetzt installierte rF2-Locations und kann beim Start
+validieren, ob ein Szenario zum aktuell geladenen Track passt.
+
+Installierte Tracks als JSON ausgeben:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\python\rf2_automation.py --list-tracks
+```
+
+Oder in MATLAB:
+
+```matlab
+tracks = rf2ListInstalledTracks();
+```
+
+## AI-driver-Monitoring
+
+Fuer Session-Mitschnitte mit lokalem AI-Fahrer:
+
+```matlab
+rf2RunAIDriverMonitor(60)
+```
+
+Das setzt lokal AI-Control, loggt Telemetrie und stellt danach wieder auf
+Player-Control zurueck.
+
+## MATLAB closed-loop controller
+
+Wenn fuer eine Strecke kein AI-Fahrer gewuenscht ist, kann MATLAB selbst als
+Regler laufen:
+
+```matlab
+setup_rf2_matlab()
+run = rf2RunMatlabController(@rf2BlackLakeExampleController, 30, 20);
+```
+
+Dabei:
+
+- liest `RF2Client` live Shared-Memory-Telemetrie
+- setzt `RF2Actuator` Gas, Bremse und Lenkung
+- berechnet die Funktion `rf2BlackLakeExampleController` den naechsten Befehl
+
+Fuer BlackLake ist das der richtige Pfad, sobald die Strecke installiert ist.
 
 ## CSV in MATLAB laden
 
@@ -78,3 +127,5 @@ der richtige naechste Schritt ein zweiter Aktuator-Backend:
 
 - `keyboard` fuer sofortige Open-Loop-Tests
 - `vJoy` oder `ViGEm` fuer echte analoge Lenk-, Gas- und Bremsprofile
+
+Siehe auch: `docs/proving_ground_scale.md`

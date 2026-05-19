@@ -1,0 +1,45 @@
+{
+  "batch_name": "tigermoth_scaleout_open_loop",
+  "scenario_defaults": {
+    "mode": "open_loop",
+    "track": {
+      "name": "TigerMoth Test Track",
+      "alias": "TigerMoth",
+      "installed_name": "ISI_TigerMoth_2014",
+      "current_name_contains": "TIGERMOTH_TESTTRACK",
+      "required": true
+    },
+    "control_hz": 20,
+    "sample_hz": 20,
+    "countdown_s": 2.0,
+    "ensure_player_control": true,
+    "require_session_match": true
+  },
+  "scenarios": [
+    {
+      "name": "stage250_launch_hold",
+      "notes": "Initial short proving-ground pass before any custom flat-ground authoring.",
+      "segments": [
+        { "name": "launch",  "duration_s": 4.0, "throttle": 0.45, "brake": 0.0, "steer": 0.0 },
+        { "name": "hold",    "duration_s": 6.0, "throttle": 0.40, "brake": 0.0, "steer": 0.0 },
+        { "name": "coast",   "duration_s": 4.0, "throttle": 0.00, "brake": 0.0, "steer": 0.0 }
+      ]
+    },
+    {
+      "name": "stage500_launch_hold",
+      "segments": [
+        { "name": "launch",  "duration_s": 5.0, "throttle": 0.50, "brake": 0.0, "steer": 0.0 },
+        { "name": "hold",    "duration_s": 10.0, "throttle": 0.45, "brake": 0.0, "steer": 0.0 },
+        { "name": "coast",   "duration_s": 4.0, "throttle": 0.00, "brake": 0.0, "steer": 0.0 }
+      ]
+    },
+    {
+      "name": "stage1000_launch_hold",
+      "segments": [
+        { "name": "launch",  "duration_s": 6.0, "throttle": 0.55, "brake": 0.0, "steer": 0.0 },
+        { "name": "hold",    "duration_s": 16.0, "throttle": 0.50, "brake": 0.0, "steer": 0.0 },
+        { "name": "coast",   "duration_s": 5.0, "throttle": 0.00, "brake": 0.0, "steer": 0.0 }
+      ]
+    }
+  ]
+}

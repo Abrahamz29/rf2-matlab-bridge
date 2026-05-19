@@ -211,3 +211,32 @@ rf2RunAutomation("scenarios\blacklake_step_steer_batch.json")
 
 Die erste Version nutzt Windows-Tastatur-Events als Aktuator und schreibt pro
 Variante eine `telemetry.csv`. Details: `docs/automation.md`.
+
+## Proving Ground Stufen
+
+Fuer den ersten belastbaren Ausbau auf dem vorhandenen rF2-Testgelaende sind
+jetzt TigerMoth-Szenarien hinterlegt:
+
+```matlab
+rf2RunAutomation("scenarios\tigermoth_250m_step_steer.json")
+rf2RunAutomation("scenarios\tigermoth_scaleout_open_loop.json")
+rf2RunAIDriverMonitor(60)
+```
+
+Die Skalierungslogik und der Weg zum spaeteren eigenen Flat-Proving-Ground
+stehen in `docs/proving_ground_scale.md`.
+
+## MATLAB-Regler
+
+Fuer Strecken wie BlackLake kann rF2 auch direkt von MATLAB geregelt werden,
+ohne AI-Fahrer:
+
+```matlab
+cd("C:\Users\Victor\Documents\PYTHON\RFactor2")
+setup_rf2_matlab()
+run = rf2RunMatlabController(@rf2BlackLakeExampleController, 30, 20);
+```
+
+Dabei liest MATLAB die Telemetrie ueber `RF2Client` und setzt Befehle ueber
+`RF2Actuator`. Der Beispielregler ist nur eine Vorlage fuer deinen echten
+BlackLake-Regler.
