@@ -15,19 +15,40 @@ The generator creates:
 - lane/skidpad markings OBJ geometry
 - waypoint and marker CSV references
 - ModDev `GDB/SCN/TDF/WET` scaffolding for each stage
+- rFactor 2 GMT meshes for stages exported through the bundled Blender path
 
-## Why this stops before GMT
+## GMT export path
 
 Studio 397's developer documentation says track meshes for rFactor 2 are GMT
-files exported from DCC tools via plugins. On this machine we currently have:
+files exported from DCC tools via plugins. On this machine we now use a local
+portable Blender 2.83 setup plus Traveller's rFactor 2 Blender exporter.
+
+The downloaded Blender and exporter archives stay under ignored local
+`tools/downloads/` paths. The reproducible project scripts are:
+
+- `tools/Install-BlackLakeExportToolchain.ps1`
+- `tools/Export-BlackLakeGmt.ps1`
+- `tools/blender_export_blacklake.py`
+
+Export and install the first real BlackLake stage:
+
+```powershell
+cd C:\Users\Victor\Documents\PYTHON\RFactor2
+.\tools\Install-BlackLakeExportToolchain.ps1
+.\tools\Export-BlackLakeGmt.ps1 -Stage 250m -InstallModDev
+.\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode Scaffold -RegisterSceneViewer
+```
+
+The current `250m` stage has exported:
+
+- `tracks/blacklake/source/250m/gmt/BlackLake_Surface.gmt`
+- `tracks/blacklake/source/250m/gmt/BlackLake_Markings.gmt`
+
+For reference, on this machine we also have:
 
 - `ModDev`
 - `MAS2.exe`
 - official 3ds Max exporter plugins
-
-But we do not have an installed GMT-capable DCC authoring tool such as 3ds Max
-configured for export. That means we can generate source geometry ourselves,
-but we cannot complete the final `OBJ -> GMT` conversion locally right now.
 
 Primary references:
 
@@ -53,7 +74,7 @@ Generate only the first validation stage:
 & "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\python\blacklake_builder.py --stage 250m
 ```
 
-Install one generated stage into rFactor 2 ModDev:
+Install one generated stage into rFactor 2 ModDev after GMT export:
 
 ```powershell
 .\tools\Install-BlackLakeModDev.ps1 -Stage 250m
@@ -69,7 +90,7 @@ Install a directly loadable BlackLake baseline in ModDev by reusing the loose
 This baseline is intentionally not the final geometry. It exists to get a
 named `BlackLake` location loading in ModDev now, so controller logic,
 telemetry, MATLAB plots, and session plumbing can be developed before the
-custom `OBJ -> GMT` export path is solved.
+custom GMT export path is validated in-game.
 
 ## Current stage ladder
 
@@ -84,16 +105,12 @@ The `12000m` stage is the first one aligned with the long-term requirement of
 roughly 60 s straight-line maneuver space at around 300 km/h from a central
 test area.
 
-## Next blocking step
+## Remaining work
 
-To make the custom BlackLake actually load in rFactor 2, we still need one of:
+After the first GMT export, the remaining steps are:
 
-1. a local 3ds Max + rFactor 2 exporter setup
-2. another proven GMT-capable pipeline
-
-After GMT export, the remaining steps are straightforward:
-
-1. copy GMT/maps into the generated ModDev scaffold
-2. create AIW in ModDev
-3. test in ModDev
-4. package as `.rfcmp`
+1. validate `BlackLake_250m` visually in the ModDev viewer
+2. create or adapt AIW/start positions for the flat stage
+3. test a player car on the 250m stage
+4. package as `.rfcmp` once the stage is stable
+5. repeat export and validation for `500m`, `1000m`, and larger stages

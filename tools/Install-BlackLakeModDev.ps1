@@ -88,23 +88,57 @@ function Install-Scaffold {
     }
 
     Copy-Item -Path (Join-Path $sourceRoot "*") -Destination $targetRoot -Recurse -Force
+    Install-BlackLakeDefaultMaps -ModDevRoot $ModDevRoot -TargetRoot $targetRoot
 
     $layoutFolder = Join-Path $targetRoot ("BlackLake_" + $Stage)
     $surfaceGmt = Join-Path $layoutFolder "BlackLake_Surface.gmt"
     $markingsGmt = Join-Path $layoutFolder "BlackLake_Markings.gmt"
 
     Write-InstallSummary -TargetRoot $targetRoot -LayoutFolder $layoutFolder -ModeName "Scaffold"
-    Write-Host ""
-    Write-Host "Next required step:"
-    Write-Host "  Export the generated OBJ files to GMT and place them in:"
-    Write-Host "  $layoutFolder"
-    Write-Host ""
-    Write-Host "Expected GMT files:"
-    Write-Host "  $surfaceGmt"
-    Write-Host "  $markingsGmt"
 
     if (-not (Test-Path $surfaceGmt) -or -not (Test-Path $markingsGmt)) {
+        Write-Host ""
+        Write-Host "Next required step:"
+        Write-Host "  Export the generated source geometry to GMT and place it in:"
+        Write-Host "  $layoutFolder"
+        Write-Host ""
+        Write-Host "Expected GMT files:"
+        Write-Host "  $surfaceGmt"
+        Write-Host "  $markingsGmt"
         Write-Warning "The scaffold is installed, but the GMT meshes are still missing. rFactor 2 cannot load this track yet."
+    } else {
+        Write-Host ""
+        Write-Host "GMT meshes found:"
+        Write-Host "  $surfaceGmt"
+        Write-Host "  $markingsGmt"
+    }
+}
+
+function Install-BlackLakeDefaultMaps {
+    param(
+        [string]$ModDevRoot,
+        [string]$TargetRoot
+    )
+
+    $sourceMaps = Join-Path $ModDevRoot "Locations\Joesville\Assets\Maps"
+    $targetMaps = Join-Path $TargetRoot "Assets\Maps"
+    if (-not (Test-Path $targetMaps)) {
+        New-Item -ItemType Directory -Path $targetMaps | Out-Null
+    }
+
+    $textureMap = @(
+        @{ Source = "Track_Main.dds"; Target = "DIFFUSE01.DDS" },
+        @{ Source = "Track_Main.dds"; Target = "DIFFUSE01.dds" },
+        @{ Source = "Stripes.dds"; Target = "STRIPES.DDS" },
+        @{ Source = "Asphalt_NORM.dds"; Target = "Asphalt_NORM.dds" },
+        @{ Source = "Asphalt_SPEC.dds"; Target = "Asphalt_SPEC.dds" }
+    )
+
+    foreach ($entry in $textureMap) {
+        $source = Join-Path $sourceMaps $entry.Source
+        if (Test-Path $source) {
+            Copy-Item -Path $source -Destination (Join-Path $targetMaps $entry.Target) -Force
+        }
     }
 }
 

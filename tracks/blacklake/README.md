@@ -16,5 +16,9 @@ Build source scaffolding:
 & "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\python\blacklake_builder.py --all
 ```
 
-The generator creates geometry source and ModDev text scaffolding. The last
-missing step is GMT export through a supported authoring tool.
+The generator creates geometry source and ModDev text scaffolding.
+Export GMT for a stage with:
+
+```powershell
+.\tools\Export-BlackLakeGmt.ps1 -Stage 250m -InstallModDev
+```

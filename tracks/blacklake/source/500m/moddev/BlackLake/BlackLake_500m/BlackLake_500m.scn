@@ -3,6 +3,8 @@ SearchPath=BLACKLAKE
 SearchPath=BLACKLAKE\BLACKLAKE_500M
 SearchPath=BLACKLAKE\ASSETS\GMT
 SearchPath=BLACKLAKE\ASSETS\MAPS
+SearchPath=JOESVILLE\ASSETS\GMT
+SearchPath=JOESVILLE\ASSETS\MAPS
 MASFile=COMMONMAPS.MAS
 
 View=mainview
@@ -40,5 +42,29 @@ Instance=BlackLake_Markings
 
 Instance=SkyBoxi
 {
+  Planes=(4) ReflectPlane=(0.000, 1.000, 0.000, 0.000)
   MeshFile=SkyBoxi.gmt CollTarget=False HATTarget=False Reflect=True
+}
+
+ReflectionMapper=STATIC01
+{
+  Type=Cubic
+  TextureSize=(512)
+  UpdateRate=(0.100)
+  StaticSwitch=(100.000)
+  Pos=(0.000000,0.000000,0.000000)
+  IncludeIns=BlackLake_Surface
+  IncludeIns=BlackLake_Markings
+}
+
+ReflectionMapper=REFMAP0
+{
+  Type=Cubic
+  TextureSize=(1024)
+  UpdateRate=(100.000)
+  StaticSwitch=(100.000)
+  TrackingIns=True
+  IncludeIns=BlackLake_Surface
+  IncludeIns=BlackLake_Markings
+  IncludeIns=SkyBoxi
 }

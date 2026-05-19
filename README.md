@@ -253,19 +253,25 @@ liegt jetzt ein eigener BlackLake-Authoring-Workspace im Repo:
 Die Quelle fuer BlackLake wird damit selbst generiert: Flaechen-OBJ, Markings,
 Layout-CSV und ModDev-Scaffolding fuer die Stufen `250m` bis `12000m`.
 
-Fuer den sofort nutzbaren ersten Test gibt es jetzt zusaetzlich einen
-`JoesvilleBaseline`-Pfad. Dieser erzeugt denselben `BlackLake_250m`-Stage in
-ModDev, nutzt aber vorhandene `Joesville`-Assets und kopiert die noetigen
-`AIW/CAM/WET`-Dateien, damit die Strecke direkt laden kann:
+Der erste echte GMT-Exportpfad ist eingerichtet. Er nutzt eine lokale portable
+Blender-2.83-Installation und Traveller's rFactor-2-Blender-Exporter aus
+`tools/downloads/`:
+
+```powershell
+.\tools\Install-BlackLakeExportToolchain.ps1
+.\tools\Export-BlackLakeGmt.ps1 -Stage 250m -InstallModDev
+.\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode Scaffold -RegisterSceneViewer
+```
+
+Damit liegen fuer `250m` echte BlackLake-GMTs vor:
+
+- `tracks/blacklake/source/250m/gmt/BlackLake_Surface.gmt`
+- `tracks/blacklake/source/250m/gmt/BlackLake_Markings.gmt`
+
+Fuer den sofort nutzbaren Vergleichspfad gibt es weiterhin den
+`JoesvilleBaseline`-Modus. Dieser nutzt vorhandene `Joesville`-Assets und ist
+nur fuer Telemetrie, MATLAB-Regler und Session-Plumbing gedacht:
 
 ```powershell
 .\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode JoesvilleBaseline -RegisterSceneViewer
-```
-
-Das ist bewusst nur eine lauffaehige Baseline fuer Telemetrie, MATLAB-Regler
-und Session-Plumbing. Die eigentliche BlackLake-Grossflaeche bleibt der
-`Scaffold`-Pfad mit eigener Geometrie:
-
-```powershell
-.\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode Scaffold
 ```

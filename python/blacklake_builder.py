@@ -336,6 +336,8 @@ SearchPath=BLACKLAKE
 SearchPath=BLACKLAKE\\{stage_folder}
 SearchPath=BLACKLAKE\\ASSETS\\GMT
 SearchPath=BLACKLAKE\\ASSETS\\MAPS
+SearchPath=JOESVILLE\\ASSETS\\GMT
+SearchPath=JOESVILLE\\ASSETS\\MAPS
 MASFile=COMMONMAPS.MAS
 
 View=mainview
@@ -373,7 +375,31 @@ Instance=BlackLake_Markings
 
 Instance=SkyBoxi
 {{
+  Planes=(4) ReflectPlane=(0.000, 1.000, 0.000, 0.000)
   MeshFile=SkyBoxi.gmt CollTarget=False HATTarget=False Reflect=True
+}}
+
+ReflectionMapper=STATIC01
+{{
+  Type=Cubic
+  TextureSize=(512)
+  UpdateRate=(0.100)
+  StaticSwitch=(100.000)
+  Pos=(0.000000,0.000000,0.000000)
+  IncludeIns=BlackLake_Surface
+  IncludeIns=BlackLake_Markings
+}}
+
+ReflectionMapper=REFMAP0
+{{
+  Type=Cubic
+  TextureSize=(1024)
+  UpdateRate=(100.000)
+  StaticSwitch=(100.000)
+  TrackingIns=True
+  IncludeIns=BlackLake_Surface
+  IncludeIns=BlackLake_Markings
+  IncludeIns=SkyBoxi
 }}
 """
 
@@ -402,15 +428,13 @@ What is ready:
 - `BlackLake_{stage_name}.wet`
 
 What is still required before rFactor 2 can load and drive it:
-- export `BlackLake_Surface.obj` to `BlackLake_Surface.gmt`
-- export `BlackLake_Markings.obj` to `BlackLake_Markings.gmt`
-- add any textures/materials into `Assets\\Maps`
+- export or copy `BlackLake_Surface.gmt`
+- export or copy `BlackLake_Markings.gmt`
 - create `AIW` in ModDev AI editor
 - package as `.rfcmp`
 
-Official Studio 397 documentation states GMT meshes are exported from DCC tools
-via plugins. This repository currently generates the source geometry and the
-track text files, but not the final GMT binaries.
+This repository can export GMT for the generated BlackLake geometry with
+`tools\\Export-BlackLakeGmt.ps1`.
 """
 
 
@@ -435,8 +459,12 @@ def project_readme() -> str:
         '& "C:\\Users\\Victor\\.platformio\\penv\\Scripts\\python.exe" .\\python\\blacklake_builder.py --all',
         "```",
         "",
-        "The generator creates geometry source and ModDev text scaffolding. The last",
-        "missing step is GMT export through a supported authoring tool.",
+        "The generator creates geometry source and ModDev text scaffolding.",
+        "Export GMT for a stage with:",
+        "",
+        "```powershell",
+        ".\\tools\\Export-BlackLakeGmt.ps1 -Stage 250m -InstallModDev",
+        "```",
     ]
     return "\n".join(lines) + "\n"
 
