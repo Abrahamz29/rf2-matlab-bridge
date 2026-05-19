@@ -59,6 +59,18 @@ Install one generated stage into rFactor 2 ModDev:
 .\tools\Install-BlackLakeModDev.ps1 -Stage 250m
 ```
 
+Install a directly loadable BlackLake baseline in ModDev by reusing the loose
+`Joesville` developer assets already present on this machine:
+
+```powershell
+.\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode JoesvilleBaseline -RegisterSceneViewer
+```
+
+This baseline is intentionally not the final geometry. It exists to get a
+named `BlackLake` location loading in ModDev now, so controller logic,
+telemetry, MATLAB plots, and session plumbing can be developed before the
+custom `OBJ -> GMT` export path is solved.
+
 ## Current stage ladder
 
 - `250m`

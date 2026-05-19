@@ -252,3 +252,20 @@ liegt jetzt ein eigener BlackLake-Authoring-Workspace im Repo:
 
 Die Quelle fuer BlackLake wird damit selbst generiert: Flaechen-OBJ, Markings,
 Layout-CSV und ModDev-Scaffolding fuer die Stufen `250m` bis `12000m`.
+
+Fuer den sofort nutzbaren ersten Test gibt es jetzt zusaetzlich einen
+`JoesvilleBaseline`-Pfad. Dieser erzeugt denselben `BlackLake_250m`-Stage in
+ModDev, nutzt aber vorhandene `Joesville`-Assets und kopiert die noetigen
+`AIW/CAM/WET`-Dateien, damit die Strecke direkt laden kann:
+
+```powershell
+.\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode JoesvilleBaseline -RegisterSceneViewer
+```
+
+Das ist bewusst nur eine lauffaehige Baseline fuer Telemetrie, MATLAB-Regler
+und Session-Plumbing. Die eigentliche BlackLake-Grossflaeche bleibt der
+`Scaffold`-Pfad mit eigener Geometrie:
+
+```powershell
+.\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode Scaffold
+```
