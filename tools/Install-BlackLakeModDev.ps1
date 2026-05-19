@@ -90,6 +90,11 @@ function Install-Scaffold {
     Copy-Item -Path (Join-Path $sourceRoot "*") -Destination $targetRoot -Recurse -Force
     Install-BlackLakeDefaultMaps -ModDevRoot $ModDevRoot -TargetRoot $targetRoot
 
+    $staleVenueGdb = Join-Path $targetRoot "BlackLake.gdb"
+    if (Test-Path $staleVenueGdb) {
+        Remove-Item -LiteralPath $staleVenueGdb -Force
+    }
+
     $layoutFolder = Join-Path $targetRoot ("BlackLake_" + $Stage)
     $surfaceGmt = Join-Path $layoutFolder "BlackLake_Surface.gmt"
     $markingsGmt = Join-Path $layoutFolder "BlackLake_Markings.gmt"

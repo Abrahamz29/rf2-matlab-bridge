@@ -1,5 +1,7 @@
 BlackLake_250m
 {
+  Filter Properties = rFRS TMOD NSCRS
+  Attrition = 0
   TrackName = BlackLake 250m
   EventName = BlackLake Proving Ground 250m
   VenueName = BlackLake
@@ -9,8 +11,14 @@ BlackLake_250m
   TerrainDataFile=..\BlackLake.tdf
   HeadlightsRequired = false
   Max Vehicles = 20
+  FormationAndStart=0
+  PitlaneBoundary = 0
+  RacePitKPH = 80.0
+  NormalPitKPH = 80.0
+  FormationSpeedKPH = 80.0
   RaceLaps = 3
   RaceTime = 30
+  NumStartingLights = 2
   TestDayStart = 12:00
   Latitude = 0.0
   Longitude = 0.0

@@ -252,6 +252,8 @@ liegt jetzt ein eigener BlackLake-Authoring-Workspace im Repo:
 
 Die Quelle fuer BlackLake wird damit selbst generiert: Flaechen-OBJ, Markings,
 Layout-CSV und ModDev-Scaffolding fuer die Stufen `250m` bis `12000m`.
+Das Scaffolding erzeugt inzwischen auch stage-lokale `.gdb`- und `.AIW`-Dateien,
+damit rFactor 2 Startpositionen, Teleport, Pit- und Wegpunktdaten bekommt.
 
 Der erste echte GMT-Exportpfad ist eingerichtet. Er nutzt eine lokale portable
 Blender-2.83-Installation und Traveller's rFactor-2-Blender-Exporter aus
@@ -261,12 +263,25 @@ Blender-2.83-Installation und Traveller's rFactor-2-Blender-Exporter aus
 .\tools\Install-BlackLakeExportToolchain.ps1
 .\tools\Export-BlackLakeGmt.ps1 -Stage 250m -InstallModDev
 .\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode Scaffold -RegisterSceneViewer
+.\tools\Test-BlackLakeModDevInstall.ps1 -Stage 250m
 ```
 
 Damit liegen fuer `250m` echte BlackLake-GMTs vor:
 
 - `tracks/blacklake/source/250m/gmt/BlackLake_Surface.gmt`
 - `tracks/blacklake/source/250m/gmt/BlackLake_Markings.gmt`
+
+Der ModDev-Install fuer `250m` liegt danach unter:
+
+```text
+C:\Program Files (x86)\Steam\steamapps\common\rFactor 2\ModDev\Locations\BlackLake\BlackLake_250m
+```
+
+Wichtig fuer die Spiel-/ModDev-Auswahl sind dort:
+
+- `BlackLake_250m.gdb`
+- `BlackLake_250m.scn`
+- `BlackLake_250m.AIW`
 
 Fuer den sofort nutzbaren Vergleichspfad gibt es weiterhin den
 `JoesvilleBaseline`-Modus. Dieser nutzt vorhandene `Joesville`-Assets und ist

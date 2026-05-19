@@ -14,7 +14,7 @@ The generator creates:
 - flat proving-ground OBJ source geometry
 - lane/skidpad markings OBJ geometry
 - waypoint and marker CSV references
-- ModDev `GDB/SCN/TDF/WET` scaffolding for each stage
+- ModDev `GDB/SCN/AIW/TDF/WET` scaffolding for each stage
 - rFactor 2 GMT meshes for stages exported through the bundled Blender path
 
 ## GMT export path
@@ -37,12 +37,18 @@ cd C:\Users\Victor\Documents\PYTHON\RFactor2
 .\tools\Install-BlackLakeExportToolchain.ps1
 .\tools\Export-BlackLakeGmt.ps1 -Stage 250m -InstallModDev
 .\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode Scaffold -RegisterSceneViewer
+.\tools\Test-BlackLakeModDevInstall.ps1 -Stage 250m
 ```
 
 The current `250m` stage has exported:
 
 - `tracks/blacklake/source/250m/gmt/BlackLake_Surface.gmt`
 - `tracks/blacklake/source/250m/gmt/BlackLake_Markings.gmt`
+
+The `250m` ModDev install now also includes a stage-local
+`BlackLake_250m.gdb` and a generated `BlackLake_250m.AIW`, so rFactor 2 has
+start, teleport, pit, and waypoint data instead of relying on copied Joesville
+session files.
 
 For reference, on this machine we also have:
 
@@ -110,7 +116,8 @@ test area.
 After the first GMT export, the remaining steps are:
 
 1. validate `BlackLake_250m` visually in the ModDev viewer
-2. create or adapt AIW/start positions for the flat stage
+2. test that `BlackLake 250m` is visible in ModDev track selection
 3. test a player car on the 250m stage
-4. package as `.rfcmp` once the stage is stable
-5. repeat export and validation for `500m`, `1000m`, and larger stages
+4. refine the generated AIW if rFactor reports waypoint or garage issues
+5. package as `.rfcmp` once the stage is stable
+6. repeat export and validation for `500m`, `1000m`, and larger stages

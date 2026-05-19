@@ -3,7 +3,7 @@
 This generator creates:
 - parametric OBJ source geometry for a flat proving-ground surface
 - lane marking geometry and CSV reference layouts
-- a ModDev location scaffold (GDB/SCN/TDF/WET placeholders)
+- a ModDev location scaffold (GDB/SCN/AIW/TDF/WET placeholders)
 
 It does not convert geometry to GMT. rFactor 2 official docs state GMT meshes
 are exported from DCC tools such as 3ds Max via plugins, so this generator
@@ -196,10 +196,11 @@ def build_stage(stage_name: str, stage: dict[str, float], root: Path) -> None:
     )
     write_text(layout_root / "README.md", layout_readme(stage_name, half_extent, lane_length, lane_width))
 
-    write_text(moddev_root / "BlackLake.tdf", blacklake_tdf())
-    write_text(moddev_root / "BlackLake.gdb", blacklake_gdb(stage_name, lane_length))
     layout_folder = moddev_root / f"BlackLake_{stage_name}"
+    write_text(moddev_root / "BlackLake.tdf", blacklake_tdf())
+    write_text(layout_folder / f"BlackLake_{stage_name}.gdb", blacklake_gdb(stage_name, lane_length))
     write_text(layout_folder / f"BlackLake_{stage_name}.scn", blacklake_scn(stage_name))
+    write_text(layout_folder / f"BlackLake_{stage_name}.AIW", blacklake_aiw(stage_name, half_extent, lane_length, lane_width))
     write_text(layout_folder / f"BlackLake_{stage_name}.wet", blacklake_wet())
     write_text(layout_folder / "README.md", moddev_readme(stage_name))
 
@@ -214,7 +215,9 @@ def build_stage(stage_name: str, stage: dict[str, float], root: Path) -> None:
             str((layout_root / "waypoints_fast_path.csv").relative_to(PROJECT_ROOT)),
             str((layout_root / "markers.csv").relative_to(PROJECT_ROOT)),
             str((moddev_root / "BlackLake.tdf").relative_to(PROJECT_ROOT)),
+            str((layout_folder / f"BlackLake_{stage_name}.gdb").relative_to(PROJECT_ROOT)),
             str((layout_folder / f"BlackLake_{stage_name}.scn").relative_to(PROJECT_ROOT)),
+            str((layout_folder / f"BlackLake_{stage_name}.AIW").relative_to(PROJECT_ROOT)),
             str((layout_folder / f"BlackLake_{stage_name}.wet").relative_to(PROJECT_ROOT)),
             str((layout_folder / "README.md").relative_to(PROJECT_ROOT)),
         ],
@@ -305,6 +308,8 @@ def blacklake_gdb(stage_name: str, lane_length_m: float) -> str:
     km = lane_length_m / 1000.0
     return f"""BlackLake_{stage_name}
 {{
+  Filter Properties = rFRS TMOD NSCRS
+  Attrition = 0
   TrackName = BlackLake {stage_name}
   EventName = BlackLake Proving Ground {stage_name}
   VenueName = BlackLake
@@ -314,8 +319,14 @@ def blacklake_gdb(stage_name: str, lane_length_m: float) -> str:
   TerrainDataFile=..\\BlackLake.tdf
   HeadlightsRequired = false
   Max Vehicles = 20
+  FormationAndStart=0
+  PitlaneBoundary = 0
+  RacePitKPH = 80.0
+  NormalPitKPH = 80.0
+  FormationSpeedKPH = 80.0
   RaceLaps = 3
   RaceTime = 30
+  NumStartingLights = 2
   TestDayStart = 12:00
   Latitude = 0.0
   Longitude = 0.0
@@ -327,6 +338,177 @@ def blacklake_gdb(stage_name: str, lane_length_m: float) -> str:
   SettingsAI = BlackLake.svm
 }}
 """
+
+
+def blacklake_aiw(stage_name: str, half_extent_m: float, lane_length_m: float, lane_width_m: float) -> str:
+    half_lane = lane_length_m / 2.0
+    usable_half = max(20.0, min(half_extent_m - 15.0, half_lane - 10.0))
+    loop_half_width = min(max(lane_width_m * 3.0, 30.0), max(10.0, half_extent_m - 25.0))
+    spawn_z = -min(usable_half - 15.0, 70.0)
+    spawn_y = 0.55
+    lane_offset = max(2.5, lane_width_m * 0.28)
+
+    grid_lines = []
+    for index in range(12):
+        row = index // 2
+        side = -1 if index % 2 == 0 else 1
+        x = side * lane_offset
+        z = spawn_z - row * 8.0
+        grid_lines.extend([
+            f"GridIndex={index}",
+            f"Pos=({x:.3f},{spawn_y:.3f},{z:.3f})",
+            "Ori=(0.000,0.000,0.000)",
+        ])
+
+    pits = []
+    pit_x = -loop_half_width + 8.0
+    for team in range(4):
+        z = spawn_z + team * 9.0
+        pits.extend([
+            f"TeamIndex={team}",
+            f"PitPos=({pit_x:.3f},{spawn_y:.3f},{z:.3f})",
+            "PitOri=(0.000,0.000,0.000)",
+            f"GarPos=(0,{pit_x - 5.0:.3f},{spawn_y:.3f},{z - 2.0:.3f})",
+            "GarOri=(0,0.000,0.000,0.000)",
+            f"GarPos=(1,{pit_x - 5.0:.3f},{spawn_y:.3f},{z:.3f})",
+            "GarOri=(1,0.000,0.000,0.000)",
+            f"GarPos=(2,{pit_x - 5.0:.3f},{spawn_y:.3f},{z + 2.0:.3f})",
+            "GarOri=(2,0.000,0.000,0.000)",
+        ])
+
+    waypoint_spacing = max(10.0, min(100.0, usable_half / 20.0))
+    points = rectangular_waypoints(loop_half_width, usable_half, spacing=waypoint_spacing)
+    waypoint_lines = blacklake_waypoint_lines(points, lane_width_m, loop_half_width, usable_half)
+
+    return "\n".join([
+        "//[[gMa1.002f (c)2015    ]] [[            ]]",
+        "[Features]",
+        "pitlanes=1",
+        "startinggrid=12",
+        "pitspots=4",
+        "garagespots=3",
+        "auxspots=2",
+        "acceptabledriverlinenoise=1.000000",
+        "StartingStretch=20.000000",
+        "definepath=FASTEST",
+        "pathtime=60.0000",
+        "",
+        "[GRID]",
+        *grid_lines,
+        "",
+        "[ALTGRID]",
+        *grid_lines,
+        "",
+        "[TELEPORT]",
+        *grid_lines,
+        "",
+        "[PITS]",
+        *pits,
+        "",
+        "[AUX]",
+        "LocationIndex=0",
+        f"Pos=(0.000,{spawn_y:.3f},0.000)",
+        "Ori=(0.000,0.000,0.000)",
+        "LocationIndex=1",
+        f"Pos=(0.000,{spawn_y:.3f},10.000)",
+        "Ori=(0.000,0.000,0.000)",
+        "",
+        "[Waypoint]",
+        "trackstate=4507",
+        "drivinglines=1",
+        f"autogengridf=(0.0,{lane_width_m:.2f})",
+        f"teleportwp=({max(0, len(points) // 4)})",
+        "pitlanepaths=(0,0)",
+        f"number_waypoints={len(points)}",
+        f"lap_length={rectangular_lap_length(loop_half_width, usable_half):.6f}",
+        f"sector_1_length={rectangular_lap_length(loop_half_width, usable_half) / 3.0:.6f}",
+        f"sector_2_length={2.0 * rectangular_lap_length(loop_half_width, usable_half) / 3.0:.6f}",
+        "LeftHandedPits=1",
+        "FuelUse=10000.000000",
+        "AIBrakingStiffness=(1.0000,1.0000,0.9000)",
+        "slowwhenpushed=1.00",
+        "DelayPitCrewLoad=0",
+        f"LaneSpacing={lane_width_m:.2f}",
+        "WorstAdjust=(0.8000)",
+        "MidAdjust=(1.0000)",
+        "BestAdjust=(1.2000)",
+        "AIRange=(0.1000)",
+        "AISpec=(0.0000,0.0000,1.0000,0.0000)",
+        *waypoint_lines,
+        "",
+    ])
+
+
+def rectangular_waypoints(half_width: float, half_length: float, spacing: float) -> List[Tuple[float, float, float]]:
+    corners = [
+        (-half_width, 0.0, -half_length),
+        (half_width, 0.0, -half_length),
+        (half_width, 0.0, half_length),
+        (-half_width, 0.0, half_length),
+    ]
+    points: List[Tuple[float, float, float]] = []
+    for start, end in zip(corners, corners[1:] + corners[:1]):
+        sx, sy, sz = start
+        ex, ey, ez = end
+        length = math.hypot(ex - sx, ez - sz)
+        steps = max(1, int(length / spacing))
+        for step in range(steps):
+            alpha = step / steps
+            points.append((sx + (ex - sx) * alpha, sy + (ey - sy) * alpha, sz + (ez - sz) * alpha))
+    return points
+
+
+def rectangular_lap_length(half_width: float, half_length: float) -> float:
+    return 4.0 * (half_width + half_length)
+
+
+def blacklake_waypoint_lines(
+    points: Sequence[Tuple[float, float, float]],
+    lane_width_m: float,
+    loop_half_width: float,
+    loop_half_length: float,
+) -> List[str]:
+    lines: List[str] = []
+    distance = 0.0
+    total_length = rectangular_lap_length(loop_half_width, loop_half_length)
+    for index, (x, y, z) in enumerate(points):
+        prev_index = (index - 1) % len(points)
+        next_index = (index + 1) % len(points)
+        nx, _ny, nz = points[next_index]
+        if index > 0:
+            px, _py, pz = points[index - 1]
+            distance += math.hypot(x - px, z - pz)
+
+        dx = nx - x
+        dz = nz - z
+        length = math.hypot(dx, dz) or 1.0
+        tx = dx / length
+        tz = dz / length
+        perp_x = -tz
+        perp_z = tx
+        yaw = math.atan2(tx, tz)
+        sector = 0 if distance < total_length / 3.0 else 1 if distance < 2.0 * total_length / 3.0 else 2
+
+        lines.extend([
+            f"wp_pos=({x:.4f},{y:.4f},{z:.4f})",
+            f"wp_perp=({perp_x:.4f},0.0000,{perp_z:.4f})",
+            "wp_normal=(0.0000,1.0000,0.0000)",
+            "wp_pathinfo2=(0,0.0000,0.0000,55.0000)",
+            f"wp_oriantation=(0,0.0000,{yaw:.4f},0.0000)",
+            "wp_pathflags=(0,0)",
+            f"wp_width=({lane_width_m:.3f},{lane_width_m:.3f},{loop_half_width:.3f},{loop_half_width:.3f})",
+            f"wp_dwidth=({loop_half_width:.3f},{loop_half_width:.3f},0.000,0.000)",
+            "wp_lockedAlpha=(0)",
+            "wp_test_speed=(55.000000)",
+            "wp_reverb=(0)",
+            f"wp_score=({sector},{distance:.3f})",
+            "wp_wpse=(0,0)",
+            "wp_branchID=(0)",
+            "wp_bitfields=(0)",
+            "wp_pitlane=(0)",
+            f"WP_PTRS=({prev_index},{next_index},-1,0)",
+        ])
+    return lines
 
 
 def blacklake_scn(stage_name: str) -> str:
@@ -424,13 +606,14 @@ This folder is a text scaffold for the custom BlackLake proving ground.
 What is ready:
 - `BlackLake.tdf`
 - `BlackLake.gdb`
+- `BlackLake_{stage_name}.gdb`
 - `BlackLake_{stage_name}.scn`
+- `BlackLake_{stage_name}.AIW`
 - `BlackLake_{stage_name}.wet`
 
 What is still required before rFactor 2 can load and drive it:
 - export or copy `BlackLake_Surface.gmt`
 - export or copy `BlackLake_Markings.gmt`
-- create `AIW` in ModDev AI editor
 - package as `.rfcmp`
 
 This repository can export GMT for the generated BlackLake geometry with
