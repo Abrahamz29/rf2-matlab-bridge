@@ -1,0 +1,53 @@
+{
+  "batch_name": "blacklake_step_steer",
+  "scenarios": [
+    {
+      "name": "step_left_020",
+      "control_hz": 20,
+      "sample_hz": 20,
+      "countdown_s": 2.0,
+      "ensure_player_control": true,
+      "segments": [
+        { "name": "stabilize", "duration_s": 3.0, "throttle": 0.35, "brake": 0.0, "steer": 0.0 },
+        { "name": "step",      "duration_s": 1.0, "throttle": 0.35, "brake": 0.0, "steer": -0.20 },
+        { "name": "recover",   "duration_s": 4.0, "throttle": 0.10, "brake": 0.0, "steer": 0.0 }
+      ]
+    },
+    {
+      "name": "step_left_035",
+      "control_hz": 20,
+      "sample_hz": 20,
+      "countdown_s": 2.0,
+      "ensure_player_control": true,
+      "segments": [
+        { "name": "stabilize", "duration_s": 3.0, "throttle": 0.35, "brake": 0.0, "steer": 0.0 },
+        { "name": "step",      "duration_s": 1.0, "throttle": 0.35, "brake": 0.0, "steer": -0.35 },
+        { "name": "recover",   "duration_s": 4.0, "throttle": 0.10, "brake": 0.0, "steer": 0.0 }
+      ]
+    },
+    {
+      "name": "step_right_020",
+      "control_hz": 20,
+      "sample_hz": 20,
+      "countdown_s": 2.0,
+      "ensure_player_control": true,
+      "segments": [
+        { "name": "stabilize", "duration_s": 3.0, "throttle": 0.35, "brake": 0.0, "steer": 0.0 },
+        { "name": "step",      "duration_s": 1.0, "throttle": 0.35, "brake": 0.0, "steer": 0.20 },
+        { "name": "recover",   "duration_s": 4.0, "throttle": 0.10, "brake": 0.0, "steer": 0.0 }
+      ]
+    },
+    {
+      "name": "step_right_035",
+      "control_hz": 20,
+      "sample_hz": 20,
+      "countdown_s": 2.0,
+      "ensure_player_control": true,
+      "segments": [
+        { "name": "stabilize", "duration_s": 3.0, "throttle": 0.35, "brake": 0.0, "steer": 0.0 },
+        { "name": "step",      "duration_s": 1.0, "throttle": 0.35, "brake": 0.0, "steer": 0.35 },
+        { "name": "recover",   "duration_s": 4.0, "throttle": 0.10, "brake": 0.0, "steer": 0.0 }
+      ]
+    }
+  ]
+}

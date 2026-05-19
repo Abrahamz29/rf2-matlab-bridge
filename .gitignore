@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# MATLAB
+*.asv
+*.mlx.autosave
+slprj/
+
+# Logs and local outputs
+logs/
+*.log
+*.jsonl
+
+# OS/editor
+.DS_Store
+Thumbs.db
+
+# Local downloads and extracted archives
+tools/downloads/

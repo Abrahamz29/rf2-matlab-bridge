@@ -1,0 +1,206 @@
+# rFactor 2 MATLAB Telemetry Bridge
+
+Dieses Projekt verbindet MATLAB mit rFactor 2 ueber den offiziellen Community-Weg:
+`rFactor2SharedMemoryMapPlugin64.dll` schreibt rFactor-2-Internals in Windows
+Shared Memory, die Python-Bridge liest diese Buffer und MATLAB dekodiert sie als
+Strukturen.
+
+## Repository und Workflow
+
+Das Projekt ist fuer Git/GitHub-Nutzung vorbereitet.
+
+- Arbeitsregeln fuer Codex und Mitwirkende stehen in `AGENTS.md`.
+- GitHub-Initialisierung und Remote-Setup stehen in `docs/github_bootstrap.md`.
+- Nach sinnvollen, verifizierten Aenderungen sollte ein lokaler Commit erzeugt
+  werden.
+- Nach stabilen Zwischenstaenden und vor groesseren Pausen sollte nach `origin`
+  gepusht werden.
+
+## Eingebundene Projekte
+
+- `vendor/rF2SharedMemoryMapPlugin`:
+  TheIronWolfModding/rF2SharedMemoryMapPlugin, Quelle der rFactor-2-Shared-Memory-Structs.
+- `vendor/pyRfactor2SharedMemory`:
+  TonyWhitley/pyRfactor2SharedMemory, Python-ctypes-Mapping der rF2-Structs.
+- `vendor/rF2SharedMemoryNet`:
+  Domaslau/rF2SharedMemoryNet, aktuelle .NET-Referenzimplementierung fuer alle Buffer.
+
+Weitere nuetzliche Referenzen sind TinyPedal, CrewChief, SimHub und die Wine-Fork
+des Shared-Memory-Plugins. Fuer MATLAB ist die direkte Python-Bridge in diesem
+Repo der kuerzeste stabile Weg.
+
+## rFactor 2 vorbereiten
+
+Die DLL wurde in diesem Projekt bereits aus `rf2_sm_tools_3.7.15.1.zip`
+geladen und nach rFactor 2 kopiert:
+
+```text
+C:\Program Files (x86)\Steam\steamapps\common\rFactor 2\Bin64\Plugins\rFactor2SharedMemoryMapPlugin64.dll
+SHA256: 9D98D77B767812DCA5AFEB6663F486B3AD5BE090C3E10783F36BC73A470AB5E6
+```
+
+Die Plugin-Konfiguration wurde ebenfalls gesetzt:
+
+```text
+C:\Program Files (x86)\Steam\steamapps\common\rFactor 2\UserData\player\CustomPluginVariables.JSON
+"rFactor2SharedMemoryMapPlugin64.dll" -> " Enabled": 1
+"UnsubscribedBuffersMask": 0
+```
+
+Zum erneuten Installieren:
+
+```powershell
+.\tools\Install-RF2SharedMemoryPlugin.ps1 -Download
+```
+
+Manuelle Schritte:
+
+1. Lade `rFactor2SharedMemoryMapPlugin64.dll` aus den rF2 Shared Memory Tools:
+   https://github.com/TheIronWolfModding/rF2SharedMemoryMapPlugin#download
+2. Kopiere die DLL nach:
+   `C:\Program Files (x86)\Steam\steamapps\common\rFactor 2\Bin64\Plugins`
+3. Starte rFactor 2, aktiviere in `Settings > Gameplay > Plugins`
+   `rFactor2SharedMemoryMapPlugin64.dll`, danach rFactor 2 neu starten.
+4. Fuer alle Output-Buffer sollte in
+   `UserData\player\CustomPluginVariables.JSON` der Plugin-Wert
+   `UnsubscribedBuffersMask` auf `0` stehen. Graphics und Weather sind im Plugin
+   oft standardmaessig unsubscribed.
+
+Hilfsscript, wenn die DLL bereits lokal vorhanden ist:
+
+Falls rFactor 2 die Plugin-Konfiguration nicht erzeugt, installiere den VC12
+Runtime aus `C:\Program Files (x86)\Steam\steamapps\common\rFactor 2\Support\Runtimes`
+und starte rFactor 2 erneut.
+
+## MATLAB benutzen
+
+In MATLAB:
+
+```matlab
+cd("C:\Users\Victor\Documents\PYTHON\RFactor2")
+status = setup_rf2_matlab()
+
+client = RF2Client();
+data = client.snapshot();
+wheels = client.wheelTable(data)
+dynamics = client.playerDynamics(data)
+```
+
+Vollstaendige Arrays inklusive aller 128 Fahrzeug-Slots:
+
+```matlab
+dataFull = client.snapshot("Full", true);
+```
+
+Live-Beispiel:
+
+```matlab
+rf2LivePlotExample(60, 20)
+```
+
+Setup-relevante Uebersichtsplots:
+
+```matlab
+run = rf2CollectTelemetry(120, 20);
+rf2PlotTelemetry(run);
+```
+
+Kurzform:
+
+```matlab
+run = rf2PlotLatest(120, 20);
+```
+
+JSONL-Logging:
+
+```matlab
+client.logJsonl(120, 50)
+```
+
+CLI-Test ohne MATLAB, mit der Python-Umgebung, die MATLAB hier ebenfalls nutzt:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\python\rf2_matlab_bridge.py status --pretty
+```
+
+Erwarteter Status bei laufendem rFactor 2:
+
+```text
+connected: true
+pluginVersion: 3.7.15.1
+availableBuffers: telemetry, scoring, rules, forceFeedback, graphics, pitInfo, weather, extended
+```
+
+## Verfuegbare Shared-Memory-Buffer
+
+- `telemetry` bei ca. 50 Hz: Fahrzeug-, Reifen-, Fahrdynamik- und Eingabedaten.
+- `scoring` bei ca. 5 Hz: Session, Strecke, Position, Zeiten, Fahrer/Fahrzeuge.
+- `rules` bei ca. 3 Hz: Full-course-yellow, Safety-Car, Regelstatus.
+- `forceFeedback` bei ca. 400 Hz: aktueller FFB-Wert.
+- `graphics` bei ca. 400 Hz: Kamera und Render-Umgebungsdaten.
+- `pitInfo` bei ca. 100 Hz: aktuelles Pit-Menue.
+- `weather` bei ca. 1 Hz: Regen, Wolken, Temperatur, Wind.
+- `extended` bei ca. 5 Hz: Plugin-Version, Sessionstatus, Damage-Tracking,
+  Direct-Memory-Reader-Status und Zusatzmeldungen.
+
+Wichtige Reifenfelder liegen unter:
+
+```matlab
+data.convenience.playerTelemetry.mWheels
+```
+
+Die Reihenfolge ist:
+
+```matlab
+data.convenience.wheelOrder
+```
+
+Pro Rad werden unter anderem geliefert: Reifendruck, Temperaturen links/mitte/rechts,
+Carcass- und Inner-Layer-Temperaturen, Verschleiss, Tire Load, Grip Fraction,
+laterale/longitudinale Kraefte, Patch/Ground Velocities, Camber, Toe, Ride Height,
+Suspension Deflection und Brake Temp/Pressure.
+
+## Grenzen
+
+Die Bridge liefert alle Daten, die der rFactor-2-Internals-API/Shared-Memory-Plugin
+oeffentlich bereitstellt. Nicht enthalten sind proprietaere interne Solver-Zustaende
+oder vollstaendige Reifenmodell-Parameter, die rF2 nicht in Shared Memory publiziert.
+Solche statischen Mod-/TGM-Daten muessten separat aus installierten Fahrzeugdateien
+extrahiert werden, soweit sie unverschluesselt vorliegen.
+
+## MoTeC
+
+MoTeC i2 Pro ist weiterhin sinnvoll fuer Offline-Lap-Analyse mit DAMPlugin-Logs.
+Diese MATLAB-Bridge ist dagegen fuer Live-Daten, eigene Auswertungen und
+automatisierte Versuche gedacht. Details stehen in `docs/plots_and_motec.md`.
+
+## Headless und Autopilot
+
+Fuer Plot-Entwicklung ohne laufende rF2-Session gibt es einen Mock-Modus:
+
+```matlab
+rf2RollingLivePlot(15, 20, "mock")
+run = rf2PlotLatest(60, 20, "mock");
+```
+
+Fuer echte Daten muss rF2 als Client-Session laufen. Die Config ist vorbereitet:
+AI-Control ist erlaubt, und rF2 pausiert nicht mehr bei Fokusverlust. In der
+Session Taste `I` druecken, damit die AI das eigene Auto faehrt. Details:
+`docs/headless_autopilot.md`.
+
+## Automation
+
+Es gibt jetzt einen Open-Loop-Manoever-Runner fuer rF2:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\python\rf2_automation.py .\scenarios\blacklake_step_steer_batch.json
+```
+
+Oder aus MATLAB:
+
+```matlab
+rf2RunAutomation("scenarios\blacklake_step_steer_batch.json")
+```
+
+Die erste Version nutzt Windows-Tastatur-Events als Aktuator und schreibt pro
+Variante eine `telemetry.csv`. Details: `docs/automation.md`.
