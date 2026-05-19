@@ -94,14 +94,15 @@ Regler laufen:
 
 ```matlab
 setup_rf2_matlab()
-run = rf2RunMatlabController(@rf2BlackLakeExampleController, 30, 20);
+run = rf2RunBlackLakeController(30, 20);
 ```
 
 Dabei:
 
 - liest `RF2Client` live Shared-Memory-Telemetrie
 - setzt `RF2Actuator` Gas, Bremse und Lenkung
-- berechnet die Funktion `rf2BlackLakeExampleController` den naechsten Befehl
+- prueft `rf2RunBlackLakeController`, ob BlackLake wirklich geladen ist
+- berechnet `rf2MakeBlackLakeController` den naechsten Befehl
 
 Fuer BlackLake ist das der richtige Pfad, sobald die Strecke installiert ist.
 

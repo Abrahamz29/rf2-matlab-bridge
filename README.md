@@ -234,9 +234,9 @@ ohne AI-Fahrer:
 ```matlab
 cd("C:\Users\Victor\Documents\PYTHON\RFactor2")
 setup_rf2_matlab()
-run = rf2RunMatlabController(@rf2BlackLakeExampleController, 30, 20);
+run = rf2RunBlackLakeController(30, 20);
 ```
 
 Dabei liest MATLAB die Telemetrie ueber `RF2Client` und setzt Befehle ueber
-`RF2Actuator`. Der Beispielregler ist nur eine Vorlage fuer deinen echten
-BlackLake-Regler.
+`RF2Actuator`. `rf2RunBlackLakeController` prueft vor dem Start, ob wirklich
+eine BlackLake-Session geladen ist.
