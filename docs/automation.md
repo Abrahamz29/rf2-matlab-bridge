@@ -130,3 +130,16 @@ der richtige naechste Schritt ein zweiter Aktuator-Backend:
 - `vJoy` oder `ViGEm` fuer echte analoge Lenk-, Gas- und Bremsprofile
 
 Siehe auch: `docs/proving_ground_scale.md`
+
+## Custom BlackLake authoring
+
+Wenn BlackLake als eigener rF2-Testtrack gebaut wird, erzeugt das Repo bereits
+die Quellgeometrie und das ModDev-Scaffold:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\python\blacklake_builder.py --all
+```
+
+Die Details und Grenzen des lokalen Toolchains stehen in:
+
+- `docs/blacklake_authoring.md`

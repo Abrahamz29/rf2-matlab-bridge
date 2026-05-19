@@ -1,0 +1,8 @@
+name,x_m,y_m,z_m
+origin,0.0,0.0,0.0
+north_limit,0.0,0.0,900.0
+south_limit,0.0,0.0,-900.0
+east_limit,900.0,0.0,0.0
+west_limit,-900.0,0.0,0.0
+skidpad_40m,40.0,0.0,0.0
+skidpad_80m,80.0,0.0,0.0

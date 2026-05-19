@@ -1,0 +1,32 @@
+{
+  "250m": {
+    "half_extent_m": 125.0,
+    "lane_length_m": 220.0,
+    "lane_width_m": 12.0
+  },
+  "500m": {
+    "half_extent_m": 250.0,
+    "lane_length_m": 440.0,
+    "lane_width_m": 12.0
+  },
+  "1000m": {
+    "half_extent_m": 500.0,
+    "lane_length_m": 900.0,
+    "lane_width_m": 12.0
+  },
+  "2000m": {
+    "half_extent_m": 1000.0,
+    "lane_length_m": 1800.0,
+    "lane_width_m": 14.0
+  },
+  "5000m": {
+    "half_extent_m": 2500.0,
+    "lane_length_m": 4600.0,
+    "lane_width_m": 16.0
+  },
+  "12000m": {
+    "half_extent_m": 6000.0,
+    "lane_length_m": 11000.0,
+    "lane_width_m": 18.0
+  }
+}

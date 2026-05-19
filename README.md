@@ -240,3 +240,15 @@ run = rf2RunBlackLakeController(30, 20);
 Dabei liest MATLAB die Telemetrie ueber `RF2Client` und setzt Befehle ueber
 `RF2Actuator`. `rf2RunBlackLakeController` prueft vor dem Start, ob wirklich
 eine BlackLake-Session geladen ist.
+
+## Custom BlackLake
+
+Da auf diesem System kein installierter rF2-BlackLake-Content vorhanden ist,
+liegt jetzt ein eigener BlackLake-Authoring-Workspace im Repo:
+
+- `tracks/blacklake/`
+- `python/blacklake_builder.py`
+- `docs/blacklake_authoring.md`
+
+Die Quelle fuer BlackLake wird damit selbst generiert: Flaechen-OBJ, Markings,
+Layout-CSV und ModDev-Scaffolding fuer die Stufen `250m` bis `12000m`.

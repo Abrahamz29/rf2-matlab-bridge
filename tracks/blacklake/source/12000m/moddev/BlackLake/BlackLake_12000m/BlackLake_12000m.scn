@@ -1,0 +1,44 @@
+SearchPath=.
+SearchPath=BLACKLAKE
+SearchPath=BLACKLAKE\BLACKLAKE_12000M
+SearchPath=BLACKLAKE\ASSETS\GMT
+SearchPath=BLACKLAKE\ASSETS\MAPS
+MASFile=COMMONMAPS.MAS
+
+View=mainview
+{
+  Clear=False
+  Color=(0, 0, 0)
+  Size=(1.00, 1.00) Center=(0.5, 0.5)
+  FOV=(77.75, 31.25)
+  ClipPlanes=(0.50, 20000.00)
+}
+
+GroupMethod=Dynamic
+MaxShadowRange=(900.00)
+AmbientColor=(126, 126, 126)
+ReflectPlane=(0.000, 1.000, 0.000, 0.000)
+FogMode=LINEAR FogIn=(800.00) FogOut=(18000.00) FogDensity=(0.00002) FogColor=(205, 215, 235)
+
+Light=Direct00
+{
+ Type=Directional Color=(220, 220, 220) Dir=(0.5, -0.9, 0.5)
+}
+
+// The following GMT names are placeholders for source geometry exported from
+// tracks/blacklake/source/12000m/geometry/*.obj through a GMT-capable DCC tool.
+
+Instance=BlackLake_Surface
+{
+  MeshFile=BlackLake_Surface.gmt Deformable=True CollTarget=True HATTarget=True
+}
+
+Instance=BlackLake_Markings
+{
+  MeshFile=BlackLake_Markings.gmt CollTarget=False HATTarget=False
+}
+
+Instance=SkyBoxi
+{
+  MeshFile=SkyBoxi.gmt CollTarget=False HATTarget=False Reflect=True
+}

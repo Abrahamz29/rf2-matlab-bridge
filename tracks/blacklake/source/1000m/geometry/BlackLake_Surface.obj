@@ -1,0 +1,8 @@
+mtllib BlackLake_Surface.mtl
+o BlackLake_Surface
+usemtl BlackLakeAsphalt
+v -500.000000 0.000000 -500.000000
+v 500.000000 0.000000 -500.000000
+v 500.000000 0.000000 500.000000
+v -500.000000 0.000000 500.000000
+f 1 2 3 4

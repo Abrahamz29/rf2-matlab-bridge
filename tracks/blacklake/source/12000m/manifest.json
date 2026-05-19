@@ -1,0 +1,16 @@
+{
+  "stage": "12000m",
+  "half_extent_m": 6000.0,
+  "lane_length_m": 11000.0,
+  "lane_width_m": 18.0,
+  "generated_files": [
+    "tracks\\blacklake\\source\\12000m\\geometry\\BlackLake_Surface.obj",
+    "tracks\\blacklake\\source\\12000m\\geometry\\BlackLake_Markings.obj",
+    "tracks\\blacklake\\source\\12000m\\layout\\waypoints_fast_path.csv",
+    "tracks\\blacklake\\source\\12000m\\layout\\markers.csv",
+    "tracks\\blacklake\\source\\12000m\\moddev\\BlackLake\\BlackLake.tdf",
+    "tracks\\blacklake\\source\\12000m\\moddev\\BlackLake\\BlackLake_12000m\\BlackLake_12000m.scn",
+    "tracks\\blacklake\\source\\12000m\\moddev\\BlackLake\\BlackLake_12000m\\BlackLake_12000m.wet",
+    "tracks\\blacklake\\source\\12000m\\moddev\\BlackLake\\BlackLake_12000m\\README.md"
+  ]
+}
