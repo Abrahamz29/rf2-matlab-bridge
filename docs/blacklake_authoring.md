@@ -50,6 +50,20 @@ The `250m` ModDev install now also includes a stage-local
 start, teleport, pit, and waypoint data instead of relying on copied Joesville
 session files.
 
+At the moment `BlackLake` is still a loose `ModDev` location. That means it
+does not show up in the normal retail single-player track search yet. For the
+first drivable validation use:
+
+```powershell
+.\tools\Start-BlackLakeModDev.ps1 -Mode Viewer -Stage 250m
+```
+
+To prepare the first normal-game install package staging for MAS2:
+
+```powershell
+.\tools\Prepare-BlackLakePackage.ps1 -Stage 250m
+```
+
 For reference, on this machine we also have:
 
 - `ModDev`

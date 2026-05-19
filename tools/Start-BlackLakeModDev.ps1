@@ -32,4 +32,4 @@ if ($Mode -eq "Viewer") {
     exit 0
 }
 
-throw "Direct Game mode is not reliable for loose ModDev scenes in the current rFactor 2 UI. Use -Mode Viewer until BlackLake is packaged as rfcmp."
+throw "BlackLake does not appear in the retail single-player menu yet, and direct +scene launches still fall back to the currently installed retail track. Use -Mode Viewer for loose ModDev validation, or package BlackLake as an installable component for normal game track selection."

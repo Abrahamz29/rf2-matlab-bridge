@@ -13,6 +13,8 @@ slprj/
 logs/
 *.log
 *.jsonl
+build/
+tmp/
 
 # OS/editor
 .DS_Store

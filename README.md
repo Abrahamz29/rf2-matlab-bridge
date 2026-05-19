@@ -283,6 +283,21 @@ Wichtig fuer die Spiel-/ModDev-Auswahl sind dort:
 - `BlackLake_250m.scn`
 - `BlackLake_250m.AIW`
 
+Wichtig: Diese lose `ModDev`-Strecke erscheint noch nicht im normalen
+Singleplayer-Track-Menue des Hauptspiels. Fuer den direkten Fahrtest ist der
+aktuelle Weg:
+
+```powershell
+.\tools\Start-BlackLakeModDev.ps1 -Mode Viewer -Stage 250m
+```
+
+Fuer das normale Track-Menue muss BlackLake als installierbare `Location`
+paketiert werden. Die vorbereitete MAS2-Staging-Struktur erzeugt:
+
+```powershell
+.\tools\Prepare-BlackLakePackage.ps1 -Stage 250m
+```
+
 Fuer den sofort nutzbaren Vergleichspfad gibt es weiterhin den
 `JoesvilleBaseline`-Modus. Dieser nutzt vorhandene `Joesville`-Assets und ist
 nur fuer Telemetrie, MATLAB-Regler und Session-Plumbing gedacht:
