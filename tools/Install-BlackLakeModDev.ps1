@@ -321,7 +321,12 @@ Instance=Track_Outer
 }
 Instance=SkyBoxi
 {
+  Planes=(4) ReflectPlane=(0.000, 1.000, 0.000, 0.550)
   MeshFile=SkyBoxi.gmt CollTarget=False HATTarget=False Reflect=True
+}
+Instance=ShadowBox
+{
+  MeshFile=ShadowBox.gmt CollTarget=False HATTarget=False ShadowObject=(Static, Solid) ShadowGroups=(15) LODOut=(1000)
 }
 Instance=XFinish
 {
@@ -342,6 +347,59 @@ Instance=XSector1
 Instance=XSector2
 {
   MeshFile=xsector2.gmt CollTarget=False HATTarget=False
+}
+
+ReflectionMapper=REFLECTEDENV
+{
+  Type=Planar
+  TextureSize=(1024)
+  UpdateRate=(100.000)
+  StaticSwitch=(150.000)
+  TrackingIns=NULL
+  IncludeIns=Walls_Inside
+  IncludeIns=Walls_Outside
+  IncludeIns=Armcos
+  IncludeIns=SafetyFences
+  IncludeIns=SFencePosts
+  IncludeIns=NightLight01Glow
+}
+
+ReflectionMapper=STATIC01
+{
+  Type=Cubic
+  TextureSize=(512)
+  UpdateRate=(0.100)
+  StaticSwitch=(100.000)
+  Pos=(-40.777466,0.000000,-46.012000)
+  IncludeIns=RaceSurface_01
+  IncludeIns=Infield
+  IncludeIns=Outfield
+  IncludeIns=Walls_Inside
+  IncludeIns=Walls_Outside
+}
+
+ReflectionMapper=REFMAP0
+{
+  Type=Cubic
+  TextureSize=(1024)
+  UpdateRate=(100.000)
+  StaticSwitch=(100.000)
+  TrackingIns=True
+  IncludeIns=NightLight01Glow
+  IncludeIns=RaceSurface_01
+  IncludeIns=Infield
+  IncludeIns=Outfield
+  IncludeIns=RoadLines
+  IncludeIns=Walls_Inside
+  IncludeIns=Walls_Outside
+  IncludeIns=Armcos
+  IncludeIns=BarrierA_01
+  IncludeIns=SafetyFences
+  IncludeIns=SFencePosts
+  IncludeIns=Fence_ChainLink
+  IncludeIns=Structures
+  IncludeIns=Track_Outer
+  IncludeIns=SkyBoxi
 }
 "@
     Set-Content -Path $scnPath -Value $scn -Encoding ASCII
