@@ -25,6 +25,18 @@ git commit -m "Kurzbeschreibung der Aenderung"
 git push
 ```
 
+Frische Klone sollten die Vendor-Repositories direkt mitziehen:
+
+```powershell
+git clone --recurse-submodules <repo-url>
+```
+
+Bestehende Klone koennen nachziehen mit:
+
+```powershell
+git submodule update --init --recursive
+```
+
 Hinweise:
 
 - Das Projekt ist fuer regelmaessige kleine Commits ausgelegt.

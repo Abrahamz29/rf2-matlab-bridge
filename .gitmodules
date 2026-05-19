@@ -1,0 +1,9 @@
+[submodule "vendor/pyRfactor2SharedMemory"]
+	path = vendor/pyRfactor2SharedMemory
+	url = https://github.com/TonyWhitley/pyRfactor2SharedMemory.git
+[submodule "vendor/rF2SharedMemoryMapPlugin"]
+	path = vendor/rF2SharedMemoryMapPlugin
+	url = https://github.com/TheIronWolfModding/rF2SharedMemoryMapPlugin.git
+[submodule "vendor/rF2SharedMemoryNet"]
+	path = vendor/rF2SharedMemoryNet
+	url = https://github.com/Domaslau/rF2SharedMemoryNet.git

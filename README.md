@@ -11,10 +11,17 @@ Das Projekt ist fuer Git/GitHub-Nutzung vorbereitet.
 
 - Arbeitsregeln fuer Codex und Mitwirkende stehen in `AGENTS.md`.
 - GitHub-Initialisierung und Remote-Setup stehen in `docs/github_bootstrap.md`.
+- Vendor-Abhaengigkeiten sind als Git-Submodules eingebunden.
 - Nach sinnvollen, verifizierten Aenderungen sollte ein lokaler Commit erzeugt
   werden.
 - Nach stabilen Zwischenstaenden und vor groesseren Pausen sollte nach `origin`
   gepusht werden.
+
+Frischer Clone mit Submodules:
+
+```powershell
+git clone --recurse-submodules <repo-url>
+```
 
 ## Eingebundene Projekte
 
