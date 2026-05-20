@@ -64,6 +64,18 @@ To prepare the first normal-game install package staging for MAS2:
 .\tools\Prepare-BlackLakePackage.ps1 -Stage 250m
 ```
 
+For the most automated drive-test preparation currently available:
+
+```powershell
+.\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m
+```
+
+This regenerates the stage, exports GMT, installs and verifies ModDev content,
+prepares MAS2 staging, and creates a loose local retail test install in
+`Installed\Locations\BlackLake_2026\0.10`.
+
+Add `-OpenGame` to start rFactor 2 after the preparation step.
+
 For reference, on this machine we also have:
 
 - `ModDev`

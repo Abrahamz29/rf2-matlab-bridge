@@ -298,6 +298,26 @@ paketiert werden. Die vorbereitete MAS2-Staging-Struktur erzeugt:
 .\tools\Prepare-BlackLakePackage.ps1 -Stage 250m
 ```
 
+Fuer einen weitgehend automatischen Fahrtest-Vorbereitungslauf gibt es den
+gebuendelten Befehl:
+
+```powershell
+.\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m
+```
+
+Der Befehl baut die Quelle neu, exportiert die GMTs, installiert und prueft den
+ModDev-Stand, erzeugt das MAS2-Staging und legt zusaetzlich eine lose lokale
+Testinstallation unter `Installed\Locations\BlackLake_2026\0.10` an. Danach im
+normalen rFactor-2-Menue nach `BlackLake` suchen. Falls die lose Testinstallation
+vom Retail-Menue nicht akzeptiert wird, ist der naechste notwendige Schritt die
+MAS2-`rfcmp`-Paketierung aus `build\blacklake_package\250m`.
+
+Mit `-OpenGame` startet der Befehl nach der Vorbereitung direkt rFactor 2:
+
+```powershell
+.\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m -OpenGame
+```
+
 Fuer den sofort nutzbaren Vergleichspfad gibt es weiterhin den
 `JoesvilleBaseline`-Modus. Dieser nutzt vorhandene `Joesville`-Assets und ist
 nur fuer Telemetrie, MATLAB-Regler und Session-Plumbing gedacht:
