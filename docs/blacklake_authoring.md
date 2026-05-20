@@ -50,9 +50,7 @@ The `250m` ModDev install now also includes a stage-local
 start, teleport, pit, and waypoint data instead of relying on copied Joesville
 session files.
 
-At the moment `BlackLake` is still a loose `ModDev` location. That means it
-does not show up in the normal retail single-player track search yet. For the
-first drivable validation use:
+For the first loose ModDev validation use:
 
 ```powershell
 .\tools\Start-BlackLakeModDev.ps1 -Mode Viewer -Stage 250m
@@ -64,6 +62,13 @@ To prepare the first normal-game install package staging for MAS2:
 .\tools\Prepare-BlackLakePackage.ps1 -Stage 250m
 ```
 
+To build the MAS files, create a real `.rfcmp`, and install it into the rFactor
+2 retail root:
+
+```powershell
+.\tools\Build-BlackLakeRfcmp.ps1 -Stage 250m -Install
+```
+
 For the most automated drive-test preparation currently available:
 
 ```powershell
@@ -71,8 +76,8 @@ For the most automated drive-test preparation currently available:
 ```
 
 This regenerates the stage, exports GMT, installs and verifies ModDev content,
-prepares MAS2 staging, and creates a loose local retail test install in
-`Installed\Locations\BlackLake_2026\0.10`.
+and prepares MAS2 staging. Use `Build-BlackLakeRfcmp.ps1 -Install` after that
+for the normal retail track menu.
 
 Add `-OpenGame` to start rFactor 2 after the preparation step.
 

@@ -37,12 +37,11 @@ function Get-SteamContinueButtonCenter {
     try {
         $graphics.CopyFromScreen($bounds.Location, [System.Drawing.Point]::Empty, $bounds.Size)
 
-        $minX = $bounds.Width
-        $minY = $bounds.Height
-        $maxX = -1
-        $maxY = -1
-        $count = 0
-        $startY = [Math]::Floor($bounds.Height * 0.45)
+        $points = New-Object 'System.Collections.Generic.HashSet[string]'
+        # Restrict to the lower part of the screen. The Steam dialog has a
+        # thin blue border near its top; including it skews the computed
+        # bounding box above the actual "Fortfahren" button.
+        $startY = [Math]::Floor($bounds.Height * 0.60)
 
         for ($y = $startY; $y -lt $bounds.Height; $y += 2) {
             for ($x = 0; $x -lt $bounds.Width; $x += 2) {
@@ -53,32 +52,73 @@ function Get-SteamContinueButtonCenter {
                 if ($pixel.R -ge 35 -and $pixel.R -le 95 -and
                     $pixel.G -ge 85 -and $pixel.G -le 150 -and
                     $pixel.B -ge 170 -and $pixel.B -le 245) {
-                    $count++
-                    if ($x -lt $minX) { $minX = $x }
-                    if ($x -gt $maxX) { $maxX = $x }
-                    if ($y -lt $minY) { $minY = $y }
-                    if ($y -gt $maxY) { $maxY = $y }
+                    [void]$points.Add("$x,$y")
                 }
             }
         }
 
-        if ($count -lt 250) {
+        if ($points.Count -lt 250) {
             return $null
         }
 
-        $width = $maxX - $minX
-        $height = $maxY - $minY
-        if ($width -lt 80 -or $height -lt 20) {
-            return $null
+        $best = $null
+        $visited = New-Object 'System.Collections.Generic.HashSet[string]'
+        foreach ($point in $points) {
+            if ($visited.Contains($point)) {
+                continue
+            }
+
+            $queue = New-Object 'System.Collections.Generic.Queue[string]'
+            $queue.Enqueue($point)
+            [void]$visited.Add($point)
+            $minX = $bounds.Width
+            $minY = $bounds.Height
+            $maxX = -1
+            $maxY = -1
+            $count = 0
+
+            while ($queue.Count -gt 0) {
+                $current = $queue.Dequeue()
+                $parts = $current.Split(',')
+                $x = [int]$parts[0]
+                $y = [int]$parts[1]
+                $count++
+                if ($x -lt $minX) { $minX = $x }
+                if ($x -gt $maxX) { $maxX = $x }
+                if ($y -lt $minY) { $minY = $y }
+                if ($y -gt $maxY) { $maxY = $y }
+
+                foreach ($neighbor in @(
+                    "$($x - 2),$y",
+                    "$($x + 2),$y",
+                    "$x,$($y - 2)",
+                    "$x,$($y + 2)"
+                )) {
+                    if ($points.Contains($neighbor) -and -not $visited.Contains($neighbor)) {
+                        [void]$visited.Add($neighbor)
+                        $queue.Enqueue($neighbor)
+                    }
+                }
+            }
+
+            $width = $maxX - $minX
+            $height = $maxY - $minY
+            if ($count -ge 250 -and
+                $width -ge 90 -and $width -le 260 -and
+                $height -ge 25 -and $height -le 90) {
+                if ($null -eq $best -or $count -gt $best.PixelCount) {
+                    $best = [PSCustomObject]@{
+                        X = $bounds.Left + [Math]::Floor(($minX + $maxX) / 2)
+                        Y = $bounds.Top + [Math]::Floor(($minY + $maxY) / 2)
+                        PixelCount = $count
+                        Width = $width
+                        Height = $height
+                    }
+                }
+            }
         }
 
-        return [PSCustomObject]@{
-            X = $bounds.Left + [Math]::Floor(($minX + $maxX) / 2)
-            Y = $bounds.Top + [Math]::Floor(($minY + $maxY) / 2)
-            PixelCount = $count
-            Width = $width
-            Height = $height
-        }
+        return $best
     }
     finally {
         $graphics.Dispose()

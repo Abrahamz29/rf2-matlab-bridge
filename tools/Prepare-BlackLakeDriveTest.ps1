@@ -184,6 +184,7 @@ $exportScript = Join-Path $ProjectRoot "tools\Export-BlackLakeGmt.ps1"
 $installModDevScript = Join-Path $ProjectRoot "tools\Install-BlackLakeModDev.ps1"
 $testModDevScript = Join-Path $ProjectRoot "tools\Test-BlackLakeModDevInstall.ps1"
 $packageScript = Join-Path $ProjectRoot "tools\Prepare-BlackLakePackage.ps1"
+$rfcmpScript = Join-Path $ProjectRoot "tools\Build-BlackLakeRfcmp.ps1"
 $viewerScript = Join-Path $ProjectRoot "tools\Start-BlackLakeModDev.ps1"
 
 if (-not (Test-Path $ProjectRoot)) {
@@ -226,7 +227,15 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 if (-not $NoLooseRetailInstall) {
-    Install-LooseRetailLocation -Stage $Stage -ProjectRoot $ProjectRoot -Rf2Root $Rf2Root -ComponentName $ComponentName -ComponentVersion $ComponentVersion
+    if (Test-Path $rfcmpScript) {
+        & powershell -ExecutionPolicy Bypass -File $rfcmpScript -Stage $Stage -ProjectRoot $ProjectRoot -Rf2Root $Rf2Root -PythonExe $PythonExe -ComponentName $ComponentName -ComponentVersion $ComponentVersion -Install
+        if ($LASTEXITCODE -ne 0) {
+            throw "BlackLake rfcmp install failed with exit code $LASTEXITCODE"
+        }
+    }
+    else {
+        Install-LooseRetailLocation -Stage $Stage -ProjectRoot $ProjectRoot -Rf2Root $Rf2Root -ComponentName $ComponentName -ComponentVersion $ComponentVersion
+    }
 }
 
 if ($OpenViewer) {
@@ -255,4 +264,4 @@ Write-Host ""
 Write-Host "BlackLake drive-test preparation complete."
 Write-Host "Next checks:"
 Write-Host "  1. In normal rFactor 2 track search, look for: BlackLake"
-Write-Host "  2. If the normal menu does not list it, use the ModDev viewer and then package with MAS2 from build\blacklake_package\$Stage."
+Write-Host "  2. If the normal menu does not list it, use the ModDev viewer for geometry validation and inspect the installed rfcmp package."

@@ -292,10 +292,17 @@ aktuelle Weg:
 ```
 
 Fuer das normale Track-Menue muss BlackLake als installierbare `Location`
-paketiert werden. Die vorbereitete MAS2-Staging-Struktur erzeugt:
+paketiert werden. Die Staging-Struktur erzeugt:
 
 ```powershell
 .\tools\Prepare-BlackLakePackage.ps1 -Stage 250m
+```
+
+Ein echtes `.rfcmp`-Paket inklusive MAS-Erzeugung und Installation in den
+rFactor-2-Root wird automatisiert mit:
+
+```powershell
+.\tools\Build-BlackLakeRfcmp.ps1 -Stage 250m -Install
 ```
 
 Fuer einen weitgehend automatischen Fahrtest-Vorbereitungslauf gibt es den
@@ -306,11 +313,9 @@ gebuendelten Befehl:
 ```
 
 Der Befehl baut die Quelle neu, exportiert die GMTs, installiert und prueft den
-ModDev-Stand, erzeugt das MAS2-Staging und legt zusaetzlich eine lose lokale
-Testinstallation unter `Installed\Locations\BlackLake_2026\0.10` an. Danach im
-normalen rFactor-2-Menue nach `BlackLake` suchen. Falls die lose Testinstallation
-vom Retail-Menue nicht akzeptiert wird, ist der naechste notwendige Schritt die
-MAS2-`rfcmp`-Paketierung aus `build\blacklake_package\250m`.
+ModDev-Stand und erzeugt das MAS2-Staging. Fuer die Retail-Installation danach
+`Build-BlackLakeRfcmp.ps1 -Install` ausfuehren und im normalen rFactor-2-Menue
+nach `BlackLake` suchen.
 
 Mit `-OpenGame` startet der Befehl nach der Vorbereitung direkt rFactor 2:
 
