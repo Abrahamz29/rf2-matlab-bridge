@@ -239,6 +239,16 @@ if ($OpenGame) {
         throw "rFactor 2 executable not found: $gameExe"
     }
     Start-Process -FilePath $gameExe -WorkingDirectory (Join-Path $Rf2Root "Bin64") -ArgumentList @("+trace=2")
+
+    $steamConfirmScript = Join-Path $ProjectRoot "tools\Confirm-SteamLaunchDialog.ps1"
+    if (Test-Path $steamConfirmScript) {
+        try {
+            & powershell -ExecutionPolicy Bypass -File $steamConfirmScript -TimeoutSeconds 20
+        }
+        catch {
+            Write-Warning "Steam launch dialog auto-confirm did not complete: $($_.Exception.Message)"
+        }
+    }
 }
 
 Write-Host ""
