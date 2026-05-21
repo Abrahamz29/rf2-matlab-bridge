@@ -96,26 +96,43 @@ function Install-Scaffold {
     }
 
     $layoutFolder = Join-Path $targetRoot ("BlackLake_" + $Stage)
-    $surfaceGmt = Join-Path $layoutFolder "BlackLake_Surface.gmt"
-    $markingsGmt = Join-Path $layoutFolder "BlackLake_Markings.gmt"
+    $gmtFiles = @(
+        "BlackLake_Surface.gmt",
+        "BlackLake_Markings.gmt",
+        "BlackLake_Reference.gmt",
+        "xfinish.gmt",
+        "xsector1.gmt",
+        "xsector2.gmt",
+        "xpitin.gmt",
+        "xpitout.gmt"
+    )
+    $missingGmts = @()
+    foreach ($file in $gmtFiles) {
+        $path = Join-Path $layoutFolder $file
+        if (-not (Test-Path $path)) {
+            $missingGmts += $path
+        }
+    }
 
     Write-InstallSummary -TargetRoot $targetRoot -LayoutFolder $layoutFolder -ModeName "Scaffold"
 
-    if (-not (Test-Path $surfaceGmt) -or -not (Test-Path $markingsGmt)) {
+    if ($missingGmts.Count -gt 0) {
         Write-Host ""
         Write-Host "Next required step:"
         Write-Host "  Export the generated source geometry to GMT and place it in:"
         Write-Host "  $layoutFolder"
         Write-Host ""
         Write-Host "Expected GMT files:"
-        Write-Host "  $surfaceGmt"
-        Write-Host "  $markingsGmt"
+        foreach ($path in $missingGmts) {
+            Write-Host "  $path"
+        }
         Write-Warning "The scaffold is installed, but the GMT meshes are still missing. rFactor 2 cannot load this track yet."
     } else {
         Write-Host ""
         Write-Host "GMT meshes found:"
-        Write-Host "  $surfaceGmt"
-        Write-Host "  $markingsGmt"
+        foreach ($file in $gmtFiles) {
+            Write-Host "  $(Join-Path $layoutFolder $file)"
+        }
     }
 }
 

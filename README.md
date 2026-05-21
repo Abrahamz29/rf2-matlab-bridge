@@ -270,6 +270,9 @@ Damit liegen fuer `250m` echte BlackLake-GMTs vor:
 
 - `tracks/blacklake/source/250m/gmt/BlackLake_Surface.gmt`
 - `tracks/blacklake/source/250m/gmt/BlackLake_Markings.gmt`
+- `tracks/blacklake/source/250m/gmt/BlackLake_Reference.gmt`
+- mandatory timing-trigger GMTs: `xfinish.gmt`, `xsector1.gmt`,
+  `xsector2.gmt`, `xpitin.gmt`, `xpitout.gmt`
 
 Der ModDev-Install fuer `250m` liegt danach unter:
 
@@ -313,14 +316,27 @@ gebuendelten Befehl:
 ```
 
 Der Befehl baut die Quelle neu, exportiert die GMTs, installiert und prueft den
-ModDev-Stand und erzeugt das MAS2-Staging. Fuer die Retail-Installation danach
-`Build-BlackLakeRfcmp.ps1 -Install` ausfuehren und im normalen rFactor-2-Menue
-nach `BlackLake` suchen.
+ModDev-Stand, erzeugt das MAS2-Staging und installiert das `.rfcmp` in die
+Retail-Instanz.
+
+Solange die generierte BlackLake-AIW noch keine von rFactor 2 akzeptierten
+Pitbox-Wegpunkte erzeugt, ist fuer echte Fahrtests dieser Fallback sinnvoll:
+
+```powershell
+.\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m -UseJoesvilleAiwFallback
+```
+
+Damit bleibt die BlackLake-Geometrie aktiv, aber die Start-/Pitbox-Daten kommen
+aus der bekannten Joesville-AIW. Der Fallback begrenzt die installierte GDB
+zusaetzlich auf `Max Vehicles = 20` und trimmt die AIW-Startaufstellung auf 20
+Plaetze. Ausserdem wird die bekannte Joesville-TDF als `BlackLake.tdf`
+verwendet, weil die eigene BlackLake-TDF den Retail-Client aktuell beim Laden
+crashen laesst. Danach im normalen rFactor-2-Menue nach `BlackLake` suchen.
 
 Mit `-OpenGame` startet der Befehl nach der Vorbereitung direkt rFactor 2:
 
 ```powershell
-.\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m -OpenGame
+.\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m -UseJoesvilleAiwFallback -OpenGame
 ```
 
 Fuer den sofort nutzbaren Vergleichspfad gibt es weiterhin den

@@ -62,20 +62,20 @@ def make_mas(rf2_root: Path, source_dir: Path, mas_name: str) -> Path:
 
     _proc, app = connect_mas2(rf2_root, source_dir)
     win = app.window(title_re=r".*MAS File Utility.*")
-    win.set_focus()
-    time.sleep(0.3)
-    send_keys("%e")
-    time.sleep(0.2)
-    send_keys("f")
+    for path in files:
+        win.set_focus()
+        time.sleep(0.2)
+        send_keys("%e")
+        time.sleep(0.15)
+        send_keys("f")
+        select_file_dialog(app, "Select files to add to MAS archive", str(path), edit_id=1148)
+        win.wait("enabled ready", timeout=30)
+        time.sleep(0.2)
 
-    select_file_dialog(
-        app,
-        "Select files to add to MAS archive",
-        " ".join(f'"{path}"' for path in files),
-        edit_id=1148,
-    )
-    win.wait("enabled ready", timeout=30)
-    time.sleep(0.5)
+    list_count = win.child_window(class_name="SysListView32").wrapper_object().item_count()
+    if list_count != len(files):
+        raise RuntimeError(f"Expected {len(files)} files in {mas_name}, got {list_count}")
+
     win.set_focus()
     send_keys("^s")
     save = app.window(title="Select MAS archive to save")

@@ -3,7 +3,7 @@
 This generator creates:
 - parametric OBJ source geometry for a flat proving-ground surface
 - lane marking geometry and CSV reference layouts
-- a ModDev location scaffold (GDB/SCN/AIW/TDF/WET placeholders)
+- a ModDev location scaffold (GDB/SCN/AIW/TDF/WET)
 
 It does not convert geometry to GMT. rFactor 2 official docs state GMT meshes
 are exported from DCC tools such as 3ds Max via plugins, so this generator
@@ -60,9 +60,9 @@ def quad(x0: float, z0: float, x1: float, z1: float, y: float = 0.0, name: str =
         name=name,
         points=[
             (x0, y, z0),
-            (x1, y, z0),
-            (x1, y, z1),
             (x0, y, z1),
+            (x1, y, z1),
+            (x1, y, z0),
         ],
     )
 
@@ -108,9 +108,9 @@ def build_ring_markers(radius: float, width: float, segments: int, name: str) ->
         r1 = radius + (width / 2.0)
         points = [
             (r0 * math.cos(angle0), 0.01, r0 * math.sin(angle0)),
-            (r1 * math.cos(angle0), 0.01, r1 * math.sin(angle0)),
-            (r1 * math.cos(angle1), 0.01, r1 * math.sin(angle1)),
             (r0 * math.cos(angle1), 0.01, r0 * math.sin(angle1)),
+            (r1 * math.cos(angle1), 0.01, r1 * math.sin(angle1)),
+            (r1 * math.cos(angle0), 0.01, r1 * math.sin(angle0)),
         ]
         quads.append(Quad(name=f"{name}_{idx:03d}", points=points))
     return quads
@@ -250,57 +250,46 @@ exported as GMT before rFactor 2 can load them as drivable terrain.
 
 
 def blacklake_tdf() -> str:
-    return """[FEEDBACK]
-Dry=1.0
-Wet=0.85
-Resistance=0.0
-BumpAmp=0.0
-BumpWavelen=8.0
-Legal=false
-Spring=0.0
-Damper=0.0
-CollFrict=1.00
-Sparks=0
-Scraping=0
-Sink=0.0
-Sound=dry
-Tex=asphalt
-Max=0
+    return """// BlackLake terrain feedback.
+// Keep this close to the rFactor 2 Joesville sample TDF format; overly sparse
+// feedback blocks can crash the client during SpecialFX initialization.
+// NOTE: The current feedback materials intentionally do not match the generated
+// BlackLakeAsphalt/BlackLakePaint GMT materials. Matching them currently causes
+// the retail client to crash during load. Until the material/TDF contract is
+// fixed, rFactor 2 will warn and fall back to default feedback for load tests.
 
-[BLACKLAKE_ASPHALT]
-Dry=1.00
-Wet=0.85
-Resistance=0.0
-BumpAmp=0.0
-BumpWavelen=8.0
-Legal=true
-Spring=0.0
-Damper=0.0
-CollFrict=1.00
-Sparks=0
-Scraping=0
-Sink=0.0
-Sound=dry
-Tex=asphalt
-Max=0
+[TRACKVARS]
+RoadDryGrip=1.00
+RoadWetGrip=0.85
+RoadBumpAmp=0.001
+RoadBumpLen=3.0
+HATFilterMaxOffset=0.003
+
+// Flat proving-ground asphalt.
+[FEEDBACK]
+Wear=1.05 Dry=1.02 Wet=0.80 Roughness=(0.50,0.25) Resistance=0 BumpAmp=RoadBumpAmp BumpWavelen=RoadBumpLen Legal=true Spring=0 Damper=0 CollFrict=0.40 Sparks=1 Scraping=1 Sink=-0.003 Sound=dry
 Reaction=tiresmoke Tex=SMOKETire.tga Max=1024 Scale=(0.5,0.5,0.5) Growth=(2.5,2.0,2.0) ASDEnvelope=(0.1,0.7,3.8) Suspension=0.98 DestBlend=InvSrcAlpha SrcBlend=SrcAlpha
+Reaction=skid Tex=skidhard.tga Max=2500 Pixel=NoReduceDetail Particle=Plane+Deformable+SingleSided DestBlend=InvSrcAlpha SrcBlend=SrcAlpha
+Reaction=wetskid Tex=skidwet.tga Max=1024 Duration=0.40 Pixel=NoReduceDetail Particle=Plane+Deformable+SingleSided DestBlend=One SrcBlend=SrcAlpha
+Reaction=spray Tex=rainspray.tga Max=1024 Scale=(1.3,0.02,0.02) Growth=(2.0,0.19,0.19) GrowthVel=(0.17,0.13,0.13) Power=0.41 RampSpeed=90 OffsetVel=0.10 ASDEnvelope=(0.01,3.0,2.0) DestBlend=InvSrcAlpha SrcBlend=SrcAlpha
+Materials=unused_asph
 
-[BLACKLAKE_GRASS]
-Dry=0.80
-Wet=0.60
-Resistance=8000.0
-BumpAmp=0.010
-BumpWavelen=2.5
-Legal=true
-Spring=0.0
-Damper=0.0
-CollFrict=0.95
-Sparks=0
-Scraping=0
-Sink=0.0
-Sound=grass
-Tex=grass
-Max=0
+// Painted lane and reference markings.
+[FEEDBACK]
+Wear=0.85 Dry=0.88 Wet=0.50 Roughness=(0.45,0.02) Resistance=0 BumpAmp=0.002 BumpWavelen=5 Legal=true Spring=0 Damper=0 CollFrict=0.20 Sparks=1 Scraping=1 OnTop=0.0015 Sound=dry
+Reaction=tiresmoke Tex=SMOKETire.tga Max=1024 Scale=(0.5,0.5,0.5) Growth=(2.5,2.0,2.0) ASDEnvelope=(0.1,0.7,3.8) Suspension=0.98 DestBlend=InvSrcAlpha SrcBlend=SrcAlpha
+Reaction=skid Tex=skidhard.tga Max=2500 Pixel=NoReduceDetail Particle=Plane+Deformable+SingleSided DestBlend=InvSrcAlpha SrcBlend=SrcAlpha
+Reaction=wetskid Tex=skidwet.tga Max=1024 Duration=0.40 Pixel=NoReduceDetail Particle=Plane+Deformable+SingleSided DestBlend=InvSrcAlpha SrcBlend=SrcAlpha
+Reaction=spray Tex=rainspray.tga Max=1024 Scale=(1.3,0.02,0.02) Growth=(2.0,0.19,0.19) GrowthVel=(0.17,0.13,0.13) Power=0.41 RampSpeed=70 OffsetVel=0.10 ASDEnvelope=(0.01,3.0,2.0) DestBlend=InvSrcAlpha SrcBlend=SrcAlpha
+Materials=unused_strp
+
+// Optional grass/off-surface material for future larger stages.
+[FEEDBACK]
+Wear=0.60 Dry=0.50 Wet=0.30 Resistance=2000 BumpAmp=0.039 BumpWavelen=2.0 Legal=false Spring=300 Damper=300 CollFrict=2 Sparks=0 Scraping=0 Sink=0.032 Sound=grass
+Reaction=softskid Tex=skidgreen.tga Max=1024 Pixel=NoReduceDetail Particle=Plane+Deformable+SingleSided DestBlend=InvSrcAlpha SrcBlend=SrcAlpha
+Reaction=dust Tex=DIRT_Cloud.tga Max=128 TopSpeed=105 Scale=(1.4,1.0,1.0) Growth=(3.0,2.0,2.0) Suspension=0.847 ASDEnvelope=(1.0,2.0,3.5) DestBlend=InvSrcAlpha SrcBlend=SrcAlpha
+Reaction=dirt Tex=GrassDirtKick.tga Max=64 Scale=(0.7,0.7,0.7) Growth=(0.85,0.85,0.85) Suspension=0.693 ASDEnvelope=(0.2,0.8,0.2) DestBlend=InvSrcAlpha SrcBlend=SrcAlpha
+Materials=gras
 """
 
 
@@ -318,9 +307,9 @@ def blacklake_gdb(stage_name: str, lane_length_m: float) -> str:
   TrackType = Test Track
   TerrainDataFile=..\\BlackLake.tdf
   HeadlightsRequired = false
-  Max Vehicles = 20
+  Max Vehicles = 104
   FormationAndStart=0
-  PitlaneBoundary = 0
+  PitlaneBoundary = 1
   RacePitKPH = 80.0
   NormalPitKPH = 80.0
   FormationSpeedKPH = 80.0
@@ -346,14 +335,22 @@ def blacklake_aiw(stage_name: str, half_extent_m: float, lane_length_m: float, l
     loop_half_width = min(max(lane_width_m * 3.0, 30.0), max(10.0, half_extent_m - 25.0))
     spawn_z = -min(usable_half - 15.0, 70.0)
     spawn_y = 0.55
-    lane_offset = max(2.5, lane_width_m * 0.28)
+    pit_y = 0.0
+    grid_count = 104
+    grid_columns = 8
+    grid_x_spacing = max(4.0, lane_width_m * 0.42)
+    grid_z_spacing = max(4.5, lane_width_m * 0.42)
+    pit_count = 52
+    pit_columns = 4
+    pit_x_spacing = max(4.0, lane_width_m * 0.42)
+    pit_z_spacing = max(5.0, lane_width_m * 0.50)
 
     grid_lines = []
-    for index in range(12):
-        row = index // 2
-        side = -1 if index % 2 == 0 else 1
-        x = side * lane_offset
-        z = spawn_z - row * 8.0
+    for index in range(grid_count):
+        row = index // grid_columns
+        column = index % grid_columns
+        x = (column - (grid_columns - 1) / 2.0) * grid_x_spacing
+        z = spawn_z + row * grid_z_spacing
         grid_lines.extend([
             f"GridIndex={index}",
             f"Pos=({x:.3f},{spawn_y:.3f},{z:.3f})",
@@ -361,36 +358,106 @@ def blacklake_aiw(stage_name: str, half_extent_m: float, lane_length_m: float, l
         ])
 
     pits = []
-    pit_x = -loop_half_width + 8.0
-    for team in range(4):
-        z = spawn_z + team * 9.0
+    pit_positions = []
+    pit_x_origin = -loop_half_width + 6.0
+    for team in range(pit_count):
+        row = team // pit_columns
+        column = team % pit_columns
+        x = pit_x_origin + column * pit_x_spacing
+        z = spawn_z + row * pit_z_spacing
+        pit_positions.append((x, pit_y, z))
         pits.extend([
             f"TeamIndex={team}",
-            f"PitPos=({pit_x:.3f},{spawn_y:.3f},{z:.3f})",
+            f"PitPos=({x:.3f},{pit_y:.3f},{z:.3f})",
             "PitOri=(0.000,0.000,0.000)",
-            f"GarPos=(0,{pit_x - 5.0:.3f},{spawn_y:.3f},{z - 2.0:.3f})",
+            f"GarPos=(0,{x - 3.0:.3f},{pit_y:.3f},{z - 1.5:.3f})",
             "GarOri=(0,0.000,0.000,0.000)",
-            f"GarPos=(1,{pit_x - 5.0:.3f},{spawn_y:.3f},{z:.3f})",
+            f"GarPos=(1,{x - 3.0:.3f},{pit_y:.3f},{z:.3f})",
             "GarOri=(1,0.000,0.000,0.000)",
-            f"GarPos=(2,{pit_x - 5.0:.3f},{spawn_y:.3f},{z + 2.0:.3f})",
+            f"GarPos=(2,{x - 3.0:.3f},{pit_y:.3f},{z + 1.5:.3f})",
             "GarOri=(2,0.000,0.000,0.000)",
         ])
 
     waypoint_spacing = max(10.0, min(100.0, usable_half / 20.0))
     points = rectangular_waypoints(loop_half_width, usable_half, spacing=waypoint_spacing)
-    waypoint_lines = blacklake_waypoint_lines(points, lane_width_m, loop_half_width, usable_half)
+    pit_lane_points: List[Tuple[float, float, float]] = []
+    pit_lane_local_by_team: dict[int, int] = {}
+    for row in range(math.ceil(pit_count / pit_columns)):
+        columns = range(pit_columns) if row % 2 == 0 else range(pit_columns - 1, -1, -1)
+        for column in columns:
+            team = row * pit_columns + column
+            if team >= pit_count:
+                continue
+            x, y, z = pit_positions[team]
+            pit_lane_local_by_team[team] = len(pit_lane_points)
+            pit_lane_points.append((x + 1.5, y, z + 2.0))
+
+    pit_lane_start_index = len(points)
+    pit_entry_index = nearest_waypoint_index(points, pit_lane_points[0])
+    pit_exit_index = nearest_waypoint_index(points, pit_lane_points[-1])
+    branch_links = {pit_entry_index: pit_lane_start_index}
+    special_branch_start_index = pit_lane_start_index + len(pit_lane_points)
+    pit_lane_links = {
+        pit_lane_local_by_team[team]: special_branch_start_index + team * 2
+        for team in range(pit_count)
+    }
+    special_waypoint_lines: List[str] = []
+    for team, (x, y, z) in enumerate(pit_positions):
+        pit_lane_global_index = pit_lane_start_index + pit_lane_local_by_team[team]
+        branch_start_index = special_branch_start_index + team * 2
+        special_waypoint_lines.extend(
+            blacklake_waypoint_lines(
+                [(x, y, z), (x - 3.0, y, z)],
+                lane_width_m,
+                loop_half_width,
+                usable_half,
+                start_index=branch_start_index,
+                circular=False,
+                branch_id=team + 2,
+                pitlane=1,
+                first_prev_index=pit_lane_global_index,
+                last_next_index=pit_lane_global_index,
+            )
+        )
+    waypoint_lines = [
+        *blacklake_waypoint_lines(
+            points,
+            lane_width_m,
+            loop_half_width,
+            usable_half,
+            branch_links=branch_links,
+        ),
+        *blacklake_waypoint_lines(
+            pit_lane_points,
+            lane_width_m,
+            loop_half_width,
+            usable_half,
+            start_index=pit_lane_start_index,
+            circular=False,
+            branch_id=1,
+            pitlane=1,
+            first_prev_index=pit_entry_index,
+            last_next_index=pit_exit_index,
+            branch_links=pit_lane_links,
+        ),
+        *special_waypoint_lines,
+    ]
 
     return "\n".join([
         "//[[gMa1.002f (c)2015    ]] [[            ]]",
         "[Features]",
         "pitlanes=1",
-        "startinggrid=12",
-        "pitspots=4",
+        f"startinggrid={grid_count}",
+        f"pitspots={pit_count}",
         "garagespots=3",
-        "auxspots=2",
+        "auxspots=8",
         "acceptabledriverlinenoise=1.000000",
         "StartingStretch=20.000000",
         "definepath=FASTEST",
+        "pathtime=60.0000",
+        "definepath=LEFT",
+        "pathtime=60.0000",
+        "definepath=RIGHT",
         "pathtime=60.0000",
         "",
         "[GRID]",
@@ -406,20 +473,15 @@ def blacklake_aiw(stage_name: str, half_extent_m: float, lane_length_m: float, l
         *pits,
         "",
         "[AUX]",
-        "LocationIndex=0",
-        f"Pos=(0.000,{spawn_y:.3f},0.000)",
-        "Ori=(0.000,0.000,0.000)",
-        "LocationIndex=1",
-        f"Pos=(0.000,{spawn_y:.3f},10.000)",
-        "Ori=(0.000,0.000,0.000)",
+        *aux_lines(spawn_y),
         "",
         "[Waypoint]",
         "trackstate=4507",
         "drivinglines=1",
         f"autogengridf=(0.0,{lane_width_m:.2f})",
         f"teleportwp=({max(0, len(points) // 4)})",
-        "pitlanepaths=(0,0)",
-        f"number_waypoints={len(points)}",
+        "pitlanepaths=(2,3)",
+        f"number_waypoints={len(points) + len(pit_lane_points) + pit_count * 2}",
         f"lap_length={rectangular_lap_length(loop_half_width, usable_half):.6f}",
         f"sector_1_length={rectangular_lap_length(loop_half_width, usable_half) / 3.0:.6f}",
         f"sector_2_length={2.0 * rectangular_lap_length(loop_half_width, usable_half) / 3.0:.6f}",
@@ -458,6 +520,48 @@ def rectangular_waypoints(half_width: float, half_length: float, spacing: float)
     return points
 
 
+def straight_waypoints(x: float, z0: float, z1: float, spacing: float) -> List[Tuple[float, float, float]]:
+    length = abs(z1 - z0)
+    steps = max(2, int(length / spacing) + 1)
+    points: List[Tuple[float, float, float]] = []
+    for step in range(steps):
+        alpha = step / (steps - 1)
+        points.append((x, 0.0, z0 + (z1 - z0) * alpha))
+    return points
+
+
+def aux_lines(spawn_y: float) -> List[str]:
+    positions = [
+        (-18.0, 0.0),
+        (-12.0, 0.0),
+        (-6.0, 0.0),
+        (0.0, 0.0),
+        (6.0, 0.0),
+        (12.0, 0.0),
+        (18.0, 0.0),
+        (24.0, 0.0),
+    ]
+    lines: List[str] = []
+    for index, (x, z) in enumerate(positions):
+        lines.extend([
+            f"LocationIndex={index}",
+            f"Pos=({x:.3f},{spawn_y:.3f},{z:.3f})",
+            "Ori=(0.000,0.000,0.000)",
+        ])
+    return lines
+
+
+def nearest_waypoint_index(
+    points: Sequence[Tuple[float, float, float]],
+    target: Tuple[float, float, float],
+) -> int:
+    target_x, _target_y, target_z = target
+    return min(
+        range(len(points)),
+        key=lambda index: math.hypot(points[index][0] - target_x, points[index][2] - target_z),
+    )
+
+
 def rectangular_lap_length(half_width: float, half_length: float) -> float:
     return 4.0 * (half_width + half_length)
 
@@ -467,14 +571,42 @@ def blacklake_waypoint_lines(
     lane_width_m: float,
     loop_half_width: float,
     loop_half_length: float,
+    *,
+    start_index: int = 0,
+    circular: bool = True,
+    branch_id: int = 0,
+    pitlane: int = 0,
+    first_prev_index: int | None = None,
+    last_next_index: int | None = None,
+    branch_links: dict[int, int] | None = None,
 ) -> List[str]:
+    if not points:
+        return []
+
     lines: List[str] = []
     distance = 0.0
     total_length = rectangular_lap_length(loop_half_width, loop_half_length)
+    branch_links = branch_links or {}
+    path_offsets = [
+        (0, 0.0),
+        (1, -lane_width_m * 0.35),
+        (2, lane_width_m * 0.35),
+    ]
     for index, (x, y, z) in enumerate(points):
-        prev_index = (index - 1) % len(points)
-        next_index = (index + 1) % len(points)
-        nx, _ny, nz = points[next_index]
+        global_index = start_index + index
+        if circular:
+            prev_index = start_index + ((index - 1) % len(points))
+            next_index = start_index + ((index + 1) % len(points))
+            nx, _ny, nz = points[(index + 1) % len(points)]
+        else:
+            prev_index = first_prev_index if index == 0 and first_prev_index is not None else global_index - 1
+            next_index = last_next_index if index == len(points) - 1 and last_next_index is not None else global_index + 1
+            if index == len(points) - 1 and len(points) > 1:
+                px, _py, pz = points[index - 1]
+                nx, nz = x + (x - px), z + (z - pz)
+            else:
+                next_local_index = min(index + 1, len(points) - 1)
+                nx, _ny, nz = points[next_local_index]
         if index > 0:
             px, _py, pz = points[index - 1]
             distance += math.hypot(x - px, z - pz)
@@ -488,25 +620,35 @@ def blacklake_waypoint_lines(
         perp_z = tx
         yaw = math.atan2(tx, tz)
         sector = 0 if distance < total_length / 3.0 else 1 if distance < 2.0 * total_length / 3.0 else 2
+        branch_pointer = branch_links.get(index, -1)
+        test_speed = 0.0 if pitlane else 55.0
+        edge_width = lane_width_m * (0.75 if pitlane else 1.0)
 
         lines.extend([
             f"wp_pos=({x:.4f},{y:.4f},{z:.4f})",
             f"wp_perp=({perp_x:.4f},0.0000,{perp_z:.4f})",
             "wp_normal=(0.0000,1.0000,0.0000)",
-            "wp_pathinfo2=(0,0.0000,0.0000,55.0000)",
-            f"wp_oriantation=(0,0.0000,{yaw:.4f},0.0000)",
-            "wp_pathflags=(0,0)",
-            f"wp_width=({lane_width_m:.3f},{lane_width_m:.3f},{loop_half_width:.3f},{loop_half_width:.3f})",
+        ])
+        for path_id, offset in path_offsets:
+            path_speed = test_speed if not pitlane else -1.0
+            lines.extend([
+                f"wp_pathinfo2=({path_id},{offset:.4f},0.0000,{path_speed:.4f})",
+                f"wp_oriantation=({path_id},0.0000,{yaw:.4f},0.0000)",
+                f"wp_pathflags=({path_id},0)",
+            ])
+
+        lines.extend([
+            f"wp_width=({edge_width:.3f},{edge_width:.3f},{loop_half_width:.3f},{loop_half_width:.3f})",
             f"wp_dwidth=({loop_half_width:.3f},{loop_half_width:.3f},0.000,0.000)",
             "wp_lockedAlpha=(0)",
-            "wp_test_speed=(55.000000)",
+            f"wp_test_speed=({test_speed:.6f})",
             "wp_reverb=(0)",
             f"wp_score=({sector},{distance:.3f})",
             "wp_wpse=(0,0)",
-            "wp_branchID=(0)",
-            "wp_bitfields=(0)",
-            "wp_pitlane=(0)",
-            f"WP_PTRS=({prev_index},{next_index},-1,0)",
+            f"wp_branchID=({branch_id})",
+            f"wp_bitfields=({1 if pitlane else 0})",
+            f"wp_pitlane=({pitlane})",
+            f"WP_PTRS=({prev_index},{next_index},{branch_pointer},{branch_id})",
         ])
     return lines
 
@@ -553,6 +695,50 @@ Instance=BlackLake_Markings
   MeshFile=BlackLake_Markings.gmt CollTarget=False HATTarget=False
 }}
 
+Instance=BlackLake_Reference
+{{
+  MeshFile=BlackLake_Reference.gmt CollTarget=False HATTarget=False
+}}
+
+//-------------------------------------------------------
+//------------------MANDATORY OBJECTS--------------------
+//-------------------------------------------------------
+
+Instance=xsector1
+{{
+  Render=False
+  MeshFile=xsector1.gmt CollTarget=True HATTarget=False
+  Response=VEHICLE,TIMING
+}}
+
+Instance=xsector2
+{{
+  Render=False
+  MeshFile=xsector2.gmt CollTarget=True HATTarget=False
+  Response=VEHICLE,TIMING
+}}
+
+Instance=xfinish
+{{
+  Render=False
+  MeshFile=xfinish.gmt CollTarget=True HATTarget=False
+  Response=VEHICLE,TIMING
+}}
+
+Instance=xpitin
+{{
+  Render=False
+  MeshFile=xpitin.gmt CollTarget=True HATTarget=False
+  Response=VEHICLE,PITSTOP
+}}
+
+Instance=xpitout
+{{
+  Render=False
+  MeshFile=xpitout.gmt CollTarget=True HATTarget=False
+  Response=VEHICLE,PITSTOP
+}}
+
 ReflectionMapper=STATIC01
 {{
   Type=Cubic
@@ -562,6 +748,7 @@ ReflectionMapper=STATIC01
   Pos=(0.000000,0.000000,0.000000)
   IncludeIns=BlackLake_Surface
   IncludeIns=BlackLake_Markings
+  IncludeIns=BlackLake_Reference
 }}
 
 ReflectionMapper=REFMAP0
@@ -573,6 +760,7 @@ ReflectionMapper=REFMAP0
   TrackingIns=True
   IncludeIns=BlackLake_Surface
   IncludeIns=BlackLake_Markings
+  IncludeIns=BlackLake_Reference
 }}
 """
 
@@ -605,6 +793,9 @@ What is ready:
 What is still required before rFactor 2 can load and drive it:
 - export or copy `BlackLake_Surface.gmt`
 - export or copy `BlackLake_Markings.gmt`
+- export or copy `BlackLake_Reference.gmt`
+- export or copy mandatory timing trigger GMTs: `xfinish.gmt`, `xsector1.gmt`,
+  `xsector2.gmt`, `xpitin.gmt`, `xpitout.gmt`
 - package as `.rfcmp`
 
 This repository can export GMT for the generated BlackLake geometry with

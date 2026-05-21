@@ -12,6 +12,16 @@ $locationRoot = Join-Path $ModDevRoot "Locations\BlackLake"
 $layoutName = "BlackLake_$Stage"
 $layoutRoot = Join-Path $locationRoot $layoutName
 $mapsRoot = Join-Path $locationRoot "Assets\Maps"
+$gmtFiles = @(
+    "BlackLake_Surface.gmt",
+    "BlackLake_Markings.gmt",
+    "BlackLake_Reference.gmt",
+    "xfinish.gmt",
+    "xsector1.gmt",
+    "xsector2.gmt",
+    "xpitin.gmt",
+    "xpitout.gmt"
+)
 
 $requiredFiles = @(
     (Join-Path $locationRoot "BlackLake.tdf"),
@@ -19,10 +29,9 @@ $requiredFiles = @(
     (Join-Path $layoutRoot "$layoutName.scn"),
     (Join-Path $layoutRoot "$layoutName.AIW"),
     (Join-Path $layoutRoot "$layoutName.wet"),
-    (Join-Path $layoutRoot "BlackLake_Surface.gmt"),
-    (Join-Path $layoutRoot "BlackLake_Markings.gmt"),
     (Join-Path $mapsRoot "DIFFUSE01.DDS")
 )
+$requiredFiles += $gmtFiles | ForEach-Object { Join-Path $layoutRoot $_ }
 
 $missing = @()
 foreach ($file in $requiredFiles) {

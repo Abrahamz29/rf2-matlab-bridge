@@ -20,6 +20,16 @@ $gmtRoot = $gmtSourceRoot
 $packageRoot = Join-Path $ProjectRoot "build\blacklake_package\$Stage"
 $componentName = "BlackLake_2026"
 $componentVersion = "0.10"
+$gmtFiles = @(
+    "BlackLake_Surface.gmt",
+    "BlackLake_Markings.gmt",
+    "BlackLake_Reference.gmt",
+    "xfinish.gmt",
+    "xsector1.gmt",
+    "xsector2.gmt",
+    "xpitin.gmt",
+    "xpitout.gmt"
+)
 
 if (-not (Test-Path $layoutRoot)) {
     throw "BlackLake layout source not found: $layoutRoot"
@@ -30,10 +40,9 @@ $required = @(
     (Join-Path $layoutRoot "$layoutName.gdb"),
     (Join-Path $layoutRoot "$layoutName.scn"),
     (Join-Path $layoutRoot "$layoutName.AIW"),
-    (Join-Path $layoutRoot "$layoutName.wet"),
-    (Join-Path $gmtRoot "BlackLake_Surface.gmt"),
-    (Join-Path $gmtRoot "BlackLake_Markings.gmt")
+    (Join-Path $layoutRoot "$layoutName.wet")
 )
+$required += $gmtFiles | ForEach-Object { Join-Path $gmtRoot $_ }
 
 foreach ($path in $required) {
     if (-not (Test-Path $path)) {
@@ -64,8 +73,14 @@ Copy-Item (Join-Path $layoutRoot "$layoutName.gdb") $layoutDir
 Copy-Item (Join-Path $layoutRoot "$layoutName.scn") $layoutDir
 Copy-Item (Join-Path $layoutRoot "$layoutName.AIW") $layoutDir
 Copy-Item (Join-Path $layoutRoot "$layoutName.wet") $layoutDir
-Copy-Item (Join-Path $gmtRoot "BlackLake_Surface.gmt") $gmtDir
-Copy-Item (Join-Path $gmtRoot "BlackLake_Markings.gmt") $gmtDir
+foreach ($file in $gmtFiles) {
+    Copy-Item (Join-Path $gmtRoot $file) $gmtDir
+}
+
+$packagedGdb = Join-Path $layoutDir "$layoutName.gdb"
+$packagedGdbText = Get-Content $packagedGdb -Raw
+$packagedGdbText = $packagedGdbText -replace "TerrainDataFile=\.\.\\BlackLake\.tdf", "TerrainDataFile=BlackLake.tdf"
+Set-Content -Path $packagedGdb -Value $packagedGdbText -Encoding ASCII
 
 $mapFiles = @(
     "DIFFUSE01.DDS",

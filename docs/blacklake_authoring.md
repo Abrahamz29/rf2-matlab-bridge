@@ -44,6 +44,9 @@ The current `250m` stage has exported:
 
 - `tracks/blacklake/source/250m/gmt/BlackLake_Surface.gmt`
 - `tracks/blacklake/source/250m/gmt/BlackLake_Markings.gmt`
+- `tracks/blacklake/source/250m/gmt/BlackLake_Reference.gmt`
+- mandatory timing-trigger GMTs: `xfinish.gmt`, `xsector1.gmt`,
+  `xsector2.gmt`, `xpitin.gmt`, `xpitout.gmt`
 
 The `250m` ModDev install now also includes a stage-local
 `BlackLake_250m.gdb` and a generated `BlackLake_250m.AIW`, so rFactor 2 has
@@ -72,12 +75,29 @@ To build the MAS files, create a real `.rfcmp`, and install it into the rFactor
 For the most automated drive-test preparation currently available:
 
 ```powershell
-.\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m
+.\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m -UseJoesvilleAiwFallback
 ```
 
 This regenerates the stage, exports GMT, installs and verifies ModDev content,
-and prepares MAS2 staging. Use `Build-BlackLakeRfcmp.ps1 -Install` after that
-for the normal retail track menu.
+prepares MAS2 staging, builds the `.rfcmp`, and installs it for the normal
+retail track menu.
+
+The `-UseJoesvilleAiwFallback` switch is temporary but important for the first
+drive tests. The generated BlackLake AIW contains start, grid, pit, and branch
+data, but the retail client still reports `No pit box waypoints found`. With
+the fallback, BlackLake keeps its generated GMT geometry while the known
+Joesville AIW supplies pitbox/start data that rFactor 2 accepts. The same
+fallback also caps the staged GDB to `Max Vehicles = 20`, matching the donor
+AIW's pitbox capacity, and trims the copied AIW `startinggrid` block to 20
+entries. It also copies the known Joesville TDF as `BlackLake.tdf`, because the
+current custom BlackLake TDF still crashes the retail client before
+`DynMan::Init`.
+
+The current BlackLake TDF is also intentionally conservative: its feedback
+materials do not match `BlackLakeAsphalt` or `BlackLakePaint`. Matching those
+materials currently makes the retail client crash during loading, and even the
+non-matching custom TDF still fails in the retail load path. Keep the Joesville
+TDF fallback for drive tests until the material/TDF contract is fixed.
 
 Add `-OpenGame` to start rFactor 2 after the preparation step.
 

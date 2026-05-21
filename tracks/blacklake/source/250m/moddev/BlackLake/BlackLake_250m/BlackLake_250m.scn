@@ -38,6 +38,50 @@ Instance=BlackLake_Markings
   MeshFile=BlackLake_Markings.gmt CollTarget=False HATTarget=False
 }
 
+Instance=BlackLake_Reference
+{
+  MeshFile=BlackLake_Reference.gmt CollTarget=False HATTarget=False
+}
+
+//-------------------------------------------------------
+//------------------MANDATORY OBJECTS--------------------
+//-------------------------------------------------------
+
+Instance=xsector1
+{
+  Render=False
+  MeshFile=xsector1.gmt CollTarget=True HATTarget=False
+  Response=VEHICLE,TIMING
+}
+
+Instance=xsector2
+{
+  Render=False
+  MeshFile=xsector2.gmt CollTarget=True HATTarget=False
+  Response=VEHICLE,TIMING
+}
+
+Instance=xfinish
+{
+  Render=False
+  MeshFile=xfinish.gmt CollTarget=True HATTarget=False
+  Response=VEHICLE,TIMING
+}
+
+Instance=xpitin
+{
+  Render=False
+  MeshFile=xpitin.gmt CollTarget=True HATTarget=False
+  Response=VEHICLE,PITSTOP
+}
+
+Instance=xpitout
+{
+  Render=False
+  MeshFile=xpitout.gmt CollTarget=True HATTarget=False
+  Response=VEHICLE,PITSTOP
+}
+
 ReflectionMapper=STATIC01
 {
   Type=Cubic
@@ -47,6 +91,7 @@ ReflectionMapper=STATIC01
   Pos=(0.000000,0.000000,0.000000)
   IncludeIns=BlackLake_Surface
   IncludeIns=BlackLake_Markings
+  IncludeIns=BlackLake_Reference
 }
 
 ReflectionMapper=REFMAP0
@@ -58,4 +103,5 @@ ReflectionMapper=REFMAP0
   TrackingIns=True
   IncludeIns=BlackLake_Surface
   IncludeIns=BlackLake_Markings
+  IncludeIns=BlackLake_Reference
 }

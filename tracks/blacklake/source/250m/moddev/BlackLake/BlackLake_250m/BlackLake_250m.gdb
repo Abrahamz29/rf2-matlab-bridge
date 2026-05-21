@@ -10,9 +10,9 @@ BlackLake_250m
   TrackType = Test Track
   TerrainDataFile=..\BlackLake.tdf
   HeadlightsRequired = false
-  Max Vehicles = 20
+  Max Vehicles = 104
   FormationAndStart=0
-  PitlaneBoundary = 0
+  PitlaneBoundary = 1
   RacePitKPH = 80.0
   NormalPitKPH = 80.0
   FormationSpeedKPH = 80.0
