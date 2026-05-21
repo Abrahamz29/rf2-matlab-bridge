@@ -172,11 +172,18 @@ function Install-JoesvilleAiwFallback {
     param(
         [string]$Stage,
         [string]$Rf2Root,
+        [string]$ProjectRoot,
+        [string]$PythonExe,
         [string[]]$Destinations,
         [int]$MaxStartingGrid = 20
     )
 
     $sourceAiw = Get-JoesvilleAiwPath -Rf2Root $Rf2Root
+    $aiwPatcher = Join-Path $ProjectRoot "tools\patch_blacklake_drive_aiw.py"
+    if (-not (Test-Path $aiwPatcher)) {
+        throw "BlackLake AIW patcher not found: $aiwPatcher"
+    }
+
     foreach ($destination in $Destinations) {
         $parent = Split-Path -Parent $destination
         if (-not (Test-Path $parent)) {
@@ -185,11 +192,15 @@ function Install-JoesvilleAiwFallback {
 
         Copy-Item -Path $sourceAiw -Destination $destination -Force
         Limit-AiwStartingGrid -Path $destination -MaxStartingGrid $MaxStartingGrid
+        & $PythonExe $aiwPatcher $destination --max-entries $MaxStartingGrid
+        if ($LASTEXITCODE -ne 0) {
+            throw "BlackLake AIW drive-test patch failed with exit code $LASTEXITCODE"
+        }
         Write-Host "Installed Joesville AIW fallback:"
         Write-Host "  Stage:  $Stage"
         Write-Host "  Source: $sourceAiw"
         Write-Host "  Target: $destination"
-        Write-Host "  Starting grid limited to $MaxStartingGrid"
+        Write-Host "  Starting grid, teleports, and pit boxes patched to BlackLake center"
     }
 }
 
@@ -399,7 +410,7 @@ if ($UseJoesvilleAiwFallback) {
     )
     Install-JoesvilleAiwFallback -Stage $Stage -Rf2Root $Rf2Root -Destinations @(
         (Join-Path $Rf2Root "ModDev\Locations\BlackLake\BlackLake_$Stage\BlackLake_$Stage.AIW")
-    )
+    ) -ProjectRoot $ProjectRoot -PythonExe $PythonExe
     Set-JoesvilleAiwFallbackGdbLimits -GdbPaths @(
         (Join-Path $Rf2Root "ModDev\Locations\BlackLake\BlackLake_$Stage\BlackLake_$Stage.gdb")
     )
@@ -421,7 +432,7 @@ if ($UseJoesvilleAiwFallback) {
     )
     Install-JoesvilleAiwFallback -Stage $Stage -Rf2Root $Rf2Root -Destinations @(
         (Join-Path $ProjectRoot "build\blacklake_package\$Stage\02_layout\BlackLake_$Stage.AIW")
-    )
+    ) -ProjectRoot $ProjectRoot -PythonExe $PythonExe
     Set-JoesvilleAiwFallbackGdbLimits -GdbPaths @(
         (Join-Path $ProjectRoot "build\blacklake_package\$Stage\02_layout\BlackLake_$Stage.gdb")
     )

@@ -88,10 +88,13 @@ data, but the retail client still reports `No pit box waypoints found`. With
 the fallback, BlackLake keeps its generated GMT geometry while the known
 Joesville AIW supplies pitbox/start data that rFactor 2 accepts. The same
 fallback also caps the staged GDB to `Max Vehicles = 20`, matching the donor
-AIW's pitbox capacity, and trims the copied AIW `startinggrid` block to 20
-entries. It also copies the known Joesville TDF as `BlackLake.tdf`, because the
-current custom BlackLake TDF still crashes the retail client before
-`DynMan::Init`.
+AIW's pitbox capacity. The copied AIW is also patched for drive testing:
+`GRID`, `ALTGRID`, `TELEPORT`, and the accepted pit/garage entries are moved to
+central BlackLake coordinates above the flat surface. This avoids loading into
+Joesville's original pit geometry coordinates while still keeping the AIW
+structure that rFactor 2 accepts. It also copies the known Joesville TDF as
+`BlackLake.tdf`, because the current custom BlackLake TDF still crashes the
+retail client before `DynMan::Init`.
 
 The current BlackLake TDF is also intentionally conservative: its feedback
 materials do not match `BlackLakeAsphalt` or `BlackLakePaint`. Matching those

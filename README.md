@@ -328,10 +328,11 @@ Pitbox-Wegpunkte erzeugt, ist fuer echte Fahrtests dieser Fallback sinnvoll:
 
 Damit bleibt die BlackLake-Geometrie aktiv, aber die Start-/Pitbox-Daten kommen
 aus der bekannten Joesville-AIW. Der Fallback begrenzt die installierte GDB
-zusaetzlich auf `Max Vehicles = 20` und trimmt die AIW-Startaufstellung auf 20
-Plaetze. Ausserdem wird die bekannte Joesville-TDF als `BlackLake.tdf`
-verwendet, weil die eigene BlackLake-TDF den Retail-Client aktuell beim Laden
-crashen laesst. Danach im normalen rFactor-2-Menue nach `BlackLake` suchen.
+zusaetzlich auf `Max Vehicles = 20` und patcht `GRID`, `ALTGRID`, `TELEPORT`
+sowie Pit/Garage-Positionen auf zentrale BlackLake-Koordinaten. Ausserdem wird
+die bekannte Joesville-TDF als `BlackLake.tdf` verwendet, weil die eigene
+BlackLake-TDF den Retail-Client aktuell beim Laden crashen laesst. Danach im
+normalen rFactor-2-Menue nach `BlackLake` suchen.
 
 Mit `-OpenGame` startet der Befehl nach der Vorbereitung direkt rFactor 2:
 

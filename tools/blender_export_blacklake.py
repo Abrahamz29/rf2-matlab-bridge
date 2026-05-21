@@ -157,9 +157,18 @@ def make_ring(vertices, faces, radius, width, segments, y=0.015):
 def make_markings(half_extent: float, lane_length: float, lane_width: float):
     vertices = []
     faces = []
-    stripe = 0.15
+    stripe = 0.45
     gap = lane_width / 2.0
     end_margin = min(half_extent - 5.0, lane_length / 2.0)
+
+    grid_step = 25.0
+    grid_extent = half_extent - 5.0
+    grid_count = int((grid_extent * 2.0) // grid_step)
+    grid_start = -grid_count * grid_step / 2.0
+    for idx in range(grid_count + 1):
+        coord = grid_start + idx * grid_step
+        add_quad(vertices, faces, coord - stripe / 4.0, -grid_extent, coord + stripe / 4.0, grid_extent, y=0.018)
+        add_quad(vertices, faces, -grid_extent, coord - stripe / 4.0, grid_extent, coord + stripe / 4.0, y=0.018)
 
     add_quad(vertices, faces, -stripe / 2.0, -end_margin, stripe / 2.0, end_margin)
     add_quad(vertices, faces, -end_margin, -stripe / 2.0, end_margin, stripe / 2.0)
@@ -333,7 +342,7 @@ def main() -> None:
 
     _, surface = add_rf2_template("BlackLake_Surface")
     set_mesh(surface, *make_grid_surface(stage["half_extent_m"]))
-    set_material(surface, "BlackLakeAsphalt", (0.08, 0.08, 0.08, 1.0))
+    set_material(surface, "BlackLakeAsphalt", (0.24, 0.25, 0.24, 1.0))
     surface_gmt = export_selected("BlackLake_Surface", out_dir)
 
     clear_scene()
