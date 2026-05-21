@@ -43,6 +43,10 @@ Ein Schraeglaufwinkel-Sweep bei 5000 N liegt als Testmatrix hier:
 sweep = readtable("scenarios/tyre/slip_angle_5000N_minus12_to_12deg.csv");
 ```
 
+Der eigentliche TTool-Batchlauf wird nicht direkt aus dieser CSV gestartet.
+Fuer reine Reifentests gilt der offizielle ODS-Workflow in
+`docs/ttool_tyre_only_batch.md`.
+
 Nach der Messung die Ergebniswerte in die Ergebnisvorlage eintragen oder eine
 CSV mit denselben Spalten schreiben:
 
