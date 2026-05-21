@@ -46,6 +46,24 @@
       font-weight: 650;
       margin: 0;
     }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+    }
+    button {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 6px 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button:hover, .tab:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
     .pill {
       color: var(--muted);
       border: 1px solid var(--line);
@@ -77,6 +95,7 @@
       border-radius: 4px;
       color: var(--muted);
       cursor: pointer;
+      border: 1px solid transparent;
     }
     .tab.active {
       background: var(--panel-2);
@@ -95,6 +114,11 @@
       grid-template-columns: repeat(4, minmax(140px, 1fr));
       gap: 10px;
       margin-bottom: 16px;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
     }
     .metric, .plot, .table-panel {
       background: var(--panel);
@@ -120,6 +144,10 @@
       margin: 0 0 10px;
       font-size: 13px;
       font-weight: 650;
+    }
+    .plot p {
+      color: var(--muted);
+      margin: 8px 0 0;
     }
     svg {
       width: 100%;
@@ -168,6 +196,28 @@
       background: var(--ok);
     }
     .warn { color: var(--warn); }
+    .empty {
+      color: var(--muted);
+      padding: 24px;
+      border: 1px dashed var(--line);
+      border-radius: 6px;
+      background: #111519;
+    }
+    .legend {
+      display: flex;
+      gap: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .legend span::before {
+      content: "";
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      margin-right: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
   </style>
 </head>
 <body>
@@ -176,71 +226,107 @@
       <h1>rF2 TGM Generator</h1>
       <span class="pill" id="file-pill">No file</span>
       <span class="pill warn">LookupV2/PatchV1: tTool required</span>
+      <div class="toolbar">
+        <button id="reload-button" type="button">Reload</button>
+        <button id="ping-button" type="button">Ping MATLAB</button>
+      </div>
     </header>
     <nav>
       <div class="section-title">Generator</div>
       <div class="tabs">
-        <div class="tab active">Overview</div>
-        <div class="tab">Geometry</div>
-        <div class="tab">Construction</div>
-        <div class="tab">Materials</div>
-        <div class="tab">Realtime</div>
-        <div class="tab">WLF</div>
-        <div class="tab">ContactProps</div>
-        <div class="tab">LoadSens</div>
-        <div class="tab">TGM Export</div>
-        <div class="tab">TBC Export</div>
-        <div class="tab">Validation</div>
+        <div class="tab active" data-view="overview">Overview</div>
+        <div class="tab" data-view="geometry">Geometry</div>
+        <div class="tab" data-view="construction">Construction</div>
+        <div class="tab" data-view="materials">Materials</div>
+        <div class="tab" data-view="realtime">Realtime</div>
+        <div class="tab" data-view="wlf">WLF</div>
+        <div class="tab" data-view="contactprops">ContactProps</div>
+        <div class="tab" data-view="loadsens">LoadSens</div>
+        <div class="tab" data-view="tgmexport">TGM Export</div>
+        <div class="tab" data-view="tbcexport">TBC Export</div>
+        <div class="tab" data-view="validation">Validation</div>
       </div>
       <div class="section-title">Plots</div>
       <div class="tabs">
-        <div class="tab">Cross-section</div>
-        <div class="tab">Material Curves</div>
-        <div class="tab">Ply Stack</div>
-        <div class="tab">Behaviour</div>
+        <div class="tab" data-view="crosssection">Cross-section</div>
+        <div class="tab" data-view="materialcurves">Material Curves</div>
+        <div class="tab" data-view="plystack">Ply Stack</div>
+        <div class="tab" data-view="behaviour">Behaviour</div>
       </div>
     </nav>
     <main>
-      <div class="grid" id="metrics"></div>
-      <section class="plot">
-        <h2>Tyre Cross-section Nodes</h2>
-        <svg id="geometry"></svg>
-      </section>
-      <section class="plot">
-        <h2>Material Stiffness By Temperature</h2>
-        <svg id="materials"></svg>
-      </section>
-      <section class="table-panel">
-        <table>
-          <thead><tr><th>Node</th><th>Kind</th><th>Temp K</th><th>E-Modulus Pa</th><th>Density</th><th>k</th></tr></thead>
-          <tbody id="material-table"></tbody>
-        </table>
-      </section>
+      <div id="content"></div>
     </main>
     <aside class="side">
       <h2>Validation</h2>
       <p id="message">Waiting for MATLAB data.</p>
+      <div id="details"></div>
       <p class="warn">Final acceptance compares generated .tgm/.tbc text against the ODS reference. LookupV2/PatchV1 are excluded.</p>
     </aside>
     <footer class="status"><span class="dot"></span><span id="status">initializing</span></footer>
   </div>
   <script>
     let state = null;
+    let matlabComponent = null;
+    let activeView = "overview";
 
     function setup(htmlComponent) {
+      matlabComponent = htmlComponent;
       htmlComponent.addEventListener("DataChanged", () => {
-        state = htmlComponent.Data;
+        const incoming = htmlComponent.Data;
+        if (incoming?.kind === "pong") {
+          setStatus(incoming.message || "MATLAB backend ready");
+          return;
+        }
+        state = incoming;
         render();
       });
-      htmlComponent.Data = { command: "ping" };
+      state = htmlComponent.Data;
+      bindControls();
+      render();
+    }
+
+    function bindControls() {
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          activeView = tab.dataset.view || "overview";
+          document.querySelectorAll(".tab").forEach(item => item.classList.toggle("active", item === tab));
+          render();
+        });
+      });
+      document.getElementById("reload-button").addEventListener("click", () => {
+        if (matlabComponent && state?.inputPath) {
+          setStatus("reloading " + state.inputPath);
+          matlabComponent.Data = { command: "loadTgm", path: state.inputPath };
+        }
+      });
+      document.getElementById("ping-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("pinging MATLAB");
+          matlabComponent.Data = { command: "ping" };
+        }
+      });
     }
 
     function render() {
       if (!state) return;
-      document.getElementById("status").textContent = state.status || state.kind || "ready";
+      if (state.kind === "pong") {
+        setStatus(state.message || "MATLAB backend ready");
+        return;
+      }
+      setStatus(state.status || state.kind || "ready");
       document.getElementById("message").textContent = state.message || "";
       document.getElementById("file-pill").textContent = state.inputPath || "No file";
-      if (state.kind === "pong") return;
+      renderDetails();
+      renderActiveView();
+    }
+
+    function setStatus(message) {
+      document.getElementById("status").textContent = message;
+    }
+
+    function renderActiveView() {
+      const content = document.getElementById("content");
       const summary = state.summary || {};
       const metrics = [
         ["Nodes", summary.nodeCount],
@@ -248,16 +334,68 @@
         ["Ply Rows", summary.plyParamRows],
         ["Lookup Lines", `${summary.lookupV2LineCount || 0} / ${summary.patchV1LineCount || 0}`]
       ];
-      document.getElementById("metrics").innerHTML = metrics.map(([label, value]) =>
+      const metricHtml = `<div class="grid">${metrics.map(([label, value]) =>
         `<div class="metric"><div class="value">${value ?? "-"}</div><div class="label">${label}</div></div>`
-      ).join("");
-      drawGeometry(state.plotData?.geometry || []);
-      drawMaterials(state.plotData?.materials || []);
-      drawMaterialTable(state.plotData?.materials || []);
+      ).join("")}</div>`;
+
+      if (activeView === "overview") {
+        content.innerHTML = `${metricHtml}
+          <div class="two-col">
+            ${plotShell("geometry", "Tyre Cross-section Nodes")}
+            ${plotShell("materials", "Material Stiffness By Temperature")}
+          </div>`;
+        drawGeometry(state.plotData?.geometry || [], "geometry");
+        drawMaterials(state.plotData?.materials || [], "materials");
+      } else if (activeView === "geometry" || activeView === "crosssection") {
+        content.innerHTML = `${plotShell("geometry", "Tyre Cross-section Nodes")}
+          ${tableShell("geometry-table", ["Node", "X", "Y", "Z"])}`;
+        drawGeometry(state.plotData?.geometry || [], "geometry");
+        drawGeometryTable(state.plotData?.geometry || []);
+      } else if (activeView === "materials" || activeView === "materialcurves") {
+        content.innerHTML = `<div class="legend"><span style="color:#6be675">Bulk</span><span style="color:#f0b85a">Tread</span><span style="color:#72b7ff">Ply</span></div>
+          ${plotShell("materials", "Material Stiffness By Temperature")}
+          ${tableShell("material-table", ["Node", "Kind", "Temp K", "E-Modulus Pa", "Density", "k"])}`;
+        drawMaterials(state.plotData?.materials || [], "materials");
+        drawMaterialTable(state.plotData?.materials || []);
+      } else if (activeView === "construction" || activeView === "plystack") {
+        content.innerHTML = `${plotShell("ply", "Ply Angle / Thickness")}
+          ${tableShell("ply-table", ["Node", "Angle deg", "Thickness m", "Connect"])}`;
+        drawPly(state.plotData?.plyParams || [], "ply");
+        drawPlyTable(state.plotData?.plyParams || []);
+      } else {
+        content.innerHTML = `${metricHtml}<div class="empty">${viewTitle(activeView)} is wired as a real clickable tab. The ODS formula port for this page is still pending.</div>`;
+      }
     }
 
-    function drawGeometry(points) {
-      const svg = document.getElementById("geometry");
+    function renderDetails() {
+      const summary = state.summary || {};
+      document.getElementById("details").innerHTML = `
+        <table>
+          <tbody>
+            <tr><td>Loaded</td><td>${state.loaded ? "yes" : "no"}</td></tr>
+            <tr><td>QSA rows</td><td>${summary.qsaParameterCount ?? "-"}</td></tr>
+            <tr><td>Realtime rows</td><td>${summary.realtimeParameterCount ?? "-"}</td></tr>
+            <tr><td>LookupV2</td><td>${summary.lookupV2LineCount ?? 0} lines</td></tr>
+            <tr><td>PatchV1</td><td>${summary.patchV1LineCount ?? 0} lines</td></tr>
+          </tbody>
+        </table>`;
+    }
+
+    function plotShell(id, title) {
+      return `<section class="plot"><h2>${title}</h2><svg id="${id}"></svg></section>`;
+    }
+
+    function tableShell(id, headers) {
+      return `<section class="table-panel"><table><thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody id="${id}"></tbody></table></section>`;
+    }
+
+    function viewTitle(view) {
+      return view.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, c => c.toUpperCase());
+    }
+
+    function drawGeometry(points, targetId) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
       svg.innerHTML = "";
       if (!points.length) return;
       const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 22;
@@ -272,8 +410,9 @@
         `<circle cx="${sx(Number(p.y)).toFixed(1)}" cy="${sy(Number(p.x)).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}</title></circle>`));
     }
 
-    function drawMaterials(rows) {
-      const svg = document.getElementById("materials");
+    function drawMaterials(rows, targetId) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
       svg.innerHTML = "";
       const data = rows.filter(r => Number.isFinite(Number(r.temperatureK)) && Number.isFinite(Number(r.youngsModulusPa)));
       if (!data.length) return;
@@ -295,9 +434,41 @@
       svg.insertAdjacentHTML("beforeend", `<text x="${pad}" y="18" fill="#9aa7b3">E-Modulus [MPa] vs Temperature [K]</text>`);
     }
 
+    function drawPly(rows, targetId) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
+      svg.innerHTML = "";
+      const data = rows.filter(r => Number.isFinite(Number(r.angleDeg)));
+      if (!data.length) return;
+      const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 28;
+      const xs = data.map(r => Number(r.nodeIndex));
+      const ys = data.map(r => Number(r.angleDeg));
+      const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
+      const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
+      const sy = y => h - pad - (y - minY) / safeRange(minY, maxY) * (h - 2 * pad);
+      const path = data.map((r, i) => `${i ? "L" : "M"}${sx(Number(r.nodeIndex)).toFixed(1)},${sy(Number(r.angleDeg)).toFixed(1)}`).join(" ");
+      svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="#72b7ff" stroke-width="1.4"/>`);
+      svg.insertAdjacentHTML("beforeend", `<text x="${pad}" y="18" fill="#9aa7b3">Ply angle [deg] over node index</text>`);
+    }
+
     function drawMaterialTable(rows) {
+      if (!document.getElementById("material-table")) return;
       document.getElementById("material-table").innerHTML = rows.slice(0, 120).map(r =>
         `<tr><td>${r.nodeIndex}</td><td>${r.kind}</td><td>${fmt(r.temperatureK)}</td><td>${fmt(r.youngsModulusPa)}</td><td>${fmt(r.densityKgM3)}</td><td>${fmt(r.conductivityWMK)}</td></tr>`
+      ).join("");
+    }
+
+    function drawGeometryTable(rows) {
+      if (!document.getElementById("geometry-table")) return;
+      document.getElementById("geometry-table").innerHTML = rows.map(r =>
+        `<tr><td>${r.nodeIndex}</td><td>${fmt(r.x)}</td><td>${fmt(r.y)}</td><td>${fmt(r.z)}</td></tr>`
+      ).join("");
+    }
+
+    function drawPlyTable(rows) {
+      if (!document.getElementById("ply-table")) return;
+      document.getElementById("ply-table").innerHTML = rows.slice(0, 240).map(r =>
+        `<tr><td>${r.nodeIndex}</td><td>${fmt(r.angleDeg)}</td><td>${fmt(r.thicknessM)}</td><td>${fmt(r.connectFlag)}</td></tr>`
       ).join("");
     }
 
