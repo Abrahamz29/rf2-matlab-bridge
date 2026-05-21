@@ -35,6 +35,21 @@ Weitere interessante Plots aus denselben Arrays:
 - `run.pressure` vs. `run.surfaceTempC`: Druck/Temperatur-Verlauf
 - `run.rideHeight` zusammen mit Aero-Daten aus `data.convenience.playerTelemetry`
 
+## Tyre-Bench-Sweeps
+
+Ein Schraeglaufwinkel-Sweep bei 5000 N liegt als Testmatrix hier:
+
+```matlab
+sweep = readtable("scenarios/tyre/slip_angle_5000N_minus12_to_12deg.csv");
+```
+
+Nach der Messung die Ergebniswerte in die Ergebnisvorlage eintragen oder eine
+CSV mit denselben Spalten schreiben:
+
+```matlab
+fig = rf2PlotTyreBenchSweep("scenarios/tyre/slip_angle_5000N_minus12_to_12deg_results_template.csv");
+```
+
 ## MoTeC
 
 MoTeC i2 Pro ist fuer rFactor 2 weiterhin sinnvoll, aber fuer einen anderen
