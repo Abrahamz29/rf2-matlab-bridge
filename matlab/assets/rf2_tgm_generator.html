@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>rF2 TGM Generator</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101316;
+      --panel: #171b20;
+      --panel-2: #20262d;
+      --line: #303842;
+      --text: #e6edf3;
+      --muted: #9aa7b3;
+      --accent: #4fb3ff;
+      --ok: #51c785;
+      --warn: #e0a84f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+      letter-spacing: 0;
+      overflow: hidden;
+    }
+    .app {
+      display: grid;
+      grid-template-columns: 260px 1fr 300px;
+      grid-template-rows: 48px 1fr 34px;
+      height: 100vh;
+    }
+    header {
+      grid-column: 1 / 4;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--line);
+      background: #12161a;
+    }
+    header h1 {
+      font-size: 15px;
+      font-weight: 650;
+      margin: 0;
+    }
+    .pill {
+      color: var(--muted);
+      border: 1px solid var(--line);
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    nav, aside {
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      overflow: auto;
+    }
+    aside {
+      border-right: 0;
+      border-left: 1px solid var(--line);
+    }
+    main {
+      overflow: auto;
+      padding: 16px;
+    }
+    .tabs {
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      gap: 4px;
+    }
+    .tab {
+      padding: 8px 10px;
+      border-radius: 4px;
+      color: var(--muted);
+      cursor: pointer;
+    }
+    .tab.active {
+      background: var(--panel-2);
+      color: var(--text);
+      border-left: 3px solid var(--accent);
+    }
+    .section-title {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 700;
+      margin: 18px 10px 6px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .metric, .plot, .table-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+    .metric {
+      padding: 12px;
+    }
+    .metric .value {
+      font-size: 24px;
+      font-weight: 650;
+    }
+    .metric .label {
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .plot {
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+    .plot h2, aside h2 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    svg {
+      width: 100%;
+      height: 280px;
+      display: block;
+      background: #0c0f12;
+      border: 1px solid #222a32;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 6px 8px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    th:first-child, td:first-child { text-align: left; }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      background: var(--panel-2);
+      position: sticky;
+      top: 0;
+    }
+    .side {
+      padding: 14px;
+    }
+    .status {
+      grid-column: 1 / 4;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 14px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      background: #12161a;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ok);
+    }
+    .warn { color: var(--warn); }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>rF2 TGM Generator</h1>
+      <span class="pill" id="file-pill">No file</span>
+      <span class="pill warn">LookupV2/PatchV1: tTool required</span>
+    </header>
+    <nav>
+      <div class="section-title">Generator</div>
+      <div class="tabs">
+        <div class="tab active">Overview</div>
+        <div class="tab">Geometry</div>
+        <div class="tab">Construction</div>
+        <div class="tab">Materials</div>
+        <div class="tab">Realtime</div>
+        <div class="tab">WLF</div>
+        <div class="tab">ContactProps</div>
+        <div class="tab">LoadSens</div>
+        <div class="tab">TGM Export</div>
+        <div class="tab">TBC Export</div>
+        <div class="tab">Validation</div>
+      </div>
+      <div class="section-title">Plots</div>
+      <div class="tabs">
+        <div class="tab">Cross-section</div>
+        <div class="tab">Material Curves</div>
+        <div class="tab">Ply Stack</div>
+        <div class="tab">Behaviour</div>
+      </div>
+    </nav>
+    <main>
+      <div class="grid" id="metrics"></div>
+      <section class="plot">
+        <h2>Tyre Cross-section Nodes</h2>
+        <svg id="geometry"></svg>
+      </section>
+      <section class="plot">
+        <h2>Material Stiffness By Temperature</h2>
+        <svg id="materials"></svg>
+      </section>
+      <section class="table-panel">
+        <table>
+          <thead><tr><th>Node</th><th>Kind</th><th>Temp K</th><th>E-Modulus Pa</th><th>Density</th><th>k</th></tr></thead>
+          <tbody id="material-table"></tbody>
+        </table>
+      </section>
+    </main>
+    <aside class="side">
+      <h2>Validation</h2>
+      <p id="message">Waiting for MATLAB data.</p>
+      <p class="warn">Final acceptance compares generated .tgm/.tbc text against the ODS reference. LookupV2/PatchV1 are excluded.</p>
+    </aside>
+    <footer class="status"><span class="dot"></span><span id="status">initializing</span></footer>
+  </div>
+  <script>
+    let state = null;
+
+    function setup(htmlComponent) {
+      htmlComponent.addEventListener("DataChanged", () => {
+        state = htmlComponent.Data;
+        render();
+      });
+      htmlComponent.Data = { command: "ping" };
+    }
+
+    function render() {
+      if (!state) return;
+      document.getElementById("status").textContent = state.status || state.kind || "ready";
+      document.getElementById("message").textContent = state.message || "";
+      document.getElementById("file-pill").textContent = state.inputPath || "No file";
+      if (state.kind === "pong") return;
+      const summary = state.summary || {};
+      const metrics = [
+        ["Nodes", summary.nodeCount],
+        ["Material Rows", summary.materialRows],
+        ["Ply Rows", summary.plyParamRows],
+        ["Lookup Lines", `${summary.lookupV2LineCount || 0} / ${summary.patchV1LineCount || 0}`]
+      ];
+      document.getElementById("metrics").innerHTML = metrics.map(([label, value]) =>
+        `<div class="metric"><div class="value">${value ?? "-"}</div><div class="label">${label}</div></div>`
+      ).join("");
+      drawGeometry(state.plotData?.geometry || []);
+      drawMaterials(state.plotData?.materials || []);
+      drawMaterialTable(state.plotData?.materials || []);
+    }
+
+    function drawGeometry(points) {
+      const svg = document.getElementById("geometry");
+      svg.innerHTML = "";
+      if (!points.length) return;
+      const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 22;
+      const xs = points.map(p => Number(p.y));
+      const ys = points.map(p => Number(p.x));
+      const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
+      const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
+      const sy = y => h - pad - (y - minY) / safeRange(minY, maxY) * (h - 2 * pad);
+      const path = points.map((p, i) => `${i ? "L" : "M"}${sx(Number(p.y)).toFixed(1)},${sy(Number(p.x)).toFixed(1)}`).join(" ");
+      svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="#4fb3ff" stroke-width="1.4"/>`);
+      points.forEach(p => svg.insertAdjacentHTML("beforeend",
+        `<circle cx="${sx(Number(p.y)).toFixed(1)}" cy="${sy(Number(p.x)).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}</title></circle>`));
+    }
+
+    function drawMaterials(rows) {
+      const svg = document.getElementById("materials");
+      svg.innerHTML = "";
+      const data = rows.filter(r => Number.isFinite(Number(r.temperatureK)) && Number.isFinite(Number(r.youngsModulusPa)));
+      if (!data.length) return;
+      const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 28;
+      const xs = data.map(r => Number(r.temperatureK));
+      const ys = data.map(r => Number(r.youngsModulusPa) / 1e6);
+      const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
+      const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
+      const sy = y => h - pad - (y - minY) / safeRange(minY, maxY) * (h - 2 * pad);
+      const colors = { BulkMaterial: "#6be675", TreadMaterial: "#f0b85a", PlyMaterial: "#72b7ff" };
+      for (const kind of [...new Set(data.map(r => String(r.kind)))]) {
+        const subset = data.filter(r => String(r.kind) === kind).slice(0, 240);
+        subset.forEach(r => {
+          const x = sx(Number(r.temperatureK));
+          const y = sy(Number(r.youngsModulusPa) / 1e6);
+          svg.insertAdjacentHTML("beforeend", `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="${colors[kind] || "#ddd"}"><title>${kind} node ${r.nodeIndex}</title></circle>`);
+        });
+      }
+      svg.insertAdjacentHTML("beforeend", `<text x="${pad}" y="18" fill="#9aa7b3">E-Modulus [MPa] vs Temperature [K]</text>`);
+    }
+
+    function drawMaterialTable(rows) {
+      document.getElementById("material-table").innerHTML = rows.slice(0, 120).map(r =>
+        `<tr><td>${r.nodeIndex}</td><td>${r.kind}</td><td>${fmt(r.temperatureK)}</td><td>${fmt(r.youngsModulusPa)}</td><td>${fmt(r.densityKgM3)}</td><td>${fmt(r.conductivityWMK)}</td></tr>`
+      ).join("");
+    }
+
+    function extent(values) {
+      return [Math.min(...values), Math.max(...values)];
+    }
+    function safeRange(min, max) {
+      return Math.max(Math.abs(max - min), 1e-9);
+    }
+    function fmt(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "";
+      return Math.abs(n) >= 100000 ? n.toExponential(3) : n.toFixed(4).replace(/\.?0+$/, "");
+    }
+  </script>
+</body>
+</html>
