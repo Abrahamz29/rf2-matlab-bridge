@@ -24,3 +24,6 @@ Thumbs.db
 # Local downloads and extracted archives
 tools/downloads/
 tools/cache/
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
