@@ -697,7 +697,7 @@ Instance=BlackLake_Markings
 
 Instance=BlackLake_Reference
 {{
-  MeshFile=BlackLake_Reference.gmt CollTarget=True HATTarget=False
+  MeshFile=BlackLake_Reference.gmt CollTarget=False HATTarget=False
 }}
 
 //-------------------------------------------------------

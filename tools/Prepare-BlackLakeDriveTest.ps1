@@ -200,7 +200,8 @@ function Install-JoesvilleAiwFallback {
         Write-Host "  Stage:  $Stage"
         Write-Host "  Source: $sourceAiw"
         Write-Host "  Target: $destination"
-        Write-Host "  Starting grid, teleports, and pit boxes patched to BlackLake center"
+        Write-Host "  Starting grid and teleports patched to BlackLake center"
+        Write-Host "  Pit boxes kept on donor AIW coordinates to preserve accepted pitlane waypoints"
     }
 }
 
