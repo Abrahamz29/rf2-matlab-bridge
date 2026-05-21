@@ -54,11 +54,41 @@ Der aktuelle Harness kann diesen Vergleich bereits ausfuehren:
   --strip-lookup --json
 ```
 
+## Formel-Harness
+
+Der aktuelle Port kann die ODS-Formeln inventarisieren, Zellabhaengigkeiten
+extrahieren und einen ersten Teil der Formeln gegen gespeicherte ODS-Werte
+auswerten. Fuer den Zwischenstand nutzt der Evaluator gespeicherte ODS-Werte fuer
+referenzierte Zellen; damit pruefen wir Parser, Referenzen und Funktionssemantik,
+bevor der komplette 80k-Zellgraph rekursiv frei gerechnet wird.
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
+  --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  formula-report --sheets General Realtime Materials --json
+```
+
+Aus MATLAB:
+
+```matlab
+addpath("matlab")
+report = rf2TgmGenFormulaReport("Sheets", ["General", "Realtime", "Materials"]);
+```
+
+Der Report enthaelt pro Sheet:
+
+- Anzahl der Formeln.
+- erkannte Abhaengigkeitskanten.
+- implementierte und noch fehlende Funktionsnamen.
+- ausgewertete Formeln, Matches, Abweichungen und Fehlerbeispiele.
+
 ## Status
 
 Implementiert:
 
 - ODS-Inventar und Formula-Coverage-Report.
+- Formel-Harness fuer Zellreferenzen, Abhaengigkeitsgraph und cached
+  dependency evaluation.
 - Rekonstruktion der gespeicherten ODS-`.tgm`- und `.tbc`-Exporttexte.
 - TGM-Parser, Roundtrip-Writer ohne generated Lookup/Patch.
 - Plotdaten fuer Nodes, Materialien, TreadDepth und PlyParams.
@@ -66,7 +96,9 @@ Implementiert:
 
 Noch offen:
 
-- Vollstaendige Formel-Engine fuer alle ODS-Formeln.
-- Zellwert-Golden-Tests gegen dynamisch neu berechnete ODS-Werte.
+- Vollstaendige rekursive Formel-Engine fuer alle ODS-Formeln ohne gespeicherte
+  Abhaengigkeitswerte.
+- Zellwert-Golden-Tests gegen dynamisch neu berechnete ODS-Werte fuer alle
+  relevanten Sheets.
 - Vollstaendige Plotdatenabdeckung aller ODS-Charts.
 - Vollstaendige Editier- und Exportoberflaeche.
