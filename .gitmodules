@@ -7,3 +7,6 @@
 [submodule "vendor/rF2SharedMemoryNet"]
 	path = vendor/rF2SharedMemoryNet
 	url = https://github.com/Domaslau/rF2SharedMemoryNet.git
+[submodule "vendor/TGM-Utils"]
+	path = vendor/TGM-Utils
+	url = https://github.com/Abrahamz29/TGM-Utils.git
