@@ -31,13 +31,13 @@ fy = localNumeric(T.(fyCol));
 fz = localNumeric(T.(fzCol));
 if all(isnan(fz))
     targetFzCol = localFindColumn(T, "target_vertical_load_n");
-    if ~isempty(targetFzCol)
+    if localHasColumn(targetFzCol)
         fzCol = targetFzCol;
         fz = localNumeric(T.(fzCol));
     end
 end
 
-if ~isempty(muYCol)
+if localHasColumn(muYCol)
     muY = localNumeric(T.(muYCol));
 else
     muY = fy ./ fz;
@@ -73,12 +73,12 @@ ylabel("Vertical load N");
 title("Fz Check");
 
 nexttile(layout);
-if ~isempty(mzCol)
+if localHasColumn(mzCol)
     mz = localNumeric(T.(mzCol));
     plot(alpha, mz(order), "o-", "LineWidth", 1.2);
     ylabel("Aligning torque Nm");
     title("Mz vs Slip Angle");
-elseif ~isempty(fxCol)
+elseif localHasColumn(fxCol)
     fx = localNumeric(T.(fxCol));
     plot(alpha, fx(order), "o-", "LineWidth", 1.2);
     ylabel("Longitudinal force N");
@@ -92,6 +92,10 @@ grid on;
 xlabel("Slip angle deg");
 
 title(layout, "Tyre Bench Sweep");
+end
+
+function tf = localHasColumn(name)
+tf = strlength(string(name)) > 0;
 end
 
 function values = localNumeric(values)
