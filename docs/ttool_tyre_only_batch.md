@@ -25,6 +25,22 @@ Herunterladen und direkt oeffnen:
 Die ODS wird unter `tools\downloads\studio397\` abgelegt. Dieser Ordner ist
 absichtlich nicht versioniert.
 
+Einen kompletten INI-Block aus der ODS extrahieren:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\extract_ttool_realtime_ini_from_ods.py `
+  --suite 0_Initial-Tests `
+  --output .\scenarios\tyre\ttool\custom_realtime_0_initial_tests.ini
+```
+
+Verfuegbare ODS-Testgruppen anzeigen:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\extract_ttool_realtime_ini_from_ods.py `
+  --output .\tmp\unused.ini `
+  --list
+```
+
 ## TTool starten
 
 ```powershell
