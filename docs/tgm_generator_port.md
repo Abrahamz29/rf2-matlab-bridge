@@ -219,13 +219,33 @@ charts = rf2TgmGenChartReport;
 disp(charts.chart_count)
 ```
 
+Die Chart-Quellbereiche koennen auch rekursiv ausgewertet werden. Fehlerwerte
+aus der ODS wie `#DIV/0!` bleiben dabei als nichtnumerische Plotpunkte im
+Datensatz erhalten, damit die Extraktion nicht an bewusst leeren/ungueltigen
+Serienbereichen abbricht.
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
+  --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  chart-data --mode recursive --json
+```
+
+Aus MATLAB:
+
+```matlab
+chartData = rf2TgmGenChartData;
+disp(chartData.series_count)
+```
+
 Aktueller Stand fuer die offizielle Beispiel-ODS:
 
 - 12 eingebettete ODS-Charts.
 - 79 Datenserien.
+- 79 Datenserien werden rekursiv als Chartdaten ausgewertet.
 - Quellbereiche aus `Geometry`, `Construction`, `Compound`, `WLF`,
   `ContactProps`, `LoadSens` und `TBC`.
-- Die UI zeigt diese Chart-Coverage im Tab `ODS Charts`.
+- Die UI zeigt diese Chart-Coverage im Tab `ODS Charts`; der Button
+  `Load ODS Chart Data` zeichnet die ausgewerteten ODS-Serien nach.
 
 ## Status
 
@@ -253,6 +273,7 @@ Implementiert:
 - Behaviour-Plotdaten aus dem neuesten tTool `CustomRealtimeTable.csv`.
 - ODS-Chart-Inventory mit Serien-/Quellbereichsauswertung und MATLAB-Wrapper
   `rf2TgmGenChartReport`.
+- Rekursive ODS-Chartdatenextraktion mit MATLAB-Wrapper `rf2TgmGenChartData`.
 - Moderne MATLAB-`uihtml`-App-Shell mit ersten Plots und Acceptance-Test-Button.
 - UI-Tabelle fuer extrahierte ODS-Eingabezellen mit `Generate From Inputs`.
 - UI-Behaviour-Plots fuer `Fy` ueber Schraeglaufwinkel, `Fx` ueber Slip Ratio

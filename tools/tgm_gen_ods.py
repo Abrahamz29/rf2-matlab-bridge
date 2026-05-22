@@ -2087,6 +2087,104 @@ def inspect_charts(ods: Path) -> dict:
     }
 
 
+def chart_scalar_record(value: Any) -> dict[str, Any]:
+    unwrapped = unwrap_scalar(value)
+    display = format_excel_scalar(value)
+    record: dict[str, Any] = {"display": display}
+    if isinstance(unwrapped, ExcelError):
+        record["value"] = unwrapped.code
+        record["numeric"] = None
+        record["isNumeric"] = False
+        return record
+    if unwrapped == "":
+        record["value"] = ""
+        record["numeric"] = None
+        record["isNumeric"] = False
+        return record
+    if isinstance(unwrapped, bool):
+        record["value"] = bool(unwrapped)
+    elif isinstance(unwrapped, (int, float, str)):
+        record["value"] = unwrapped
+    else:
+        record["value"] = str(unwrapped)
+    try:
+        record["numeric"] = to_number(unwrapped)
+        record["isNumeric"] = True
+    except FormulaEvaluationError:
+        record["numeric"] = None
+        record["isNumeric"] = False
+    return record
+
+
+def evaluate_chart_cell(sheet: str, row: int, col: int, evaluator: CachedFormulaEvaluator) -> Any:
+    try:
+        return evaluator.ref(sheet, row_col_to_a1(row, col))
+    except FormulaEvaluationError as exc:
+        cell = evaluator.cells.get((sheet, row, col))
+        if cell is not None:
+            stored = cell.value if cell.value != "" else cell.display
+            if str(stored).startswith(("#", "Err:")):
+                return ExcelScalar(ExcelError(str(stored)), sheet=sheet, row=row, col=col, display=str(stored))
+            return ExcelScalar(parse_scalar(stored), sheet=sheet, row=row, col=col, display=cell.display)
+        return ExcelScalar(ExcelError(str(exc)), sheet=sheet, row=row, col=col, display=str(exc))
+
+
+def evaluated_address_data(address_meta: dict[str, Any], evaluator: CachedFormulaEvaluator) -> dict[str, Any]:
+    if address_meta.get("parseError") or not address_meta.get("raw"):
+        return {"meta": address_meta, "values": []}
+    values: list[dict[str, Any]] = []
+    sheet = str(address_meta.get("sheet", ""))
+    if address_meta.get("type") == "cell":
+        row = int(address_meta["row"])
+        col = int(address_meta["col"])
+        scalar = evaluate_chart_cell(sheet, row, col, evaluator)
+        values.append({"row": row, "col": col, "address": row_col_to_a1(row, col), **chart_scalar_record(scalar)})
+    elif address_meta.get("type") == "range":
+        start_row = int(address_meta["startRow"])
+        end_row = int(address_meta["endRow"])
+        start_col = int(address_meta["startCol"])
+        end_col = int(address_meta["endCol"])
+        for row in range(min(start_row, end_row), max(start_row, end_row) + 1):
+            for col in range(min(start_col, end_col), max(start_col, end_col) + 1):
+                scalar = evaluate_chart_cell(sheet, row, col, evaluator)
+                values.append({"row": row, "col": col, "address": row_col_to_a1(row, col), **chart_scalar_record(scalar)})
+    return {"meta": address_meta, "values": values}
+
+
+def inspect_chart_data(
+    ods: Path,
+    mode: str = "recursive",
+    fallback_on_error: bool = False,
+    project_path: Path | None = None,
+) -> dict:
+    report = inspect_charts(ods)
+    cells = load_formula_cells(ods)
+    overrides = load_project_overrides(project_path)
+    evaluator = make_evaluator(ods, cells, mode, overrides=overrides, fallback_on_error=fallback_on_error)
+
+    for chart in report["charts"]:
+        for series in chart["series"]:
+            series["labelText"] = ""
+            if series.get("label", {}).get("raw"):
+                label_values = evaluated_address_data(series["label"], evaluator)["values"]
+                if label_values:
+                    series["labelText"] = label_values[0]["display"]
+            series["valuesData"] = evaluated_address_data(series["values"], evaluator)
+            series["domainData"] = [
+                evaluated_address_data(domain, evaluator)
+                for domain in series.get("domains", [])
+            ]
+
+    report["kind"] = "chartData"
+    report["evaluator_mode"] = mode
+    report["fallback_on_error"] = fallback_on_error
+    report["fallback_count"] = getattr(evaluator, "fallback_count", 0)
+    report["fallback_cells"] = getattr(evaluator, "fallback_cells", [])
+    report["project_path"] = str(project_path) if project_path else ""
+    report["override_count"] = len(overrides)
+    return report
+
+
 def load_project_overrides(project_path: Path | None) -> dict[tuple[str, int, int], Any]:
     if project_path is None:
         return {}
@@ -2338,6 +2436,12 @@ def main() -> int:
     chart_parser = subparsers.add_parser("chart-report", help="Print embedded ODS chart inventory and source ranges")
     chart_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
 
+    chart_data_parser = subparsers.add_parser("chart-data", help="Evaluate embedded ODS chart source ranges")
+    chart_data_parser.add_argument("--mode", choices=["cached", "recursive"], default="recursive", help="Formula evaluator mode")
+    chart_data_parser.add_argument("--fallback-on-error", action="store_true", help="Recursive mode: use stored ODS value for unresolved dependency edges")
+    chart_data_parser.add_argument("--project", type=Path, default=None, help="Input project JSON produced by extract-inputs")
+    chart_data_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+
     export_parser = subparsers.add_parser("export-reference", help="Write reference .tgm/.tbc files reconstructed from ODS outputs")
     export_parser.add_argument("--out-dir", type=Path, default=Path("tmp/tgm_gen_port"))
     export_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
@@ -2370,13 +2474,15 @@ def main() -> int:
     compare_parser.add_argument("--json", action="store_true")
 
     args = parser.parse_args()
-    if args.command in {"inspect", "chart-report", "export-reference", "generate", "formula-report", "extract-inputs"} and not args.ods.exists():
+    if args.command in {"inspect", "chart-report", "chart-data", "export-reference", "generate", "formula-report", "extract-inputs"} and not args.ods.exists():
         raise FileNotFoundError(f"ODS not found: {args.ods}")
 
     if args.command == "inspect":
         report = inspect_ods(args.ods)
     elif args.command == "chart-report":
         report = inspect_charts(args.ods)
+    elif args.command == "chart-data":
+        report = inspect_chart_data(args.ods, mode=args.mode, fallback_on_error=args.fallback_on_error, project_path=args.project)
     elif args.command == "export-reference":
         report = export_reference(args.ods, args.out_dir)
     elif args.command == "generate":

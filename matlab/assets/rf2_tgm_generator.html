@@ -238,6 +238,7 @@
       <span class="pill warn">LookupV2/PatchV1: tTool required</span>
       <div class="toolbar">
         <button id="inputs-button" type="button">Load ODS Inputs</button>
+        <button id="chart-data-button" type="button">Load ODS Chart Data</button>
         <button id="generate-inputs-button" type="button">Generate From Inputs</button>
         <button id="acceptance-button" type="button">Run Acceptance</button>
         <button id="prepare-ttool-button" type="button">Prepare tTool</button>
@@ -351,6 +352,16 @@
           };
         }
       });
+      document.getElementById("chart-data-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("loading evaluated ODS chart data");
+          matlabComponent.Data = {
+            command: "loadOdsChartData",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods"
+          };
+        }
+      });
       document.getElementById("generate-inputs-button").addEventListener("click", () => {
         if (matlabComponent && state?.inputModel?.inputs?.length) {
           setStatus("generating from ODS inputs");
@@ -437,10 +448,13 @@
         drawForceHistory(state.behaviour?.records || [], "forcehistory");
         drawBehaviourTable(state.behaviour?.records || []);
       } else if (activeView === "odscharts") {
+        const chartSource = state.chartData?.loaded ? state.chartData : (state.chartReport || {});
         content.innerHTML = `${renderChartSummary()}
+          ${renderOdsChartPlots(chartSource)}
           ${tableShell("chart-table", ["Object", "Title", "Class", "Series", "Sheets"])}
           ${tableShell("chart-series-table", ["Chart", "Series", "Values", "Label", "Domain"])}`;
-        drawChartTables(state.chartReport || {});
+        drawChartTables(chartSource);
+        drawOdsChartPlots(chartSource.charts || []);
       } else if (["realtime", "wlf", "contactprops", "loadsens", "tbcexport", "tgmexport"].includes(activeView)) {
         content.innerHTML = `${renderInputBlock(activeView)}${renderValidationBlock()}${renderExportBlock()}`;
       } else if (activeView === "validation") {
@@ -537,15 +551,25 @@
 
     function renderChartSummary() {
       const report = state.chartReport || {};
+      const data = state.chartData || {};
       const sheetCounts = report.sheet_series_counts || {};
       const sheetRows = Object.keys(sheetCounts).map(sheet => `<tr><td>${sheet}</td><td>${sheetCounts[sheet]}</td></tr>`).join("");
       return `<div class="grid">
         <div class="metric"><div class="value">${report.loaded ? "yes" : "no"}</div><div class="label">ODS Chart Report</div></div>
         <div class="metric"><div class="value">${report.chart_count ?? 0}</div><div class="label">Charts</div></div>
         <div class="metric"><div class="value">${report.series_count ?? 0}</div><div class="label">Series</div></div>
-        <div class="metric"><div class="value">${Object.keys(sheetCounts).length}</div><div class="label">Source Sheets</div></div>
+        <div class="metric"><div class="value">${data.loaded ? "yes" : "no"}</div><div class="label">Evaluated Plot Data</div></div>
       </div>
       <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Sheet</th><th>Series</th></tr></thead><tbody>${sheetRows}</tbody></table></section>`;
+    }
+
+    function renderOdsChartPlots(report) {
+      if (!report?.loaded || !report?.charts?.length || !report.charts.some(chart => (chart.series || []).some(series => series.valuesData))) {
+        return `<div class="empty" style="margin-bottom:14px">Load ODS Chart Data to evaluate the original chart source ranges with the recursive formula engine.</div>`;
+      }
+      return report.charts.map((chart, index) =>
+        plotShell(`odschart-${index}`, chart.title || chart.object || `ODS Chart ${index + 1}`)
+      ).join("");
     }
 
     function renderExportBlock() {
@@ -723,6 +747,42 @@
           `<tr><td>${escapeHtml(chart.title || chart.object || "")}</td><td>${series.index}</td><td>${escapeHtml(series.values?.raw || "")}</td><td>${escapeHtml(series.label?.raw || "")}</td><td>${escapeHtml((series.domains || []).map(item => item.raw).join(", "))}</td></tr>`
         ).join("");
       }
+    }
+
+    function drawOdsChartPlots(charts) {
+      const palette = ["#72b7ff", "#f0b85a", "#6be675", "#ff7a90", "#b594ff", "#65d6d0", "#e0a84f", "#c7d0d9"];
+      charts.forEach((chart, chartIndex) => {
+        const svg = document.getElementById(`odschart-${chartIndex}`);
+        if (!svg) return;
+        svg.innerHTML = "";
+        const seriesWithData = (chart.series || []).filter(series => series.valuesData?.values?.length);
+        const pointsBySeries = seriesWithData.map(series => {
+          const yValues = series.valuesData.values.map(value => value.numeric);
+          const domain = series.domainData?.[0]?.values || [];
+          const xValues = domain.length === yValues.length ? domain.map(value => value.numeric) : yValues.map((_, index) => index + 1);
+          return {
+            label: series.labelText || series.label?.raw || `Series ${series.index}`,
+            points: yValues.map((y, index) => ({ x: xValues[index], y })).filter(point => Number.isFinite(point.x) && Number.isFinite(point.y))
+          };
+        }).filter(item => item.points.length);
+        if (!seriesWithData.length || !pointsBySeries.length) return;
+        const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 32;
+        const xs = pointsBySeries.flatMap(item => item.points.map(point => point.x));
+        const ys = pointsBySeries.flatMap(item => item.points.map(point => point.y));
+        const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
+        const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
+        const sy = y => h - pad - (y - minY) / safeRange(minY, maxY) * (h - 2 * pad);
+        pointsBySeries.forEach((item, seriesIndex) => {
+          const color = palette[seriesIndex % palette.length];
+          const path = item.points.map((point, index) => `${index ? "L" : "M"}${sx(point.x).toFixed(1)},${sy(point.y).toFixed(1)}`).join(" ");
+          if ((chart.class || "").includes("scatter")) {
+            item.points.forEach(point => svg.insertAdjacentHTML("beforeend",
+              `<circle cx="${sx(point.x).toFixed(1)}" cy="${sy(point.y).toFixed(1)}" r="1.9" fill="${color}"><title>${escapeHtml(item.label)}: ${fmt(point.x)}, ${fmt(point.y)}</title></circle>`));
+          }
+          svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${color}" stroke-width="1.2"><title>${escapeHtml(item.label)}</title></path>`);
+        });
+        svg.insertAdjacentHTML("beforeend", `<text x="${pad}" y="18" fill="#9aa7b3">${escapeHtml(chart.object || "")} ${escapeHtml(chart.class || "")}</text>`);
+      });
     }
 
     function extent(values) {

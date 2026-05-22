@@ -33,6 +33,7 @@ state.plotData = struct();
 state.behaviour = localEncodeBehaviourData(rf2TgmBehaviourPlotData);
 state.odsPath = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY F1 1975 Front.ods");
 state.chartReport = localLoadChartReport(state.odsPath);
+state.chartData = struct("loaded", false, "chart_count", 0, "series_count", 0);
 state.validation = struct("available", true, "message", "Acceptance test not run.");
 state.ttool = struct("available", true, "message", "Not prepared.");
 state.inputModel = struct("loaded", false, "input_count", 0, "sheet_counts", struct());
@@ -84,6 +85,14 @@ try
             state.inputModel = rf2TgmGenExtractInputs("OdsPath", string(data.odsPath));
             state.inputModel.loaded = true;
             state.message = "Loaded ODS input model.";
+            html.Data = state;
+        case "loadOdsChartData"
+            state = localBuildState(string(data.inputPath));
+            state.status = "loading ODS chart data";
+            state.chartData = rf2TgmGenChartData("OdsPath", string(data.odsPath));
+            state.chartData.loaded = true;
+            state.message = "Loaded evaluated ODS chart data.";
+            state.status = "chart data ready";
             html.Data = state;
         case "generateFromInputs"
             state = localBuildState(string(data.inputPath));
