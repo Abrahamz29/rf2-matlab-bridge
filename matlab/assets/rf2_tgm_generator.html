@@ -1239,14 +1239,16 @@
       svg.innerHTML = "";
       if (!points.length) return;
       const layerPoints = (layerRows || []).filter(row => Number.isFinite(Number(row.x)) && Number.isFinite(Number(row.y)));
-      const xs = points.map(p => Number(p.x)).concat(layerPoints.map(p => Number(p.x)));
-      const ys = points.map(p => Number(p.y)).concat(layerPoints.map(p => Number(p.y)));
-      const frame = makePlotFrame(svg, xs, ys, "Radial coordinate X [m]", "Lateral coordinate Y [m]", { equalScale: true, title: "Equal meter scale" });
-      const path = points.map((p, i) => `${i ? "L" : "M"}${frame.sx(Number(p.x)).toFixed(1)},${frame.sy(Number(p.y)).toFixed(1)}`).join(" ");
+      const pointsMm = points.map(p => ({ ...p, xMm: Number(p.x) * 1000, yMm: Number(p.y) * 1000 }));
+      const layerPointsMm = layerPoints.map(p => ({ ...p, xMm: Number(p.x) * 1000, yMm: Number(p.y) * 1000 }));
+      const xs = pointsMm.map(p => p.xMm).concat(layerPointsMm.map(p => p.xMm));
+      const ys = pointsMm.map(p => p.yMm).concat(layerPointsMm.map(p => p.yMm));
+      const frame = makePlotFrame(svg, xs, ys, "Radial coordinate X [mm]", "Lateral coordinate Y [mm]", { equalScale: true, title: "Equal millimetre scale" });
+      const path = pointsMm.map((p, i) => `${i ? "L" : "M"}${frame.sx(p.xMm).toFixed(1)},${frame.sy(p.yMm).toFixed(1)}`).join(" ");
       svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="#70808d" stroke-width="1.1"/>`);
-      drawPlyCrossSection(svg, frame, layerPoints);
-      points.forEach(p => svg.insertAdjacentHTML("beforeend",
-        `<circle cx="${frame.sx(Number(p.x)).toFixed(1)}" cy="${frame.sy(Number(p.y)).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}</title></circle>`));
+      drawPlyCrossSection(svg, frame, layerPointsMm);
+      pointsMm.forEach(p => svg.insertAdjacentHTML("beforeend",
+        `<circle cx="${frame.sx(p.xMm).toFixed(1)}" cy="${frame.sy(p.yMm).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}: X ${fmt(p.xMm)} mm, Y ${fmt(p.yMm)} mm</title></circle>`));
     }
 
     function drawPlyCrossSection(svg, frame, rows) {
@@ -1256,7 +1258,7 @@
         const subset = rows
           .filter(row => Number(row.plyIndex || 1) === layer)
           .sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex));
-        const path = subset.map((row, pointIndex) => `${pointIndex ? "L" : "M"}${frame.sx(Number(row.x)).toFixed(1)},${frame.sy(Number(row.y)).toFixed(1)}`).join(" ");
+        const path = subset.map((row, pointIndex) => `${pointIndex ? "L" : "M"}${frame.sx(Number(row.xMm)).toFixed(1)},${frame.sy(Number(row.yMm)).toFixed(1)}`).join(" ");
         svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${PLOT_COLORS[index % PLOT_COLORS.length]}" stroke-width="1.6"><title>Layer ${layer}</title></path>`);
       });
       drawLegend(svg, layers.map((layer, index) => ({ label: `Layer ${layer}`, color: PLOT_COLORS[index % PLOT_COLORS.length] })));

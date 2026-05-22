@@ -66,8 +66,8 @@ EXPECTED_INLINE_FUNCTIONS = {
 }
 
 EXPECTED_AXIS_LABELS = {
-    "Lateral coordinate Y [m]",
-    "Radial coordinate X [m]",
+    "Lateral coordinate Y [mm]",
+    "Radial coordinate X [mm]",
     "Temperature [K]",
     "Young's modulus [MPa]",
     "Young's modulus [Pa, log]",
@@ -170,15 +170,15 @@ def run_check() -> dict:
     if "equalScale: true" not in html:
         errors.append("cross-section plot does not request equalScale: true")
     expected_geometry_call = (
-        'makePlotFrame(svg, xs, ys, "Radial coordinate X [m]", '
-        '"Lateral coordinate Y [m]", { equalScale: true'
+        'makePlotFrame(svg, xs, ys, "Radial coordinate X [mm]", '
+        '"Lateral coordinate Y [mm]", { equalScale: true'
     )
     if expected_geometry_call not in html:
         errors.append("cross-section plot does not use swapped X/Y labels")
-    if "points.map(p => Number(p.x)).concat" not in html:
-        errors.append("cross-section x-axis does not use Geometry.x")
-    if "points.map(p => Number(p.y)).concat" not in html:
-        errors.append("cross-section y-axis does not use Geometry.y")
+    if "xMm: Number(p.x) * 1000" not in html:
+        errors.append("cross-section x-axis does not convert Geometry.x to millimetres")
+    if "yMm: Number(p.y) * 1000" not in html:
+        errors.append("cross-section y-axis does not convert Geometry.y to millimetres")
 
     for function_name in sorted(EXPECTED_INLINE_FUNCTIONS):
         if function_name not in function_names:
