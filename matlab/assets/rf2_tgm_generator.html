@@ -387,27 +387,36 @@
           <div class="two-col">
             ${plotShell("geometry", "Tyre Cross-section Nodes")}
             ${plotShell("materials", "Material Stiffness By Temperature")}
-          </div>`;
+          </div>
+          ${renderInputBlock("overview")}
+          ${renderValidationBlock()}`;
         drawGeometry(state.plotData?.geometry || [], "geometry");
         drawMaterials(state.plotData?.materials || [], "materials");
       } else if (activeView === "geometry" || activeView === "crosssection") {
         content.innerHTML = `${plotShell("geometry", "Tyre Cross-section Nodes")}
-          ${tableShell("geometry-table", ["Node", "X", "Y", "Z"])}`;
+          ${tableShell("geometry-table", ["Node", "X", "Y", "Z"])}
+          ${renderInputBlock("geometry")}`;
         drawGeometry(state.plotData?.geometry || [], "geometry");
         drawGeometryTable(state.plotData?.geometry || []);
       } else if (activeView === "materials" || activeView === "materialcurves") {
         content.innerHTML = `<div class="legend"><span style="color:#6be675">Bulk</span><span style="color:#f0b85a">Tread</span><span style="color:#72b7ff">Ply</span></div>
           ${plotShell("materials", "Material Stiffness By Temperature")}
-          ${tableShell("material-table", ["Node", "Kind", "Temp K", "E-Modulus Pa", "Density", "k"])}`;
+          ${tableShell("material-table", ["Node", "Kind", "Temp K", "E-Modulus Pa", "Density", "k"])}
+          ${renderInputBlock("materials")}`;
         drawMaterials(state.plotData?.materials || [], "materials");
         drawMaterialTable(state.plotData?.materials || []);
       } else if (activeView === "construction" || activeView === "plystack") {
         content.innerHTML = `${plotShell("ply", "Ply Angle / Thickness")}
-          ${tableShell("ply-table", ["Node", "Angle deg", "Thickness m", "Connect"])}`;
+          ${tableShell("ply-table", ["Node", "Angle deg", "Thickness m", "Connect"])}
+          ${renderInputBlock("construction")}`;
         drawPly(state.plotData?.plyParams || [], "ply");
         drawPlyTable(state.plotData?.plyParams || []);
+      } else if (["realtime", "wlf", "contactprops", "loadsens", "tbcexport", "tgmexport"].includes(activeView)) {
+        content.innerHTML = `${renderInputBlock(activeView)}${renderValidationBlock()}${renderExportBlock()}`;
+      } else if (activeView === "validation") {
+        content.innerHTML = `${renderValidationBlock()}${renderExportBlock()}${metricHtml}`;
       } else {
-        content.innerHTML = `${metricHtml}${renderInputBlock(activeView)}${renderValidationBlock()}<div class="empty">${viewTitle(activeView)} is wired as a real clickable tab. Full editors are still being wired to the extracted ODS input model.</div>`;
+        content.innerHTML = `${metricHtml}${renderInputBlock(activeView)}${renderValidationBlock()}<div class="empty">${viewTitle(activeView)} has no additional data loaded yet.</div>`;
       }
     }
 
@@ -452,7 +461,9 @@
         wlf: "WLF",
         contactprops: "ContactProps",
         loadsens: "LoadSens",
-        tbcexport: "TBC"
+        tbcexport: "TBC",
+        tgmexport: "General",
+        validation: "General"
       };
       return map[view] || "General";
     }
@@ -479,6 +490,20 @@
         <tr><td>TGM without Lookup/Patch</td><td>${tgm.equal === true ? "yes" : "-"}</td><td>${tgm.candidate_lines ?? "-"}</td><td>${formatDiff(tgm.first_diff)}</td></tr>
         <tr><td>TBC</td><td>${tbc.equal === true ? "yes" : "-"}</td><td>${tbc.candidate_lines ?? "-"}</td><td>${formatDiff(tbc.first_diff)}</td></tr>
       </tbody></table></section>`;
+    }
+
+    function renderExportBlock() {
+      const generated = state.validation?.generated || {};
+      const tgmPath = generated.tgm?.path || "";
+      const tbcPath = generated.tbc?.path || "";
+      const rows = [
+        ["Mode", state.validation?.mode || "-"],
+        ["Fallback", state.validation?.fallbackOnError === true ? "enabled" : "disabled"],
+        ["Project", state.validation?.projectPath || "-"],
+        ["TGM", tgmPath],
+        ["TBC", tbcPath]
+      ].map(([label, value]) => `<tr><td>${label}</td><td>${escapeHtml(value)}</td></tr>`).join("");
+      return `<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Export</th><th>Path / Value</th></tr></thead><tbody>${rows}</tbody></table></section>`;
     }
 
     function formatDiff(diff) {
