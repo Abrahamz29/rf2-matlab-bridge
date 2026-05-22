@@ -4,6 +4,7 @@ arguments
     options.OdsPath (1,1) string = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY F1 1975 Front.ods")
     options.OutPath (1,1) string = fullfile("tmp", "tgm_gen_port", "inputs.json")
     options.Sheets string = ["General", "Geometry", "Construction", "Compound", "Realtime", "WLF", "ContactProps", "LoadSens", "Materials", "TBC"]
+    options.EditableOnly (1,1) logical = false
     options.PythonExe (1,1) string = ""
 end
 
@@ -13,9 +14,13 @@ if pythonExe == ""
 end
 
 sheetArgs = strjoin("""" + options.Sheets + """", " ");
+editableArg = "";
+if options.EditableOnly
+    editableArg = " --editable-only";
+end
 scriptPath = fullfile("tools", "tgm_gen_ods.py");
-command = sprintf('"%s" "%s" --ods "%s" extract-inputs --sheets %s --out "%s" --json', ...
-    pythonExe, scriptPath, options.OdsPath, sheetArgs, options.OutPath);
+command = sprintf('"%s" "%s" --ods "%s" extract-inputs --sheets %s --out "%s"%s --json', ...
+    pythonExe, scriptPath, options.OdsPath, sheetArgs, options.OutPath, editableArg);
 [status, output] = system(command);
 if status ~= 0
     error("rf2TgmGenExtractInputs:CommandFailed", "Input extraction failed:\n%s", output);

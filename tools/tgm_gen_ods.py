@@ -41,6 +41,8 @@ NS = {
     "chart": "urn:oasis:names:tc:opendocument:xmlns:chart:1.0",
     "svg": "urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0",
     "xlink": "http://www.w3.org/1999/xlink",
+    "style": "urn:oasis:names:tc:opendocument:xmlns:style:1.0",
+    "fo": "urn:oasis:names:tc:opendocument:xmlns:xsl-fo-compatible:1.0",
 }
 
 Q = {prefix: f"{{{uri}}}" for prefix, uri in NS.items()}
@@ -880,6 +882,69 @@ def load_named_ranges(ods: Path) -> dict[str, dict[str, str]]:
         end_sheet, end = parse_ref_endpoint(end_token, sheet)
         ranges[name] = {"sheet": sheet, "start": start, "end": end, "end_sheet": end_sheet}
     return ranges
+
+
+def load_cell_styles(ods: Path) -> dict[str, dict[str, str]]:
+    root = read_xml(ods, "content.xml")
+    styles: dict[str, dict[str, str]] = {}
+    for style in root.findall(".//style:style", NS):
+        name = attr(style, "style", "name")
+        if not name:
+            continue
+        props = style.find("style:table-cell-properties", NS)
+        styles[name] = {
+            "family": attr(style, "style", "family"),
+            "parentStyleName": attr(style, "style", "parent-style-name"),
+            "backgroundColor": attr(props, "fo", "background-color") if props is not None else "",
+            "border": attr(props, "fo", "border") if props is not None else "",
+            "borderBottom": attr(props, "fo", "border-bottom") if props is not None else "",
+            "borderLeft": attr(props, "fo", "border-left") if props is not None else "",
+            "borderRight": attr(props, "fo", "border-right") if props is not None else "",
+            "borderTop": attr(props, "fo", "border-top") if props is not None else "",
+            "wrapOption": attr(props, "fo", "wrap-option") if props is not None else "",
+        }
+    return styles
+
+
+def classify_input_cell(cell: FormulaCell, style: dict[str, str]) -> dict[str, Any]:
+    """Return a conservative editability hint for non-formula ODS project cells."""
+    background = style.get("backgroundColor", "")
+    has_stored_value = cell.value != ""
+    is_numeric_type = cell.value_type in {"float", "percentage", "currency", "date", "time", "boolean"}
+    short_text = "\n" not in cell.display and len(cell.display.strip()) <= 80
+
+    if background in {"#ccff00", "#ffff99", "#ffffcc", "#ffffff"}:
+        confidence = "high"
+        role = "colored-input"
+        reason = f"input-colored cell background {background}"
+    elif has_stored_value and background in {"transparent", ""}:
+        confidence = "medium"
+        role = "stored-value-input"
+        reason = "stored non-formula value in white/transparent cell"
+    elif has_stored_value and background == "#eeeeee":
+        confidence = "low"
+        role = "advanced-value"
+        reason = "stored non-formula value in grey advanced/workbook cell"
+    elif is_numeric_type and background in {"transparent", ""}:
+        confidence = "low"
+        role = "typed-empty-input"
+        reason = "typed non-formula cell in white/transparent area"
+    elif cell.value_type == "string" and background in {"transparent", ""} and short_text:
+        confidence = "possible"
+        role = "possible-string-input"
+        reason = "short string in white/transparent area; may be a label or dropdown text"
+    else:
+        confidence = "none"
+        role = "label-or-helper"
+        reason = "header, note, helper, or style not classified as editable"
+
+    return {
+        "inputRole": role,
+        "editableConfidence": confidence,
+        "isLikelyEditable": confidence in {"high", "medium", "low"},
+        "isPossibleInput": confidence in {"high", "medium", "low", "possible"},
+        "editableReason": reason,
+    }
 
 
 def refs_in_formula(formula: str, current_sheet: str) -> list[dict]:
@@ -1925,17 +1990,30 @@ def generate_exports(
     }
 
 
-def extract_input_model(ods: Path, sheets: list[str] | None = None, out_path: Path | None = None) -> dict:
+def extract_input_model(
+    ods: Path,
+    sheets: list[str] | None = None,
+    out_path: Path | None = None,
+    editable_only: bool = False,
+) -> dict:
     selected_sheets = sheets or DEFAULT_INPUT_SHEETS
     cells = load_formula_cells(ods)
+    styles = load_cell_styles(ods)
     inputs: list[dict[str, Any]] = []
     by_sheet: dict[str, int] = {}
+    confidence_counts: dict[str, int] = {}
+    background_counts: dict[str, int] = {}
     for cell in sorted(cells.values(), key=lambda item: (item.sheet, item.row, item.col)):
         if cell.sheet not in selected_sheets or cell.formula:
             continue
         if cell.display == "" and cell.value == "":
             continue
+        style = styles.get(cell.style_name, {})
+        classification = classify_input_cell(cell, style)
+        if editable_only and not classification["isLikelyEditable"]:
+            continue
         parsed = parse_scalar(cell.value if cell.value != "" else cell.display)
+        background = style.get("backgroundColor", "")
         record = {
             "sheet": cell.sheet,
             "address": cell.address,
@@ -1947,16 +2025,25 @@ def extract_input_model(ods: Path, sheets: list[str] | None = None, out_path: Pa
             "parsed": format_excel_scalar(parsed),
             "valueType": cell.value_type,
             "styleName": cell.style_name,
+            "style": style,
+            "backgroundColor": background,
+            **classification,
         }
         inputs.append(record)
         by_sheet[cell.sheet] = by_sheet.get(cell.sheet, 0) + 1
+        confidence = classification["editableConfidence"]
+        confidence_counts[confidence] = confidence_counts.get(confidence, 0) + 1
+        background_counts[background or "(none)"] = background_counts.get(background or "(none)", 0) + 1
     report = {
         "ods": str(ods),
         "sheets": selected_sheets,
+        "editable_only": editable_only,
         "input_count": len(inputs),
         "sheet_counts": dict(sorted(by_sheet.items())),
+        "editable_confidence_counts": dict(sorted(confidence_counts.items())),
+        "background_counts": dict(sorted(background_counts.items())),
         "inputs": inputs,
-        "note": "This is the current editable-project seed: non-formula populated cells from ODS input sheets. ODS color/style classification is preserved for later white-cell filtering.",
+        "note": "Project seed from non-formula populated cells on ODS input sheets. Style metadata and editability hints are included; use --editable-only for the conservative likely-editable subset.",
     }
     if out_path is not None:
         out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -2465,6 +2552,7 @@ def main() -> int:
     input_parser = subparsers.add_parser("extract-inputs", help="Extract non-formula ODS input cells as a project seed JSON")
     input_parser.add_argument("--sheets", nargs="*", default=DEFAULT_INPUT_SHEETS, help="Sheet names to include")
     input_parser.add_argument("--out", type=Path, default=Path("tmp/tgm_gen_port/inputs.json"))
+    input_parser.add_argument("--editable-only", action="store_true", help="Keep only cells classified as likely editable inputs")
     input_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
 
     compare_parser = subparsers.add_parser("compare", help="Compare two generated export files")
@@ -2498,7 +2586,7 @@ def main() -> int:
             project_path=args.project,
         )
     elif args.command == "extract-inputs":
-        report = extract_input_model(args.ods, sheets=args.sheets, out_path=args.out)
+        report = extract_input_model(args.ods, sheets=args.sheets, out_path=args.out, editable_only=args.editable_only)
     else:
         report = compare_files(args.reference, args.candidate, strip_lookup=args.strip_lookup)
 

@@ -51,8 +51,8 @@ Materialtabelle. Zusaetzlich kann die UI das ODS-Input-Modell laden, Werte in
 den Projektzellen tabweise bearbeiten und einen rekursiven
 `Generate From Inputs`-Lauf starten. Bearbeitete Inputs koennen als
 `tmp\tgm_gen_port_ui\inputs_from_ui.json` gespeichert und wieder geladen werden.
-Die Input-Tabellen haben Suche und Pagination, damit auch grosse Sheets wie
-`Compound` vollstaendig erreichbar bleiben.
+Die Input-Tabellen haben Suche, Pagination und einen `Likely editable`-Filter,
+damit auch grosse Sheets wie `Compound` vollstaendig erreichbar bleiben.
 Der dateigleiche Acceptance-Test bleibt als eigener Button vorhanden.
 
 ## Akzeptanztest
@@ -118,10 +118,20 @@ ODS-Eingabezellen als Projektmodell extrahieren:
   extract-inputs --out .\tmp\tgm_gen_port\inputs.json --json
 ```
 
+Der Extractor schreibt Style-Metadaten, Hintergrundfarbe, Eingaberolle und
+Editier-Vertrauen pro Zelle. Fuer eine konservative Eingabeliste:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
+  --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  extract-inputs --editable-only --out .\tmp\tgm_gen_port\inputs_editable.json --json
+```
+
 Aus MATLAB:
 
 ```matlab
 inputs = rf2TgmGenExtractInputs;
+editableInputs = rf2TgmGenExtractInputs("EditableOnly", true);
 ```
 
 Eine bearbeitete Projektdatei kann im rekursiven Modus wieder eingespeist
@@ -291,6 +301,8 @@ Implementiert:
   nur die bewusst ausgeschlossenen `LookupV2`-/`PatchV1`-Bloecke.
 - ODS-Input-Projektmodell via `extract-inputs` und MATLAB-Wrapper
   `rf2TgmGenExtractInputs`.
+- Style-/Farbklassifizierung fuer ODS-Eingabezellen inklusive
+  `--editable-only` und UI-Filter `Likely editable`.
 - Projekt-Override-Pfad fuer rekursive Generatorlaeufe (`--project`).
 - Regressionstest fuer unveraenderte Projektinputs: ODS -> `inputs.json` ->
   rekursiver Export bleibt dateigleich zur ODS-Referenz.

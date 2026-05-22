@@ -300,6 +300,7 @@
     let matlabComponent = null;
     let activeView = "overview";
     let inputFilter = "";
+    let editableOnlyFilter = false;
     const inputPages = {};
 
     function setup(htmlComponent) {
@@ -512,6 +513,7 @@
             <tr><td>LookupV2</td><td>${summary.lookupV2LineCount ?? 0} lines</td></tr>
             <tr><td>PatchV1</td><td>${summary.patchV1LineCount ?? 0} lines</td></tr>
             <tr><td>Inputs</td><td>${state.inputModel?.input_count ?? 0}</td></tr>
+            <tr><td>Editable hints</td><td>${formatConfidenceCounts(state.inputModel?.editable_confidence_counts)}</td></tr>
             <tr><td>Project</td><td>${escapeHtml(state.projectPath || "")}</td></tr>
             <tr><td>ODS charts</td><td>${state.chartReport?.chart_count ?? 0} / ${state.chartReport?.series_count ?? 0} series</td></tr>
             <tr><td>ODS test</td><td>${state.validation?.equal === true ? "pass" : (state.validation?.message || "not run")}</td></tr>
@@ -527,17 +529,19 @@
       const sheet = sheetForView(view);
       const allInputs = (model.inputs || []).map((item, index) => ({...item, index})).filter(item => item.sheet === sheet);
       const filter = inputFilter.trim().toLowerCase();
-      const filtered = filter ? allInputs.filter(item =>
+      const editableFiltered = editableOnlyFilter ? allInputs.filter(item => item.isLikelyEditable === true) : allInputs;
+      const filtered = filter ? editableFiltered.filter(item =>
         [item.address, item.display, item.value, item.parsed].some(value => String(value || "").toLowerCase().includes(filter))
-      ) : allInputs;
+      ) : editableFiltered;
       const pageSize = 160;
       const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
       const page = Math.min(inputPages[sheet] || 0, pageCount - 1);
       inputPages[sheet] = page;
       const inputs = filtered.slice(page * pageSize, (page + 1) * pageSize);
-      const inputRows = inputs.map(item => `<tr><td>${item.address}</td><td>${escapeHtml(item.display || "")}</td><td><input value="${escapeAttr(item.value || item.parsed || "")}" onchange="updateInputValue(${item.index}, this.value)" /></td></tr>`).join("");
+      const inputRows = inputs.map(item => `<tr><td>${item.address}</td><td>${escapeHtml(item.editableConfidence || "")}</td><td>${escapeHtml(item.inputRole || "")}</td><td>${escapeHtml(item.display || "")}</td><td><input value="${escapeAttr(item.value || item.parsed || "")}" onchange="updateInputValue(${item.index}, this.value)" /></td></tr>`).join("");
       const controls = `<div class="input-controls">
         <input value="${escapeAttr(inputFilter)}" placeholder="Filter cells" oninput="setInputFilter(this.value)" />
+        <label class="pill"><input type="checkbox" ${editableOnlyFilter ? "checked" : ""} onchange="setEditableOnlyFilter(this.checked)" style="width:auto;min-width:0;margin-right:6px" />Likely editable</label>
         <button type="button" onclick="changeInputPage('${sheet}', -1)">Prev</button>
         <button type="button" onclick="changeInputPage('${sheet}', 1)">Next</button>
         <span class="pill">Page ${page + 1} / ${pageCount}</span>
@@ -546,7 +550,7 @@
       </div>`;
       return `<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>ODS Input Sheet</th><th>Cells</th></tr></thead><tbody>${countRows}</tbody></table></section>
         ${controls}
-        <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>${sheet} Cell</th><th>ODS Display</th><th>Project Value</th></tr></thead><tbody>${inputRows || `<tr><td colspan="3">No extracted inputs for ${sheet}</td></tr>`}</tbody></table></section>`;
+        <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>${sheet} Cell</th><th>Confidence</th><th>Role</th><th>ODS Display</th><th>Project Value</th></tr></thead><tbody>${inputRows || `<tr><td colspan="5">No extracted inputs for ${sheet}</td></tr>`}</tbody></table></section>`;
     }
 
     function sheetForView(view) {
@@ -577,6 +581,12 @@
 
     function setInputFilter(value) {
       inputFilter = value || "";
+      Object.keys(inputPages).forEach(sheet => inputPages[sheet] = 0);
+      renderActiveView();
+    }
+
+    function setEditableOnlyFilter(value) {
+      editableOnlyFilter = value === true;
       Object.keys(inputPages).forEach(sheet => inputPages[sheet] = 0);
       renderActiveView();
     }
@@ -659,6 +669,14 @@
     function formatDiff(diff) {
       if (!diff) return "";
       return `L${diff.line}: ${diff.reference || ""} != ${diff.candidate || ""}`;
+    }
+
+    function formatConfidenceCounts(counts) {
+      if (!counts) return "";
+      return ["high", "medium", "low", "possible", "none"]
+        .filter(key => counts[key] !== undefined)
+        .map(key => `${key}:${counts[key]}`)
+        .join(" ");
     }
 
     function plotShell(id, title) {
