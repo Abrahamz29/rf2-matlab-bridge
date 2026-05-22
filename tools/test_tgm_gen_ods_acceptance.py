@@ -37,6 +37,19 @@ def run_acceptance(ods: Path, out_dir: Path, mode: str) -> dict:
     generated = tgm.generate_exports(ods, out_dir, mode=mode, fallback_on_error=False)
     tgm_compare = tgm.compare_files(out_dir / "reference_from_ods.tgm", out_dir / "generated.tgm", strip_lookup=True)
     tbc_compare = tgm.compare_files(out_dir / "reference_from_ods.tbc", out_dir / "generated.tbc", strip_lookup=False)
+
+    project_path = out_dir / "inputs.json"
+    project_out_dir = out_dir / "project_roundtrip"
+    project_inputs = tgm.extract_input_model(ods, out_path=project_path)
+    project_generated = tgm.generate_exports(
+        ods,
+        project_out_dir,
+        mode=mode,
+        fallback_on_error=False,
+        project_path=project_path,
+    )
+    project_tgm_compare = tgm.compare_files(out_dir / "reference_from_ods.tgm", project_out_dir / "generated.tgm", strip_lookup=True)
+    project_tbc_compare = tgm.compare_files(out_dir / "reference_from_ods.tbc", project_out_dir / "generated.tbc", strip_lookup=False)
     report = tgm.formula_report(
         ods,
         [
@@ -65,13 +78,32 @@ def run_acceptance(ods: Path, out_dir: Path, mode: str) -> dict:
         "mode": mode,
         "reference": reference["exports"],
         "generated": generated["outputs"],
+        "project_roundtrip": {
+            "inputs": {
+                "path": str(project_path),
+                "input_count": project_inputs["input_count"],
+                "sheet_counts": project_inputs["sheet_counts"],
+            },
+            "generated": project_generated["outputs"],
+            "override_count": project_generated["override_count"],
+            "tgm": project_tgm_compare,
+            "tbc": project_tbc_compare,
+            "passed": bool(project_tgm_compare["equal"] and project_tbc_compare["equal"]),
+        },
         "formula_count": report["formula_count"],
         "evaluated_count": report["evaluated_count"],
         "error_count": report["error_count"],
         "fallback_count": report["fallback_count"],
         "tgm": tgm_compare,
         "tbc": tbc_compare,
-        "passed": bool(tgm_compare["equal"] and tbc_compare["equal"] and report["error_count"] == 0 and report["fallback_count"] == 0),
+        "passed": bool(
+            tgm_compare["equal"]
+            and tbc_compare["equal"]
+            and project_tgm_compare["equal"]
+            and project_tbc_compare["equal"]
+            and report["error_count"] == 0
+            and report["fallback_count"] == 0
+        ),
     }
 
 
@@ -93,6 +125,7 @@ def main() -> int:
         print(f"fallback: {report['fallback_count']}")
         print(f"tgm_equal_without_lookup_patch: {report['tgm']['equal']}")
         print(f"tbc_equal: {report['tbc']['equal']}")
+        print(f"project_roundtrip: {report['project_roundtrip']['passed']}")
         print(f"passed: {report['passed']}")
     return 0 if report["passed"] else 1
 

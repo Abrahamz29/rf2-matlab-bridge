@@ -90,7 +90,10 @@ Als reproduzierbarer Regressionstest:
 ```
 
 Der Test erzeugt Referenz und Kandidat neu, prueft `.tgm`/`.tbc` und laesst
-den rekursiven Full-Sheet-Formelreport ohne Fallback laufen.
+den rekursiven Full-Sheet-Formelreport ohne Fallback laufen. Zusaetzlich
+extrahiert er die editierbaren Projektinputs in `inputs.json`, speist diese
+unveraendert wieder in den Generator ein und vergleicht auch diesen
+Projekt-Roundtrip gegen die ODS-Referenz.
 
 tTool-Vorbereitung aus MATLAB:
 
@@ -195,6 +198,8 @@ Aktueller rekursiver Exportstand:
 - `.tbc` ist rekursiv ohne Fallback textgleich zur ODS-Referenz.
 - `.tgm` ist rekursiv ohne Fallback textgleich zur ODS-Referenz, wenn nur
   `LookupV2` und `PatchV1` ausgeschlossen werden.
+- Der unveraenderte Projekt-Roundtrip aus 28.254 extrahierten ODS-Eingabezellen
+  erzeugt dieselben `.tgm`-/`.tbc`-Dateien wie der direkte ODS-Lauf.
 
 Projektdateien aus `extract-inputs` wirken im rekursiven Modus als
 Zell-Overrides. Damit ist der Pfad fuer editierbare Eingaben vorhanden; der
@@ -267,6 +272,8 @@ Implementiert:
 - ODS-Input-Projektmodell via `extract-inputs` und MATLAB-Wrapper
   `rf2TgmGenExtractInputs`.
 - Projekt-Override-Pfad fuer rekursive Generatorlaeufe (`--project`).
+- Regressionstest fuer unveraenderte Projektinputs: ODS -> `inputs.json` ->
+  rekursiver Export bleibt dateigleich zur ODS-Referenz.
 - Rekonstruktion der gespeicherten ODS-`.tgm`- und `.tbc`-Exporttexte.
 - TGM-Parser, Roundtrip-Writer ohne generated Lookup/Patch.
 - Plotdaten fuer Nodes, Materialien, TreadDepth und PlyParams.
