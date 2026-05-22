@@ -51,6 +51,8 @@ Materialtabelle. Zusaetzlich kann die UI das ODS-Input-Modell laden, Werte in
 den Projektzellen tabweise bearbeiten und einen rekursiven
 `Generate From Inputs`-Lauf starten. Bearbeitete Inputs koennen als
 `tmp\tgm_gen_port_ui\inputs_from_ui.json` gespeichert und wieder geladen werden.
+Die Input-Tabellen haben Suche und Pagination, damit auch grosse Sheets wie
+`Compound` vollstaendig erreichbar bleiben.
 Der dateigleiche Acceptance-Test bleibt als eigener Button vorhanden.
 
 ## Akzeptanztest
@@ -284,6 +286,7 @@ Implementiert:
 - Rekursive ODS-Chartdatenextraktion mit MATLAB-Wrapper `rf2TgmGenChartData`.
 - Moderne MATLAB-`uihtml`-App-Shell mit ersten Plots und Acceptance-Test-Button.
 - UI-Tabelle fuer extrahierte ODS-Eingabezellen mit `Generate From Inputs`.
+- UI-Suche und Pagination fuer alle extrahierten Eingabezellen.
 - UI-Projektpersistenz fuer bearbeitete Inputs (`Save Project` / `Load Project`).
 - UI-Behaviour-Plots fuer `Fy` ueber Schraeglaufwinkel, `Fx` ueber Slip Ratio
   und Kraftverlauf ueber Realtime-Testindex.

@@ -228,6 +228,18 @@
       border-radius: 50%;
       background: currentColor;
     }
+    .input-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin: 0 0 10px;
+    }
+    .input-controls input {
+      max-width: 280px;
+    }
+    .input-controls .spacer {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
@@ -287,6 +299,8 @@
     let state = null;
     let matlabComponent = null;
     let activeView = "overview";
+    let inputFilter = "";
+    const inputPages = {};
 
     function setup(htmlComponent) {
       matlabComponent = htmlComponent;
@@ -511,9 +525,27 @@
       const countRows = Object.keys(counts).map(sheet => `<tr><td>${sheet}</td><td>${counts[sheet]}</td></tr>`).join("");
       if (!countRows) return "";
       const sheet = sheetForView(view);
-      const inputs = (model.inputs || []).map((item, index) => ({...item, index})).filter(item => item.sheet === sheet).slice(0, 160);
+      const allInputs = (model.inputs || []).map((item, index) => ({...item, index})).filter(item => item.sheet === sheet);
+      const filter = inputFilter.trim().toLowerCase();
+      const filtered = filter ? allInputs.filter(item =>
+        [item.address, item.display, item.value, item.parsed].some(value => String(value || "").toLowerCase().includes(filter))
+      ) : allInputs;
+      const pageSize = 160;
+      const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+      const page = Math.min(inputPages[sheet] || 0, pageCount - 1);
+      inputPages[sheet] = page;
+      const inputs = filtered.slice(page * pageSize, (page + 1) * pageSize);
       const inputRows = inputs.map(item => `<tr><td>${item.address}</td><td>${escapeHtml(item.display || "")}</td><td><input value="${escapeAttr(item.value || item.parsed || "")}" onchange="updateInputValue(${item.index}, this.value)" /></td></tr>`).join("");
+      const controls = `<div class="input-controls">
+        <input value="${escapeAttr(inputFilter)}" placeholder="Filter cells" oninput="setInputFilter(this.value)" />
+        <button type="button" onclick="changeInputPage('${sheet}', -1)">Prev</button>
+        <button type="button" onclick="changeInputPage('${sheet}', 1)">Next</button>
+        <span class="pill">Page ${page + 1} / ${pageCount}</span>
+        <span class="pill">${filtered.length} / ${allInputs.length} cells</span>
+        <span class="spacer"></span>
+      </div>`;
       return `<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>ODS Input Sheet</th><th>Cells</th></tr></thead><tbody>${countRows}</tbody></table></section>
+        ${controls}
         <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>${sheet} Cell</th><th>ODS Display</th><th>Project Value</th></tr></thead><tbody>${inputRows || `<tr><td colspan="3">No extracted inputs for ${sheet}</td></tr>`}</tbody></table></section>`;
     }
 
@@ -541,6 +573,17 @@
       if (!state?.inputModel?.inputs?.[index]) return;
       state.inputModel.inputs[index].value = value;
       state.inputModel.inputs[index].parsed = value;
+    }
+
+    function setInputFilter(value) {
+      inputFilter = value || "";
+      Object.keys(inputPages).forEach(sheet => inputPages[sheet] = 0);
+      renderActiveView();
+    }
+
+    function changeInputPage(sheet, delta) {
+      inputPages[sheet] = Math.max(0, (inputPages[sheet] || 0) + delta);
+      renderActiveView();
     }
 
     function escapeHtml(value) {
