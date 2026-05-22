@@ -50,11 +50,14 @@ Die UI zeigt TGM-Zusammenfassung, Querschnitt, Materialpunkte, Materialtabelle,
 ODS-Inputmodell und Plotdaten. Das vollstaendige ODS-Input-Modell wird beim
 Start geladen: 28.254 Nichtformel-Zellen aus `General`, `Geometry`,
 `Construction`, `Compound`, `Realtime`, `WLF`, `ContactProps`, `LoadSens`,
-`Materials` und `TBC`. Die Input-Tabellen haben echte Sheet-Tabs, Suche,
-Pagination und einen optionalen `Likely editable`-Filter, damit auch grosse
-Sheets wie `Compound` vollstaendig erreichbar bleiben. Bearbeitete Inputs
-koennen als `tmp\tgm_gen_port_ui\inputs_from_ui.json` gespeichert, wieder
-geladen und mit `Generate From Inputs` rekursiv exportiert werden.
+`Materials` und `TBC`. Die Input-Ansicht nutzt echte Sheet-Tabs und eine
+ODS-artige Zeilen-/Spaltenmatrix, damit Eingaben, Labels und Hilfswerte in
+der gleichen Nachbarschaft wie in der Referenzdatei sichtbar bleiben. Suche,
+zeilenbasierte Pagination und der optionale `Likely editable`-Filter halten
+auch grosse Sheets wie `Compound` erreichbar; auf extrem breiten Seiten werden
+komplett leere Spaltengaps pro Zeilenseite komprimiert. Bearbeitete Inputs koennen als
+`tmp\tgm_gen_port_ui\inputs_from_ui.json` gespeichert, wieder geladen und mit
+`Generate From Inputs` rekursiv exportiert werden.
 Der dateigleiche Acceptance-Test und der Full-Sheet-Formelreport bleiben als
 eigene Buttons vorhanden.
 

@@ -133,6 +133,10 @@ def run_check() -> dict:
 
     for function_name in [
         "buildInputPresentation",
+        "renderInputSheetGrid",
+        "renderSheetCell",
+        "sheetCellStyle",
+        "columnName",
         "nearestLeftLabel",
         "nearestAboveLabel",
         "nearestSectionLabel",
@@ -141,12 +145,27 @@ def run_check() -> dict:
         if function_name not in function_names:
             errors.append(f"input presentation helper missing: {function_name}")
 
-    if "<th>Context</th><th>Parameter</th>" not in html:
-        errors.append("input table does not lead with context/parameter columns")
+    for class_name in [
+        "sheet-layout",
+        "sheet-grid",
+        "sheet-cell",
+        "sheet-col-header",
+        "sheet-row-header",
+        "sheet-cell-context",
+    ]:
+        if class_name not in html:
+            errors.append(f"spreadsheet input layout class missing: {class_name}")
+
+    if "<th>Context</th><th>Parameter</th>" in html:
+        errors.append("input UI still renders the old linear context/parameter table")
     if "<th>${sheet} Cell</th>" in html:
         errors.append("input table still leads with raw cell addresses")
-    if 'title="${escapeAttr(`${item.sheet}!${item.address}`)}"' not in html:
-        errors.append("input cell address is not preserved as tooltip")
+    if "`${item.sheet}!${item.address}`" not in html or 'title="${escapeAttr(title)}"' not in html:
+        errors.append("input cell address is not preserved in sheet-cell tooltip")
+    if "renderInputSheetGrid(sheet, visibleRows, columns, visibleInputs)" not in html:
+        errors.append("input block does not render the ODS-like sheet grid")
+    if "columnName(col)" not in html:
+        errors.append("spreadsheet input grid does not render Excel-style column labels")
 
     if "equalScale: true" not in html:
         errors.append("cross-section plot does not request equalScale: true")

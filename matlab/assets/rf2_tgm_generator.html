@@ -245,6 +245,117 @@
     .input-controls .spacer {
       flex: 1;
     }
+    .sheet-layout {
+      overflow: auto;
+      max-height: 66vh;
+      background: #0c0f12;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      margin-bottom: 14px;
+    }
+    .sheet-grid {
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+      min-width: max-content;
+    }
+    .sheet-grid th,
+    .sheet-grid td {
+      border-right: 1px solid #27313a;
+      border-bottom: 1px solid #27313a;
+      padding: 0;
+      text-align: left;
+      vertical-align: top;
+      white-space: normal;
+    }
+    .sheet-grid thead th {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      height: 26px;
+      padding: 4px 6px;
+      text-align: center;
+      background: #20262d;
+      color: var(--muted);
+      font-weight: 650;
+    }
+    .sheet-corner,
+    .sheet-row-header {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      width: 58px;
+      min-width: 58px;
+      max-width: 58px;
+      text-align: right !important;
+      background: #20262d;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .sheet-corner {
+      z-index: 5 !important;
+      text-align: center !important;
+    }
+    .sheet-col-header {
+      width: 128px;
+      min-width: 128px;
+      max-width: 128px;
+    }
+    .sheet-cell {
+      width: 128px;
+      min-width: 128px;
+      max-width: 128px;
+      height: 34px;
+      min-height: 34px;
+      background: #11161a;
+    }
+    .sheet-cell.empty {
+      background: #0b0e11;
+    }
+    .sheet-cell.input {
+      background: #101c24;
+      box-shadow: inset 0 0 0 1px rgba(79, 179, 255, 0.32);
+    }
+    .sheet-cell.label {
+      color: #d6dde5;
+    }
+    .sheet-cell.helper {
+      color: var(--muted);
+    }
+    .sheet-cell-inner {
+      display: grid;
+      gap: 3px;
+      min-height: 34px;
+      padding: 4px 5px;
+    }
+    .sheet-cell-context {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.15;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sheet-cell-text {
+      overflow: hidden;
+      color: inherit;
+      font-size: 12px;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sheet-cell input {
+      min-width: 0;
+      width: 100%;
+      height: 24px;
+      padding: 3px 5px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    .sheet-hint {
+      color: var(--muted);
+      margin: -2px 0 10px;
+    }
     .sheet-tabs {
       display: flex;
       flex-wrap: wrap;
@@ -632,49 +743,106 @@
     function renderInputBlock(view) {
       const model = state.inputModel || {};
       const counts = model.sheet_counts || {};
-      const countRows = Object.keys(counts).map(sheet => `<tr><td>${sheet}</td><td>${counts[sheet]}</td></tr>`).join("");
-      if (!countRows) return `<div class="empty" style="margin-bottom:14px">ODS input model is not loaded.</div>`;
+      if (!Object.keys(counts).length) return `<div class="empty" style="margin-bottom:14px">ODS input model is not loaded.</div>`;
       const sheet = sheetForView(view);
       const sheetTabs = renderInputSheetTabs(sheet);
       const allInputs = buildInputPresentation((model.inputs || []).map((item, index) => ({...item, index})).filter(item => item.sheet === sheet));
       const filter = inputFilter.trim().toLowerCase();
-      const editableFiltered = editableOnlyFilter ? allInputs.filter(item => item.isLikelyEditable === true) : allInputs;
-      const filtered = filter ? editableFiltered.filter(item =>
-        [item.address, item.contextLabel, item.parameterLabel, item.display, item.value, item.parsed].some(value => String(value || "").toLowerCase().includes(filter))
+      const editableFiltered = editableOnlyFilter ? allInputs.filter(item => item.isLikelyEditable === true || item.isPossibleInput === true) : allInputs;
+      const matchedCells = filter ? editableFiltered.filter(item =>
+        [item.address, item.contextLabel, item.parameterLabel, item.display, item.value, item.parsed, item.inputRole].some(value => String(value || "").toLowerCase().includes(filter))
       ) : editableFiltered;
-      const pageSize = 160;
-      const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
+      const matchedRows = [...new Set(matchedCells.map(item => Number(item.row)).filter(row => Number.isFinite(row)))].sort((a, b) => a - b);
+      const pageSize = 28;
+      const pageCount = Math.max(1, Math.ceil(matchedRows.length / pageSize));
       const page = Math.min(inputPages[sheet] || 0, pageCount - 1);
       inputPages[sheet] = page;
-      const inputs = filtered.slice(page * pageSize, (page + 1) * pageSize);
-      const inputRows = inputs.map(item => {
-        const projectValue = item.value !== undefined && item.value !== "" ? item.value : (item.parsed || "");
-        const canEdit = item.isPossibleInput === true;
-        const disabled = canEdit ? "" : "disabled";
-        return `<tr title="${escapeAttr(`${item.sheet}!${item.address}`)}">
-          <td>${escapeHtml(item.contextLabel || "")}</td>
-          <td>${escapeHtml(item.parameterLabel || "")}</td>
-          <td>${escapeHtml(item.editableConfidence || "")}</td>
-          <td>${escapeHtml(item.inputRole || "")}</td>
-          <td>${renderSwatch(item.backgroundColor)}</td>
-          <td>${escapeHtml(item.display || "")}</td>
-          <td>${escapeHtml(item.value || "")}</td>
-          <td><input value="${escapeAttr(projectValue)}" ${disabled} onchange="updateInputValue(${item.index}, this.value)" /></td>
-        </tr>`;
-      }).join("");
+      const visibleRows = matchedRows.slice(page * pageSize, (page + 1) * pageSize);
+      const visibleRowSet = new Set(visibleRows);
+      const visibleInputs = allInputs.filter(item => visibleRowSet.has(Number(item.row)));
+      const visibleCols = [...new Set(visibleInputs.map(item => Number(item.col)).filter(col => Number.isFinite(col)))].sort((a, b) => a - b);
+      const columns = [];
+      let compactColumns = false;
+      if (visibleCols.length) {
+        const minCol = Math.min(...visibleCols);
+        const maxCol = Math.max(...visibleCols);
+        const columnSpan = maxCol - minCol + 1;
+        compactColumns = columnSpan > 96;
+        if (compactColumns) {
+          columns.push(...visibleCols);
+        } else {
+          for (let col = minCol; col <= maxCol; col += 1) columns.push(col);
+        }
+      }
+      const rowStart = visibleRows.length ? visibleRows[0] : "-";
+      const rowEnd = visibleRows.length ? visibleRows[visibleRows.length - 1] : "-";
+      const sheetCellCount = counts[sheet] ?? allInputs.length;
       const controls = `<div class="input-controls">
         <input value="${escapeAttr(inputFilter)}" placeholder="Filter cells" oninput="setInputFilter(this.value)" />
         <label class="pill"><input type="checkbox" ${editableOnlyFilter ? "checked" : ""} onchange="setEditableOnlyFilter(this.checked)" style="width:auto;min-width:0;margin-right:6px" />Likely editable</label>
         <button type="button" onclick="changeInputPage('${sheet}', -1)">Prev</button>
         <button type="button" onclick="changeInputPage('${sheet}', 1)">Next</button>
-        <span class="pill">Page ${page + 1} / ${pageCount}</span>
-        <span class="pill">${filtered.length} / ${allInputs.length} cells</span>
+        <span class="pill">Rows page ${page + 1} / ${pageCount}</span>
+        <span class="pill">Rows ${rowStart}-${rowEnd}</span>
+        <span class="pill">${matchedCells.length} / ${sheetCellCount} cells</span>
         <span class="spacer"></span>
       </div>`;
       return `${sheetTabs}
-        <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>ODS Input Sheet</th><th>Cells</th></tr></thead><tbody>${countRows}</tbody></table></section>
         ${controls}
-        <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Context</th><th>Parameter</th><th>Confidence</th><th>Role</th><th>Background</th><th>ODS Display</th><th>Stored Value</th><th>Project Value</th></tr></thead><tbody>${inputRows || `<tr><td colspan="8">No extracted inputs for ${sheet}</td></tr>`}</tbody></table></section>`;
+        <p class="sheet-hint">${escapeHtml(sheet)} keeps the ODS row/column layout. Edit project values directly in highlighted cells; labels and helper values stay in their original neighborhood.${compactColumns ? " Empty column gaps are collapsed on this very wide row page." : ""}</p>
+        ${renderInputSheetGrid(sheet, visibleRows, columns, visibleInputs)}`;
+    }
+
+    function renderInputSheetGrid(sheet, rows, columns, inputs) {
+      if (!rows.length || !columns.length) return `<div class="empty" style="margin-bottom:14px">No extracted inputs for ${sheet}</div>`;
+      const byKey = new Map(inputs.map(item => [`${Number(item.row)}:${Number(item.col)}`, item]));
+      const header = `<tr><th class="sheet-corner">${escapeHtml(sheet)}</th>${columns.map(col => `<th class="sheet-col-header">${columnName(col)}</th>`).join("")}</tr>`;
+      const body = rows.map(row => `<tr><th class="sheet-row-header">${row}</th>${columns.map(col => renderSheetCell(byKey.get(`${row}:${col}`))).join("")}</tr>`).join("");
+      return `<section class="sheet-layout"><table class="sheet-grid"><thead>${header}</thead><tbody>${body}</tbody></table></section>`;
+    }
+
+    function renderSheetCell(item) {
+      if (!item) return `<td class="sheet-cell empty"></td>`;
+      const canEdit = item.isPossibleInput === true;
+      const roleClass = canEdit ? "input" : (item.inputRole === "label-or-helper" ? "label" : "helper");
+      const displayValue = item.display !== undefined && item.display !== "" ? item.display : (item.parsed !== undefined && item.parsed !== "" ? item.parsed : item.value || "");
+      const projectValue = item.value !== undefined && item.value !== "" ? item.value : (item.parsed || "");
+      const title = [
+        `${item.sheet}!${item.address}`,
+        item.contextLabel,
+        item.parameterLabel,
+        item.inputRole,
+        item.editableConfidence
+      ].filter(Boolean).join(" | ");
+      const style = sheetCellStyle(item.backgroundColor);
+      if (canEdit) {
+        const label = item.parameterLabel && item.parameterLabel !== displayValue ? item.parameterLabel : item.contextLabel;
+        return `<td class="sheet-cell ${roleClass}" title="${escapeAttr(title)}"${style}>
+          <div class="sheet-cell-inner">
+            <div class="sheet-cell-context">${escapeHtml(label || "")}</div>
+            <input value="${escapeAttr(projectValue)}" onchange="updateInputValue(${item.index}, this.value)" />
+          </div>
+        </td>`;
+      }
+      return `<td class="sheet-cell ${roleClass}" title="${escapeAttr(title)}"${style}>
+        <div class="sheet-cell-inner"><div class="sheet-cell-text">${escapeHtml(displayValue || "")}</div></div>
+      </td>`;
+    }
+
+    function sheetCellStyle(backgroundColor) {
+      const color = backgroundColor && backgroundColor !== "(none)" && backgroundColor !== "transparent" ? String(backgroundColor) : "";
+      return color ? ` style="border-left:3px solid ${escapeAttr(color)}"` : "";
+    }
+
+    function columnName(col) {
+      let n = Math.max(1, Number(col) || 1);
+      let name = "";
+      while (n > 0) {
+        n -= 1;
+        name = String.fromCharCode(65 + (n % 26)) + name;
+        n = Math.floor(n / 26);
+      }
+      return name;
     }
 
     function buildInputPresentation(items) {
