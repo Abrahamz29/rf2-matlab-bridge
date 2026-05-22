@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Analyze TGM Gen ODS fields needed for text outputs and mark unused inputs.
 
-The analysis traces the official ODS output targets:
+By default the analysis traces the final tyre-model target:
 - TGM text from Export column A up to About!D31 + 1.
-- TBC text from TBC column O.
+
+Use --target tgm-tbc to additionally keep fields that only affect TBC column O.
 
 It combines a static formula dependency walk, a dynamic recursive-evaluator
 trace, ODS content-validations/dropdown sources, and Basic macro references.
@@ -134,7 +135,7 @@ def expand_ref(ref: dict[str, Any]) -> set[CellKey]:
     return set()
 
 
-def export_targets(ods: Path, cells: dict[tuple[str, int, int], Any]) -> tuple[set[CellKey], dict[str, Any]]:
+def export_targets(ods: Path, cells: dict[tuple[str, int, int], Any], target_mode: str) -> tuple[set[CellKey], dict[str, Any]]:
     root = tgm.read_xml(ods, "content.xml")
     first_sheet = next(iter(tgm.iter_tables(root)))
     final_row_value = tgm.get_cell_display(first_sheet, 31, 4)
@@ -144,12 +145,16 @@ def export_targets(ods: Path, cells: dict[tuple[str, int, int], Any]) -> tuple[s
 
     targets = {CellKey("Export", row, 1) for row in range(1, export_row_count + 1)}
     tbc_rows = sorted(row for sheet, row, col in cells if sheet == "TBC" and col == 15)
-    targets.update(CellKey("TBC", row, 15) for row in tbc_rows)
+    if target_mode == "tgm-tbc":
+        targets.update(CellKey("TBC", row, 15) for row in tbc_rows)
     targets.add(CellKey("About", 31, 4))
 
     return targets, {
+        "target_mode": target_mode,
         "export_row_count": export_row_count,
-        "tbc_output_cells": len(tbc_rows),
+        "tgm_output_cells": export_row_count,
+        "tbc_output_cells": len(tbc_rows) if target_mode == "tgm-tbc" else 0,
+        "available_tbc_output_cells": len(tbc_rows),
         "target_count": len(targets),
     }
 
@@ -512,10 +517,10 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
             writer.writerow({field: row.get(field, "") for field in fields})
 
 
-def analyze(ods: Path, out_dir: Path) -> dict[str, Any]:
+def analyze(ods: Path, out_dir: Path, target_mode: str = "tgm") -> dict[str, Any]:
     cells = tgm.load_formula_cells(ods)
     named_ranges = tgm.load_named_ranges(ods)
-    targets, target_report = export_targets(ods, cells)
+    targets, target_report = export_targets(ods, cells, target_mode)
     static_required = static_dependency_walk(cells, named_ranges, targets)
     dynamic_required = dynamic_dependency_trace(ods, cells, targets)
     validations, validation_assignments = load_validations_and_cell_assignments(ods)
@@ -527,14 +532,15 @@ def analyze(ods: Path, out_dir: Path) -> dict[str, Any]:
     required |= validation_sources | material_dropdown_sources
 
     rows, mark_red = classify_fields(ods, cells, required, validations, validation_assignments)
-    marked_ods = out_dir / (ods.stem + " - unused-fields-red.ods")
+    marked_ods = out_dir / (ods.stem + f" - unused-fields-red-{target_mode}.ods")
     mark_report = mark_ods_copy(ods, marked_ods, mark_red)
 
-    field_csv = out_dir / "field_usage.csv"
+    field_csv = out_dir / f"field_usage_{target_mode}.csv"
     write_csv(field_csv, rows)
     summary = summarize(rows, required, targets, macro_refs)
     report = {
         "ods": str(ods),
+        "target_mode": target_mode,
         "marked_ods": str(marked_ods),
         "field_csv": str(field_csv),
         "targets": target_report,
@@ -559,9 +565,10 @@ def analyze(ods: Path, out_dir: Path) -> dict[str, Any]:
             "Formula cells are not colored red; they are internal calculation logic, not user input fields.",
             "Dropdown source ranges from output-relevant validated cells are preserved as required.",
             "LookupV2/PatchV1 generation remains outside this ODS output trace.",
+            "Use --target tgm-tbc when TBC-only setup fields should be preserved as output-relevant too.",
         ],
     }
-    report_path = out_dir / "field_analysis_report.json"
+    report_path = out_dir / f"field_analysis_report_{target_mode}.json"
     report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
     report["report_path"] = str(report_path)
     return report
@@ -571,9 +578,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ods", type=Path, default=DEFAULT_ODS)
     parser.add_argument("--out-dir", type=Path, default=DEFAULT_OUT_DIR)
+    parser.add_argument("--target", choices=["tgm", "tgm-tbc"], default="tgm", help="Output dependency target to preserve.")
     parser.add_argument("--json", action="store_true")
     args = parser.parse_args()
-    report = analyze(args.ods, args.out_dir)
+    report = analyze(args.ods, args.out_dir, target_mode=args.target)
     if args.json:
         print(json.dumps(report, indent=2, ensure_ascii=False))
     else:

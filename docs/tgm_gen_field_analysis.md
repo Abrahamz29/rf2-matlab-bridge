@@ -1,7 +1,8 @@
-# TGM Gen Field Analysis
+﻿# TGM Gen Field Analysis
 
-Dieses Werkzeug analysiert die offizielle Studio-397-TGM-Gen-ODS auf
-output-relevante Felder. Ziel ist eine Referenzkopie, in der nicht benoetigte
+Dieses Werkzeug analysiert die offizielle Studio-397-TGM-Gen-ODS auf Felder,
+die das finale Reifenmodell beeinflussen. Standard ist die `.tgm`-Ausgabe als
+finales Reifenmodell. Ziel ist eine Referenzkopie, in der nicht benoetigte
 Projekt-/Eingabefelder rot markiert sind.
 
 Ausgangsdatei:
@@ -19,15 +20,22 @@ Analyse ausfuehren:
 Erzeugt:
 
 ```text
-tmp\tgm_gen_field_analysis\TGM Gen V0.33 - GY F1 1975 Front - unused-fields-red.ods
-tmp\tgm_gen_field_analysis\field_analysis_report.json
-tmp\tgm_gen_field_analysis\field_usage.csv
+tmp\tgm_gen_field_analysis\TGM Gen V0.33 - GY F1 1975 Front - unused-fields-red-tgm.ods
+tmp\tgm_gen_field_analysis\field_analysis_report_tgm.json
+tmp\tgm_gen_field_analysis\field_usage_tgm.csv
+```
+
+Wenn auch `.tbc`-only Felder als output-relevant gelten sollen:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\analyze_tgm_gen_fields.py --target tgm-tbc --json
 ```
 
 ## Methode
 
 - Zielzellen sind `Export!A:A` bis `About!D31 + 1` fuer die `.tgm`-Ausgabe
-  und `TBC!O:O` fuer die `.tbc`-Ausgabe.
+  (`--target tgm`). Mit `--target tgm-tbc` kommt `TBC!O:O` fuer die `.tbc`-
+  Ausgabe hinzu.
 - Die vorhandene rekursive Formula-Engine wird dynamisch getraced.
 - Zusaetzlich laeuft ein statischer Dependency-Walk ueber alle Formelreferenzen,
   damit auch nicht aktuell aktive `IF`-Aeste sichtbar bleiben.
@@ -45,7 +53,8 @@ werden nicht rot markiert, weil sie interne Rechenlogik sind.
 
 ## Aktueller Stand
 
-Beim letzten Lauf wurden `3415` unbenoetigte input-artige Felder rot markiert.
+Beim letzten TGM-only-Lauf wurden `3544` unbenoetigte input-artige Felder rot
+markiert. Beim kombinierten `.tgm`+`.tbc`-Lauf waren es `3415`.
 Die markierte Kopie ist ZIP/XML-valide und erzeugt dieselben Exporttexte wie
 das Original:
 
