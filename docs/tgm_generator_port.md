@@ -408,6 +408,9 @@ Implementiert:
   Achse, damit Hoehe/Breite physikalisch plausibel bleiben.
 - Gurtellagen-Plot mit getrenntem `plyIndex` je Node; die BFGoodrich-Referenz
   enthaelt 277 Ply-Zeilen und maximal 6 Lagen.
+- Gurtellagen-Overlay im Reifenquerschnitt: `plyCrossSection` kombiniert
+  Node-Geometrie und kumulierte Ply-Dicken, damit die Layer direkt wie in der
+  ODS ueber dem Querschnitt sichtbar sind.
 - tTool-Vorbereitung aus MATLAB und UI: gepruefte `.tgm`/`.tbc` nach `pTool`
   kopieren.
 

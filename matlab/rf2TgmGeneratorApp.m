@@ -171,6 +171,7 @@ encoded.summary = plotData.summary;
 encoded.geometry = localTableToRecords(plotData.geometry);
 encoded.treadDepth = localTableToRecords(plotData.treadDepth);
 encoded.plyParams = localTableToRecords(plotData.plyParams);
+encoded.plyCrossSection = localTableToRecords(plotData.plyCrossSection);
 encoded.materials = localTableToRecords(plotData.materials);
 end
 

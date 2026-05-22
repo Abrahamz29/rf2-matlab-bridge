@@ -22,6 +22,7 @@ plyNodeIndex = P.nodeIndex(plyRows);
 plyIndex = localLayerIndexByNode(plyNodeIndex);
 plotData.plyParams = table(plyNodeIndex, plyIndex, ply(:, 1), ply(:, 2), ply(:, 3), ...
     'VariableNames', {'nodeIndex', 'plyIndex', 'angleDeg', 'thicknessM', 'connectFlag'});
+plotData.plyCrossSection = localBuildPlyCrossSection(plotData.geometry, plotData.plyParams);
 
 materialRows = P.section == "Node" & ismember(P.key, ["BulkMaterial", "TreadMaterial", "PlyMaterial"]);
 material = localRowsToMatrix(P(materialRows, :), 7);
@@ -34,6 +35,7 @@ plotData.summary = model.summary;
 plotData.summary.maxPlyLayers = localMaxOrZero(plyIndex);
 plotData.summary.plyNodesWithLayers = numel(unique(plyNodeIndex(~isnan(plyNodeIndex))));
 plotData.summary.plyLayerDistribution = localLayerDistribution(plyNodeIndex);
+plotData.summary.plyCrossSectionRows = height(plotData.plyCrossSection);
 end
 
 function matrix = localRowsToMatrix(rows, width)
@@ -84,5 +86,65 @@ for node = reshape(nodes, 1, [])
         distribution.(field) = 0;
     end
     distribution.(field) = distribution.(field) + 1;
+end
+end
+
+function layerTable = localBuildPlyCrossSection(geometry, plyParams)
+if isempty(geometry) || isempty(plyParams)
+    layerTable = table([], [], [], [], [], [], [], ...
+        'VariableNames', {'nodeIndex', 'plyIndex', 'x', 'y', 'angleDeg', 'thicknessM', 'offsetM'});
+    return;
+end
+
+geometry = sortrows(geometry, "nodeIndex");
+plyParams = sortrows(plyParams, ["nodeIndex", "plyIndex"]);
+points = [geometry.x, geometry.y];
+center = mean(points, 1, "omitnan");
+normal = localInwardNormals(points, center);
+
+rows = {};
+for nodeRow = 1:height(geometry)
+    node = geometry.nodeIndex(nodeRow);
+    layerRows = find(plyParams.nodeIndex == node);
+    cumulativeThickness = 0;
+    for rowIndex = reshape(layerRows, 1, [])
+        thickness = plyParams.thicknessM(rowIndex);
+        if isnan(thickness)
+            thickness = 0;
+        end
+        offset = cumulativeThickness + 0.5 * thickness;
+        xy = points(nodeRow, :) + normal(nodeRow, :) * offset;
+        rows(end + 1, :) = {node, plyParams.plyIndex(rowIndex), xy(1), xy(2), ...
+            plyParams.angleDeg(rowIndex), thickness, offset}; %#ok<AGROW>
+        cumulativeThickness = cumulativeThickness + thickness;
+    end
+end
+
+if isempty(rows)
+    layerTable = table([], [], [], [], [], [], [], ...
+        'VariableNames', {'nodeIndex', 'plyIndex', 'x', 'y', 'angleDeg', 'thicknessM', 'offsetM'});
+else
+    layerTable = cell2table(rows, ...
+        'VariableNames', {'nodeIndex', 'plyIndex', 'x', 'y', 'angleDeg', 'thicknessM', 'offsetM'});
+end
+end
+
+function normal = localInwardNormals(points, center)
+normal = nan(size(points));
+count = size(points, 1);
+for index = 1:count
+    prevIndex = max(index - 1, 1);
+    nextIndex = min(index + 1, count);
+    tangent = points(nextIndex, :) - points(prevIndex, :);
+    if norm(tangent) == 0
+        tangent = [1, 0];
+    end
+    candidate = [tangent(2), -tangent(1)];
+    candidate = candidate ./ max(norm(candidate), eps);
+    toCenter = center - points(index, :);
+    if dot(candidate, toCenter) < 0
+        candidate = -candidate;
+    end
+    normal(index, :) = candidate;
 end
 end

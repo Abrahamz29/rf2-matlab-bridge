@@ -124,9 +124,12 @@ def run_check() -> dict:
         if label not in html:
             errors.append(f"missing plot axis label: {label}")
 
-    for function_name in ["makePlotFrame", "drawAxes", "drawLegend", "drawPlyThickness"]:
+    for function_name in ["makePlotFrame", "drawAxes", "drawLegend", "drawPlyThickness", "drawPlyCrossSection"]:
         if function_name not in function_names:
             errors.append(f"plot helper function missing: {function_name}")
+
+    if "state.plotData?.plyCrossSection || []" not in html:
+        errors.append("cross-section plot does not receive plyCrossSection data")
 
     for function_name in [
         "buildInputPresentation",
@@ -153,9 +156,9 @@ def run_check() -> dict:
     )
     if expected_geometry_call not in html:
         errors.append("cross-section plot does not use swapped X/Y labels")
-    if "const xs = points.map(p => Number(p.x));" not in html:
+    if "points.map(p => Number(p.x)).concat" not in html:
         errors.append("cross-section x-axis does not use Geometry.x")
-    if "const ys = points.map(p => Number(p.y));" not in html:
+    if "points.map(p => Number(p.y)).concat" not in html:
         errors.append("cross-section y-axis does not use Geometry.y")
 
     for function_name in sorted(EXPECTED_INLINE_FUNCTIONS):
