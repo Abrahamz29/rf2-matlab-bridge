@@ -74,6 +74,30 @@ try
             state.inputModel.loaded = true;
             state.message = "Loaded ODS input model.";
             html.Data = state;
+        case "generateFromInputs"
+            state = localBuildState(string(data.inputPath));
+            projectPath = fullfile("tmp", "tgm_gen_port_ui", "inputs_from_ui.json");
+            if ~isfolder(fileparts(projectPath))
+                mkdir(fileparts(projectPath));
+            end
+            projectText = jsonencode(data.inputModel);
+            fid = fopen(projectPath, "w");
+            if fid < 0
+                error("rf2TgmGeneratorApp:ProjectWriteFailed", "Could not write %s", projectPath);
+            end
+            cleanup = onCleanup(@() fclose(fid));
+            fwrite(fid, projectText, "char");
+            clear cleanup
+            state.inputModel = data.inputModel;
+            state.validation = rf2TgmGenGenerate( ...
+                "OdsPath", string(data.odsPath), ...
+                "OutDir", fullfile("tmp", "tgm_gen_port_ui"), ...
+                "Mode", "recursive", ...
+                "FallbackOnError", true, ...
+                "ProjectPath", projectPath);
+            state.message = "Generated from UI input model.";
+            state.status = "generated";
+            html.Data = state;
         otherwise
             html.Data = struct("kind", "error", "message", "Unknown command: " + string(data.command));
     end

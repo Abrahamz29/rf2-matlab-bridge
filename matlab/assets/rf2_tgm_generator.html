@@ -64,6 +64,16 @@
       border-color: var(--accent);
       color: var(--text);
     }
+    input {
+      width: 100%;
+      min-width: 90px;
+      background: #0c0f12;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 5px 7px;
+      font: inherit;
+    }
     .pill {
       color: var(--muted);
       border: 1px solid var(--line);
@@ -228,6 +238,7 @@
       <span class="pill warn">LookupV2/PatchV1: tTool required</span>
       <div class="toolbar">
         <button id="inputs-button" type="button">Load ODS Inputs</button>
+        <button id="generate-inputs-button" type="button">Generate From Inputs</button>
         <button id="acceptance-button" type="button">Run Acceptance</button>
         <button id="reload-button" type="button">Reload</button>
         <button id="ping-button" type="button">Ping MATLAB</button>
@@ -328,6 +339,17 @@
           };
         }
       });
+      document.getElementById("generate-inputs-button").addEventListener("click", () => {
+        if (matlabComponent && state?.inputModel?.inputs?.length) {
+          setStatus("generating from ODS inputs");
+          matlabComponent.Data = {
+            command: "generateFromInputs",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods",
+            inputModel: state.inputModel
+          };
+        }
+      });
     }
 
     function render() {
@@ -408,9 +430,45 @@
     function renderInputBlock(view) {
       const model = state.inputModel || {};
       const counts = model.sheet_counts || {};
-      const rows = Object.keys(counts).map(sheet => `<tr><td>${sheet}</td><td>${counts[sheet]}</td></tr>`).join("");
-      if (!rows) return "";
-      return `<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>ODS Input Sheet</th><th>Cells</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+      const countRows = Object.keys(counts).map(sheet => `<tr><td>${sheet}</td><td>${counts[sheet]}</td></tr>`).join("");
+      if (!countRows) return "";
+      const sheet = sheetForView(view);
+      const inputs = (model.inputs || []).map((item, index) => ({...item, index})).filter(item => item.sheet === sheet).slice(0, 160);
+      const inputRows = inputs.map(item => `<tr><td>${item.address}</td><td>${escapeHtml(item.display || "")}</td><td><input value="${escapeAttr(item.value || item.parsed || "")}" onchange="updateInputValue(${item.index}, this.value)" /></td></tr>`).join("");
+      return `<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>ODS Input Sheet</th><th>Cells</th></tr></thead><tbody>${countRows}</tbody></table></section>
+        <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>${sheet} Cell</th><th>ODS Display</th><th>Project Value</th></tr></thead><tbody>${inputRows || `<tr><td colspan="3">No extracted inputs for ${sheet}</td></tr>`}</tbody></table></section>`;
+    }
+
+    function sheetForView(view) {
+      const map = {
+        overview: "General",
+        geometry: "Geometry",
+        crosssection: "Geometry",
+        construction: "Construction",
+        plystack: "Construction",
+        materials: "Materials",
+        materialcurves: "Materials",
+        realtime: "Realtime",
+        wlf: "WLF",
+        contactprops: "ContactProps",
+        loadsens: "LoadSens",
+        tbcexport: "TBC"
+      };
+      return map[view] || "General";
+    }
+
+    function updateInputValue(index, value) {
+      if (!state?.inputModel?.inputs?.[index]) return;
+      state.inputModel.inputs[index].value = value;
+      state.inputModel.inputs[index].parsed = value;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/\n/g, " ");
     }
 
     function renderValidationBlock() {
