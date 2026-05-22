@@ -107,6 +107,24 @@ Projekt-Roundtrip gegen die ODS-Referenz. Der Test prueft ausserdem die
 Style-/Editierklassifizierung, die ODS-Chartdatenextraktion und die strukturierte
 Materialbibliothek.
 
+tTool direkt nach einem erfolgreichen Acceptance-Lauf vorbereiten:
+
+```powershell
+.\tools\Invoke-TgmGenAcceptance.ps1 -PrepareTTool
+```
+
+Das kopiert die streng geprueften `generated.tgm` und `generated.tbc` als
+`generated_from_matlab.tgm` und `generated_from_matlab.tbc` nach `pTool` und
+verifiziert Quelle und Ziel per SHA256. Fuer isolierte Kopiertests oder
+abweichende Installationspfade:
+
+```powershell
+.\tools\Copy-TgmGenToPTool.ps1 `
+  -GeneratedDir .\tmp\tgm_gen_acceptance_test `
+  -PToolDir "C:\Program Files (x86)\Steam\steamapps\common\rFactor 2\pTool" `
+  -OutputBaseName generated_from_matlab
+```
+
 tTool-Vorbereitung aus MATLAB:
 
 ```matlab
@@ -346,6 +364,9 @@ Implementiert:
 - Regressionstest fuer strukturierte ODS-Materialbibliothek.
 - PowerShell-Runner `tools\Invoke-TgmGenAcceptance.ps1` fuer den kompletten
   Acceptance-Gate.
+- PowerShell-Runneroption `-PrepareTTool` und separates
+  `tools\Copy-TgmGenToPTool.ps1` mit SHA256-Verifikation fuer die
+  tTool-Uebergabe.
 - LibreOffice/UNO-Diagnose fuer dynamische ODS-Recalc-Vergleiche
   (`diagnose_tgm_gen_lo_dynamic.py`); lokal nicht als Acceptance-Golden nutzbar,
   weil Calc nach Recalc `#WERT!` in Exportzellen schreibt.
@@ -373,5 +394,6 @@ Noch offen:
 - Eine externe dynamische Golden Reference nach Eingabeaenderungen. Der lokale
   LibreOffice-Recalc ist diagnostiziert, aber wegen `#WERT!`-Exportwerten nicht
   als harte Referenz geeignet.
-- Vollstaendige Nachrechnung aller ODS-Chart-Serien als MATLAB-Plotdaten.
-- Vollstaendige Editier- und Exportoberflaeche.
+- UI-Feinschliff fuer eine vollstaendige Facharbeitsoberflaeche: Validierungs-
+  und Komfortfunktionen sind erweiterbar, der dateigleiche Rechen-/Exportkern
+  bleibt dabei das harte Gate.

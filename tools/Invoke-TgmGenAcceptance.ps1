@@ -5,7 +5,10 @@ param(
     [ValidateSet("recursive", "cached")]
     [string]$Mode = "recursive",
     [string]$ReportPath = "tmp/tgm_gen_acceptance_test_report.json",
-    [string]$PythonExe = ""
+    [string]$PythonExe = "",
+    [switch]$PrepareTTool,
+    [string]$PToolDir = (Join-Path ${env:ProgramFiles(x86)} "Steam/steamapps/common/rFactor 2/pTool"),
+    [string]$OutputBaseName = "generated_from_matlab"
 )
 
 $ErrorActionPreference = "Stop"
@@ -46,6 +49,14 @@ try {
 
     if (-not $report.passed) {
         throw "TGM Generator acceptance failed."
+    }
+
+    if ($PrepareTTool) {
+        $copyScript = Join-Path $PSScriptRoot "Copy-TgmGenToPTool.ps1"
+        & $copyScript `
+            -GeneratedDir $OutDir `
+            -PToolDir $PToolDir `
+            -OutputBaseName $OutputBaseName
     }
 }
 finally {
