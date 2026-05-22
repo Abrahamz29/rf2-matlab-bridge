@@ -1,0 +1,56 @@
+# TGM Gen Field Analysis
+
+Dieses Werkzeug analysiert die offizielle Studio-397-TGM-Gen-ODS auf
+output-relevante Felder. Ziel ist eine Referenzkopie, in der nicht benoetigte
+Projekt-/Eingabefelder rot markiert sind.
+
+Ausgangsdatei:
+
+```text
+tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods
+```
+
+Analyse ausfuehren:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\analyze_tgm_gen_fields.py --json
+```
+
+Erzeugt:
+
+```text
+tmp\tgm_gen_field_analysis\TGM Gen V0.33 - GY F1 1975 Front - unused-fields-red.ods
+tmp\tgm_gen_field_analysis\field_analysis_report.json
+tmp\tgm_gen_field_analysis\field_usage.csv
+```
+
+## Methode
+
+- Zielzellen sind `Export!A:A` bis `About!D31 + 1` fuer die `.tgm`-Ausgabe
+  und `TBC!O:O` fuer die `.tbc`-Ausgabe.
+- Die vorhandene rekursive Formula-Engine wird dynamisch getraced.
+- Zusaetzlich laeuft ein statischer Dependency-Walk ueber alle Formelreferenzen,
+  damit auch nicht aktuell aktive `IF`-Aeste sichtbar bleiben.
+- ODS-Content-Validations werden geparst. Dropdown-Quellen bleiben erhalten.
+- Material-Dropdowns werden besonders behandelt: komplette Materialdatenbloecke
+  hinter `MaterialList*` bleiben als benoetigt markiert, weil eine andere
+  Dropdown-Auswahl diese Daten zum Output machen kann.
+- Basic/VBA-Makros werden gelesen. `SaveTGM` wird fuer Dateipfade und Export-
+  Reichweite beruecksichtigt (`About!P28`, `About!P29`, `About!D31`,
+  `General!I47`).
+
+Rot markiert werden nur nicht-formula Eingabe-/Projektfelder auf den
+Haupt-Input-Sheets, die nicht im Output-Dependency-Set liegen. Formelzellen
+werden nicht rot markiert, weil sie interne Rechenlogik sind.
+
+## Aktueller Stand
+
+Beim letzten Lauf wurden `3415` unbenoetigte input-artige Felder rot markiert.
+Die markierte Kopie ist ZIP/XML-valide und erzeugt dieselben Exporttexte wie
+das Original:
+
+- `.tgm`: textgleich ohne `LookupV2`/`PatchV1`
+- `.tbc`: textgleich
+
+LibreOffice war auf dem PATH nicht verfuegbar; die Validierung laeuft daher
+ueber ODS-ZIP/XML-Pruefung und Exporttextvergleich.
