@@ -93,6 +93,12 @@ Als reproduzierbarer Regressionstest:
 & "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\test_tgm_gen_ods_acceptance.py --json
 ```
 
+Oder als Windows-Runner mit kompaktem Konsolenstatus:
+
+```powershell
+.\tools\Invoke-TgmGenAcceptance.ps1
+```
+
 Der Test erzeugt Referenz und Kandidat neu, prueft `.tgm`/`.tbc` und laesst
 den rekursiven Full-Sheet-Formelreport ohne Fallback laufen. Zusaetzlich
 extrahiert er die editierbaren Projektinputs in `inputs.json`, speist diese
@@ -338,6 +344,8 @@ Implementiert:
   rekursiver Export bleibt dateigleich zur ODS-Referenz.
 - Regressionstest fuer ODS-Chart-Inventar und ausgewertete Chartdaten.
 - Regressionstest fuer strukturierte ODS-Materialbibliothek.
+- PowerShell-Runner `tools\Invoke-TgmGenAcceptance.ps1` fuer den kompletten
+  Acceptance-Gate.
 - LibreOffice/UNO-Diagnose fuer dynamische ODS-Recalc-Vergleiche
   (`diagnose_tgm_gen_lo_dynamic.py`); lokal nicht als Acceptance-Golden nutzbar,
   weil Calc nach Recalc `#WERT!` in Exportzellen schreibt.
