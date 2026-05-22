@@ -105,7 +105,9 @@ extrahiert er die editierbaren Projektinputs in `inputs.json`, speist diese
 unveraendert wieder in den Generator ein und vergleicht auch diesen
 Projekt-Roundtrip gegen die ODS-Referenz. Der Test prueft ausserdem die
 Style-/Editierklassifizierung, die ODS-Chartdatenextraktion und die strukturierte
-Materialbibliothek.
+Materialbibliothek. Danach laeuft ein statischer UI-Smoke-Test, der die
+Toolbar-Buttons, JavaScript-Kommandos, MATLAB-Handler-Cases, Tabs und Inline-
+Handler auf Konsistenz prueft.
 
 tTool direkt nach einem erfolgreichen Acceptance-Lauf vorbereiten:
 
@@ -367,6 +369,8 @@ Implementiert:
 - PowerShell-Runneroption `-PrepareTTool` und separates
   `tools\Copy-TgmGenToPTool.ps1` mit SHA256-Verifikation fuer die
   tTool-Uebergabe.
+- Statischer UI-Smoke-Test `tools\test_tgm_generator_ui_static.py`, eingebunden
+  in `tools\Invoke-TgmGenAcceptance.ps1`.
 - LibreOffice/UNO-Diagnose fuer dynamische ODS-Recalc-Vergleiche
   (`diagnose_tgm_gen_lo_dynamic.py`); lokal nicht als Acceptance-Golden nutzbar,
   weil Calc nach Recalc `#WERT!` in Exportzellen schreibt.

@@ -333,6 +333,8 @@
         if (matlabComponent && state?.inputPath) {
           setStatus("reloading " + state.inputPath);
           matlabComponent.Data = { command: "loadTgm", path: state.inputPath };
+        } else {
+          setStatus("no TGM path loaded");
         }
       });
       document.getElementById("ping-button").addEventListener("click", () => {
@@ -401,6 +403,8 @@
             odsPath: state?.odsPath || "tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods",
             inputModel: state.inputModel
           };
+        } else {
+          setStatus("load ODS inputs before saving a project");
         }
       });
       document.getElementById("load-project-button").addEventListener("click", () => {
@@ -422,6 +426,8 @@
             odsPath: state?.odsPath || "tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods",
             inputModel: state.inputModel
           };
+        } else {
+          setStatus("load ODS inputs before generating from project values");
         }
       });
     }

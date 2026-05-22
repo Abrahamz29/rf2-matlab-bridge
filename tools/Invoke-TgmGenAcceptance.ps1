@@ -5,6 +5,7 @@ param(
     [ValidateSet("recursive", "cached")]
     [string]$Mode = "recursive",
     [string]$ReportPath = "tmp/tgm_gen_acceptance_test_report.json",
+    [string]$UiReportPath = "tmp/tgm_generator_ui_static_report.json",
     [string]$PythonExe = "",
     [switch]$PrepareTTool,
     [string]$PToolDir = (Join-Path ${env:ProgramFiles(x86)} "Steam/steamapps/common/rFactor 2/pTool"),
@@ -49,6 +50,20 @@ try {
 
     if (-not $report.passed) {
         throw "TGM Generator acceptance failed."
+    }
+
+    $uiReportParent = Split-Path -Parent $UiReportPath
+    if ($uiReportParent -and -not (Test-Path -LiteralPath $uiReportParent)) {
+        New-Item -ItemType Directory -Force -Path $uiReportParent | Out-Null
+    }
+    $uiOutput = & $PythonExe "tools/test_tgm_generator_ui_static.py" --json
+    $uiOutput | Set-Content -LiteralPath $UiReportPath -Encoding UTF8
+    $uiReport = $uiOutput | ConvertFrom-Json
+    Write-Host ("UI static smoke: {0}, buttons={1}, tabs={2}" -f $uiReport.passed, $uiReport.button_count, $uiReport.tab_count)
+    Write-Host ("UI report: {0}" -f (Resolve-Path $UiReportPath))
+
+    if (-not $uiReport.passed) {
+        throw "TGM Generator UI static smoke failed."
     }
 
     if ($PrepareTTool) {
