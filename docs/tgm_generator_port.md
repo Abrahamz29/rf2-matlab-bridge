@@ -92,6 +92,18 @@ Als reproduzierbarer Regressionstest:
 Der Test erzeugt Referenz und Kandidat neu, prueft `.tgm`/`.tbc` und laesst
 den rekursiven Full-Sheet-Formelreport ohne Fallback laufen.
 
+tTool-Vorbereitung aus MATLAB:
+
+```matlab
+addpath("matlab")
+prep = rf2TgmPrepareTTool;
+disp(prep.targetTgm)
+```
+
+Das erzeugt die geprueften Dateien neu und kopiert `generated_from_matlab.tgm`
+und `generated_from_matlab.tbc` in den rFactor-2-`pTool`-Ordner. `LookupV2` und
+`PatchV1` werden danach weiterhin in tTool erzeugt.
+
 ODS-Eingabezellen als Projektmodell extrahieren:
 
 ```powershell
@@ -216,6 +228,8 @@ Implementiert:
 - UI-Tabelle fuer extrahierte ODS-Eingabezellen mit `Generate From Inputs`.
 - UI-Behaviour-Plots fuer `Fy` ueber Schraeglaufwinkel, `Fx` ueber Slip Ratio
   und Kraftverlauf ueber Realtime-Testindex.
+- tTool-Vorbereitung aus MATLAB und UI: gepruefte `.tgm`/`.tbc` nach `pTool`
+  kopieren.
 
 Noch offen:
 

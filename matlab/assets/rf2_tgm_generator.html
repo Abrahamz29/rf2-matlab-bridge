@@ -240,6 +240,7 @@
         <button id="inputs-button" type="button">Load ODS Inputs</button>
         <button id="generate-inputs-button" type="button">Generate From Inputs</button>
         <button id="acceptance-button" type="button">Run Acceptance</button>
+        <button id="prepare-ttool-button" type="button">Prepare tTool</button>
         <button id="reload-button" type="button">Reload</button>
         <button id="ping-button" type="button">Ping MATLAB</button>
       </div>
@@ -324,6 +325,16 @@
           setStatus("running ODS acceptance");
           matlabComponent.Data = {
             command: "runAcceptance",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods"
+          };
+        }
+      });
+      document.getElementById("prepare-ttool-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("preparing tTool files");
+          matlabComponent.Data = {
+            command: "prepareTTool",
             inputPath: state?.inputPath || "",
             odsPath: state?.odsPath || "tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods"
           };
@@ -525,7 +536,10 @@
         ["Fallback", state.validation?.fallbackOnError === true ? "enabled" : "disabled"],
         ["Project", state.validation?.projectPath || "-"],
         ["TGM", tgmPath],
-        ["TBC", tbcPath]
+        ["TBC", tbcPath],
+        ["pTool TGM", state.ttool?.targetTgm || "-"],
+        ["pTool TBC", state.ttool?.targetTbc || "-"],
+        ["tTool launched", state.ttool?.launched === true ? "yes" : "no"]
       ].map(([label, value]) => `<tr><td>${label}</td><td>${escapeHtml(value)}</td></tr>`).join("");
       return `<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Export</th><th>Path / Value</th></tr></thead><tbody>${rows}</tbody></table></section>`;
     }

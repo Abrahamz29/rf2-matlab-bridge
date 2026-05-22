@@ -33,6 +33,7 @@ state.plotData = struct();
 state.behaviour = localEncodeBehaviourData(rf2TgmBehaviourPlotData);
 state.odsPath = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY F1 1975 Front.ods");
 state.validation = struct("available", true, "message", "Acceptance test not run.");
+state.ttool = struct("available", true, "message", "Not prepared.");
 state.inputModel = struct("loaded", false, "input_count", 0, "sheet_counts", struct());
 
 if inputPath ~= "" && isfile(inputPath)
@@ -68,6 +69,14 @@ try
                 state.message = "ODS acceptance test failed.";
                 state.status = "validation failed";
             end
+            html.Data = state;
+        case "prepareTTool"
+            state = localBuildState(string(data.inputPath));
+            state.status = "preparing tTool";
+            state.ttool = rf2TgmPrepareTTool("OdsPath", string(data.odsPath));
+            state.validation = state.ttool.validation;
+            state.message = "Prepared tTool files.";
+            state.status = "tTool ready";
             html.Data = state;
         case "loadOdsInputs"
             state = localBuildState(string(data.inputPath));
