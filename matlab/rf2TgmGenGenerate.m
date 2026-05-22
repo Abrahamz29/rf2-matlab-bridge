@@ -5,6 +5,7 @@ arguments
     options.OutDir (1,1) string = fullfile("tmp", "tgm_gen_port")
     options.Mode (1,1) string {mustBeMember(options.Mode, ["cached", "recursive"])} = "cached"
     options.FallbackOnError (1,1) logical = false
+    options.ProjectPath (1,1) string = ""
     options.PythonExe (1,1) string = ""
 end
 
@@ -18,6 +19,9 @@ localRunJson(pythonExe, scriptPath, options.OdsPath, "export-reference", ["--out
 generateArgs = ["--out-dir", options.OutDir, "--mode", options.Mode];
 if options.FallbackOnError
     generateArgs(end + 1) = "--fallback-on-error";
+end
+if options.ProjectPath ~= ""
+    generateArgs(end + 1:end + 2) = ["--project", options.ProjectPath];
 end
 generateReport = localRunJson(pythonExe, scriptPath, options.OdsPath, "generate", generateArgs);
 
@@ -35,6 +39,7 @@ report.odsPath = options.OdsPath;
 report.outDir = options.OutDir;
 report.mode = options.Mode;
 report.fallbackOnError = options.FallbackOnError;
+report.projectPath = options.ProjectPath;
 report.generated = generateReport.outputs;
 report.tgm = tgmCompare;
 report.tbc = tbcCompare;

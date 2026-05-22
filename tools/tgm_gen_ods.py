@@ -1788,7 +1788,13 @@ def export_reference(ods: Path, out_dir: Path) -> dict:
     return report
 
 
-def generate_exports(ods: Path, out_dir: Path, mode: str = "cached", fallback_on_error: bool = False) -> dict:
+def generate_exports(
+    ods: Path,
+    out_dir: Path,
+    mode: str = "cached",
+    fallback_on_error: bool = False,
+    project_path: Path | None = None,
+) -> dict:
     root = read_xml(ods, "content.xml")
     first_sheet = next(iter(iter_tables(root)))
     final_row_value = get_cell_display(first_sheet, 31, 4)
@@ -1797,7 +1803,8 @@ def generate_exports(ods: Path, out_dir: Path, mode: str = "cached", fallback_on
     export_row_count = int(float(final_row_value)) + 1
 
     cells = load_formula_cells(ods)
-    evaluator = make_evaluator(ods, cells, mode, fallback_on_error=fallback_on_error)
+    overrides = load_project_overrides(project_path)
+    evaluator = make_evaluator(ods, cells, mode, overrides=overrides, fallback_on_error=fallback_on_error)
 
     tgm_lines = evaluated_first_column_lines(cells, evaluator, "Export", export_row_count)
     tbc_lines = evaluated_column_lines(cells, evaluator, "TBC", 15, skip_header="Output")
@@ -1813,6 +1820,8 @@ def generate_exports(ods: Path, out_dir: Path, mode: str = "cached", fallback_on
         "fallback_on_error": fallback_on_error,
         "fallback_count": getattr(evaluator, "fallback_count", 0),
         "fallback_cells": getattr(evaluator, "fallback_cells", []),
+        "project_path": str(project_path) if project_path else "",
+        "override_count": len(overrides),
         "outputs": {
             "tgm": {"path": str(tgm_path), "line_count": len(tgm_lines), "source_sheet": "Export"},
             "tbc": {"path": str(tbc_path), "line_count": len(tbc_lines), "source_sheet": "TBC", "source_column": "O"},
@@ -1858,6 +1867,24 @@ def extract_input_model(ods: Path, sheets: list[str] | None = None, out_path: Pa
         out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
         report["path"] = str(out_path)
     return report
+
+
+def load_project_overrides(project_path: Path | None) -> dict[tuple[str, int, int], Any]:
+    if project_path is None:
+        return {}
+    data = json.loads(project_path.read_text(encoding="utf-8-sig"))
+    overrides: dict[tuple[str, int, int], Any] = {}
+    for record in data.get("inputs", []):
+        sheet = str(record.get("sheet", ""))
+        address = str(record.get("address", ""))
+        if not sheet or not address:
+            continue
+        row, col = a1_to_row_col(address)
+        value = record.get("value", "")
+        if value == "":
+            value = record.get("parsed", record.get("formulaValue", record.get("display", "")))
+        overrides[(sheet, row, col)] = parse_scalar(str(value))
+    return overrides
 
 
 def strip_generated_lookup_blocks(text: str) -> str:
@@ -1966,9 +1993,11 @@ def formula_report(
     sample_limit: int = 12,
     mode: str = "cached",
     fallback_on_error: bool = False,
+    project_path: Path | None = None,
 ) -> dict:
     cells = load_formula_cells(ods)
-    evaluator = make_evaluator(ods, cells, mode, fallback_on_error=fallback_on_error)
+    overrides = load_project_overrides(project_path)
+    evaluator = make_evaluator(ods, cells, mode, overrides=overrides, fallback_on_error=fallback_on_error)
     implemented = implemented_formula_functions()
     selected = [
         cell
@@ -2059,6 +2088,8 @@ def formula_report(
         "fallback_on_error": fallback_on_error,
         "fallback_count": getattr(evaluator, "fallback_count", 0),
         "fallback_cells": getattr(evaluator, "fallback_cells", []),
+        "project_path": str(project_path) if project_path else "",
+        "override_count": len(overrides),
         "sheets": sheets,
         "formula_count": len(selected),
         "supported_formula_count": sum(report["supported_formula_count"] for report in sheet_reports.values()),
@@ -2094,12 +2125,14 @@ def main() -> int:
     generate_parser.add_argument("--out-dir", type=Path, default=Path("tmp/tgm_gen_port"))
     generate_parser.add_argument("--mode", choices=["cached", "recursive"], default="cached", help="Formula evaluator mode")
     generate_parser.add_argument("--fallback-on-error", action="store_true", help="Recursive mode: use stored ODS value for unresolved dependency edges")
+    generate_parser.add_argument("--project", type=Path, default=None, help="Input project JSON produced by extract-inputs")
     generate_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
 
     formula_parser = subparsers.add_parser("formula-report", help="Evaluate supported formulas against stored ODS values")
     formula_parser.add_argument("--sheets", nargs="*", default=["General", "Realtime", "Materials"], help="Sheet names to include")
     formula_parser.add_argument("--mode", choices=["cached", "recursive"], default="cached", help="Formula evaluator mode")
     formula_parser.add_argument("--fallback-on-error", action="store_true", help="Recursive mode: use stored ODS value for unresolved dependency edges")
+    formula_parser.add_argument("--project", type=Path, default=None, help="Input project JSON produced by extract-inputs")
     formula_parser.add_argument("--tolerance", type=float, default=1e-9)
     formula_parser.add_argument("--sample-limit", type=int, default=12)
     formula_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
@@ -2124,7 +2157,7 @@ def main() -> int:
     elif args.command == "export-reference":
         report = export_reference(args.ods, args.out_dir)
     elif args.command == "generate":
-        report = generate_exports(args.ods, args.out_dir, mode=args.mode, fallback_on_error=args.fallback_on_error)
+        report = generate_exports(args.ods, args.out_dir, mode=args.mode, fallback_on_error=args.fallback_on_error, project_path=args.project)
     elif args.command == "formula-report":
         report = formula_report(
             args.ods,
@@ -2133,6 +2166,7 @@ def main() -> int:
             sample_limit=args.sample_limit,
             mode=args.mode,
             fallback_on_error=args.fallback_on_error,
+            project_path=args.project,
         )
     elif args.command == "extract-inputs":
         report = extract_input_model(args.ods, sheets=args.sheets, out_path=args.out)

@@ -5,6 +5,7 @@ arguments
     options.Sheets string = ["General", "Realtime", "Materials"]
     options.Mode (1,1) string {mustBeMember(options.Mode, ["cached", "recursive"])} = "cached"
     options.FallbackOnError (1,1) logical = false
+    options.ProjectPath (1,1) string = ""
     options.PythonExe (1,1) string = ""
 end
 
@@ -19,8 +20,12 @@ fallbackArg = "";
 if options.FallbackOnError
     fallbackArg = " --fallback-on-error";
 end
-command = sprintf('"%s" "%s" --ods "%s" formula-report --sheets %s --mode %s%s --json', ...
-    pythonExe, scriptPath, options.OdsPath, sheetArgs, options.Mode, fallbackArg);
+projectArg = "";
+if options.ProjectPath ~= ""
+    projectArg = " --project """ + options.ProjectPath + """";
+end
+command = sprintf('"%s" "%s" --ods "%s" formula-report --sheets %s --mode %s%s%s --json', ...
+    pythonExe, scriptPath, options.OdsPath, sheetArgs, options.Mode, fallbackArg, projectArg);
 [status, output] = system(command);
 if status ~= 0
     error("rf2TgmGenFormulaReport:CommandFailed", "Formula report failed:\n%s", output);

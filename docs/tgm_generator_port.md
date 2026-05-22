@@ -95,6 +95,17 @@ Aus MATLAB:
 inputs = rf2TgmGenExtractInputs;
 ```
 
+Eine bearbeitete Projektdatei kann im rekursiven Modus wieder eingespeist
+werden:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
+  --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  generate --out-dir .\tmp\tgm_gen_port_edit `
+  --mode recursive --fallback-on-error `
+  --project .\tmp\tgm_gen_port\inputs.json --json
+```
+
 ## Formel-Harness
 
 Der aktuelle Port kann die ODS-Formeln inventarisieren, Zellabhaengigkeiten
@@ -149,6 +160,11 @@ uebergangsweise einzelne unresolved dependency edges auf gespeicherte ODS-Werte
 zurueckfallen lassen. Der dateigleiche finale Export bleibt aktuell bewusst im
 validierten `cached`-Modus.
 
+Projektdateien aus `extract-inputs` wirken im rekursiven Modus als
+Zell-Overrides. Damit ist der Pfad fuer editierbare Eingaben vorhanden; die
+vollstaendige Dateigleichheit nach beliebigen Edits haengt noch an den
+verbleibenden rekursiven Fallback-Kanten und ODS-Iterationsstellen.
+
 ## Status
 
 Implementiert:
@@ -165,6 +181,7 @@ Implementiert:
   `CUBSPLINE` inklusive Numerical-Recipes-Spline und monotonem `SplineX3`.
 - ODS-Input-Projektmodell via `extract-inputs` und MATLAB-Wrapper
   `rf2TgmGenExtractInputs`.
+- Projekt-Override-Pfad fuer rekursive Generatorlaeufe (`--project`).
 - Rekonstruktion der gespeicherten ODS-`.tgm`- und `.tbc`-Exporttexte.
 - TGM-Parser, Roundtrip-Writer ohne generated Lookup/Patch.
 - Plotdaten fuer Nodes, Materialien, TreadDepth und PlyParams.
