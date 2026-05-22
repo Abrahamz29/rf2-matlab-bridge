@@ -266,6 +266,7 @@
         <div class="tab" data-view="materialcurves">Material Curves</div>
         <div class="tab" data-view="plystack">Ply Stack</div>
         <div class="tab" data-view="behaviour">Behaviour</div>
+        <div class="tab" data-view="odscharts">ODS Charts</div>
       </div>
     </nav>
     <main>
@@ -387,6 +388,7 @@
         ["Nodes", summary.nodeCount],
         ["Material Rows", summary.materialRows],
         ["Ply Rows", summary.plyParamRows],
+        ["ODS Charts", state.chartReport?.chart_count],
         ["Lookup Lines", `${summary.lookupV2LineCount || 0} / ${summary.patchV1LineCount || 0}`]
       ];
       const metricHtml = `<div class="grid">${metrics.map(([label, value]) =>
@@ -434,6 +436,11 @@
         drawScatter(state.behaviour?.records || [], "longforce", "slipRatioPct", "longForceN", "#f0b85a");
         drawForceHistory(state.behaviour?.records || [], "forcehistory");
         drawBehaviourTable(state.behaviour?.records || []);
+      } else if (activeView === "odscharts") {
+        content.innerHTML = `${renderChartSummary()}
+          ${tableShell("chart-table", ["Object", "Title", "Class", "Series", "Sheets"])}
+          ${tableShell("chart-series-table", ["Chart", "Series", "Values", "Label", "Domain"])}`;
+        drawChartTables(state.chartReport || {});
       } else if (["realtime", "wlf", "contactprops", "loadsens", "tbcexport", "tgmexport"].includes(activeView)) {
         content.innerHTML = `${renderInputBlock(activeView)}${renderValidationBlock()}${renderExportBlock()}`;
       } else if (activeView === "validation") {
@@ -454,6 +461,7 @@
             <tr><td>LookupV2</td><td>${summary.lookupV2LineCount ?? 0} lines</td></tr>
             <tr><td>PatchV1</td><td>${summary.patchV1LineCount ?? 0} lines</td></tr>
             <tr><td>Inputs</td><td>${state.inputModel?.input_count ?? 0}</td></tr>
+            <tr><td>ODS charts</td><td>${state.chartReport?.chart_count ?? 0} / ${state.chartReport?.series_count ?? 0} series</td></tr>
             <tr><td>ODS test</td><td>${state.validation?.equal === true ? "pass" : (state.validation?.message || "not run")}</td></tr>
           </tbody>
         </table>`;
@@ -525,6 +533,19 @@
         <div class="metric"><div class="value">${fmt(summary.maxVerticalForceN)}</div><div class="label">Max |Fz| N</div></div>
       </div>
       <section class="table-panel" style="margin-bottom:14px"><table><tbody><tr><td>Source</td><td>${escapeHtml(behaviour.path || "")}</td></tr></tbody></table></section>`;
+    }
+
+    function renderChartSummary() {
+      const report = state.chartReport || {};
+      const sheetCounts = report.sheet_series_counts || {};
+      const sheetRows = Object.keys(sheetCounts).map(sheet => `<tr><td>${sheet}</td><td>${sheetCounts[sheet]}</td></tr>`).join("");
+      return `<div class="grid">
+        <div class="metric"><div class="value">${report.loaded ? "yes" : "no"}</div><div class="label">ODS Chart Report</div></div>
+        <div class="metric"><div class="value">${report.chart_count ?? 0}</div><div class="label">Charts</div></div>
+        <div class="metric"><div class="value">${report.series_count ?? 0}</div><div class="label">Series</div></div>
+        <div class="metric"><div class="value">${Object.keys(sheetCounts).length}</div><div class="label">Source Sheets</div></div>
+      </div>
+      <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Sheet</th><th>Series</th></tr></thead><tbody>${sheetRows}</tbody></table></section>`;
     }
 
     function renderExportBlock() {
@@ -685,6 +706,23 @@
       document.getElementById("behaviour-table").innerHTML = rows.slice(0, 300).map(r =>
         `<tr><td>${fmt(r.testIndex)}</td><td>${fmt(r.slipAngleDeg)}</td><td>${fmt(r.slipRatioPct)}</td><td>${fmt(r.verticalForceN)}</td><td>${fmt(r.longForceN)}</td><td>${fmt(r.latForceN)}</td><td>${fmt(r.aligningTorqueNm)}</td></tr>`
       ).join("");
+    }
+
+    function drawChartTables(report) {
+      const charts = report.charts || [];
+      const chartTable = document.getElementById("chart-table");
+      if (chartTable) {
+        chartTable.innerHTML = charts.map(chart =>
+          `<tr><td>${escapeHtml(chart.object || "")}</td><td>${escapeHtml(chart.title || "(untitled)")}</td><td>${escapeHtml(chart.class || "")}</td><td>${chart.seriesCount ?? 0}</td><td>${escapeHtml(Object.keys(chart.sheets || {}).join(", "))}</td></tr>`
+        ).join("");
+      }
+      const seriesTable = document.getElementById("chart-series-table");
+      if (seriesTable) {
+        const rows = charts.flatMap(chart => (chart.series || []).map(series => ({ chart, series }))).slice(0, 220);
+        seriesTable.innerHTML = rows.map(({ chart, series }) =>
+          `<tr><td>${escapeHtml(chart.title || chart.object || "")}</td><td>${series.index}</td><td>${escapeHtml(series.values?.raw || "")}</td><td>${escapeHtml(series.label?.raw || "")}</td><td>${escapeHtml((series.domains || []).map(item => item.raw).join(", "))}</td></tr>`
+        ).join("");
+      }
     }
 
     function extent(values) {

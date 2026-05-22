@@ -200,6 +200,33 @@ Projektdateien aus `extract-inputs` wirken im rekursiven Modus als
 Zell-Overrides. Damit ist der Pfad fuer editierbare Eingaben vorhanden; der
 freie rekursive Export bleibt der Standardpfad.
 
+## ODS-Chart-Abdeckung
+
+Die eingebetteten Diagramme der offiziellen ODS werden aus den `Object */content.xml`
+Chart-Dateien inventarisiert. Der Report liefert Titel, Diagrammklasse,
+Serienanzahl und die exakten ODS-Quellbereiche pro Serie.
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
+  --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  chart-report --json
+```
+
+Aus MATLAB:
+
+```matlab
+charts = rf2TgmGenChartReport;
+disp(charts.chart_count)
+```
+
+Aktueller Stand fuer die offizielle Beispiel-ODS:
+
+- 12 eingebettete ODS-Charts.
+- 79 Datenserien.
+- Quellbereiche aus `Geometry`, `Construction`, `Compound`, `WLF`,
+  `ContactProps`, `LoadSens` und `TBC`.
+- Die UI zeigt diese Chart-Coverage im Tab `ODS Charts`.
+
 ## Status
 
 Implementiert:
@@ -224,6 +251,8 @@ Implementiert:
 - TGM-Parser, Roundtrip-Writer ohne generated Lookup/Patch.
 - Plotdaten fuer Nodes, Materialien, TreadDepth und PlyParams.
 - Behaviour-Plotdaten aus dem neuesten tTool `CustomRealtimeTable.csv`.
+- ODS-Chart-Inventory mit Serien-/Quellbereichsauswertung und MATLAB-Wrapper
+  `rf2TgmGenChartReport`.
 - Moderne MATLAB-`uihtml`-App-Shell mit ersten Plots und Acceptance-Test-Button.
 - UI-Tabelle fuer extrahierte ODS-Eingabezellen mit `Generate From Inputs`.
 - UI-Behaviour-Plots fuer `Fy` ueber Schraeglaufwinkel, `Fx` ueber Slip Ratio
@@ -235,5 +264,5 @@ Noch offen:
 
 - Zellwert-Golden-Tests gegen dynamisch neu berechnete ODS-Werte nach
   Eingabeaenderungen.
-- Vollstaendige Plotdatenabdeckung aller ODS-Charts.
+- Vollstaendige Nachrechnung aller ODS-Chart-Serien als MATLAB-Plotdaten.
 - Vollstaendige Editier- und Exportoberflaeche.

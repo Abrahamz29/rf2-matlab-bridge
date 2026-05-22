@@ -32,6 +32,7 @@ state.summary = struct();
 state.plotData = struct();
 state.behaviour = localEncodeBehaviourData(rf2TgmBehaviourPlotData);
 state.odsPath = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY F1 1975 Front.ods");
+state.chartReport = localLoadChartReport(state.odsPath);
 state.validation = struct("available", true, "message", "Acceptance test not run.");
 state.ttool = struct("available", true, "message", "Not prepared.");
 state.inputModel = struct("loaded", false, "input_count", 0, "sheet_counts", struct());
@@ -149,5 +150,18 @@ for row = 1:numel(records)
         end
         records(row).(field) = value;
     end
+end
+end
+
+function report = localLoadChartReport(odsPath)
+try
+    report = rf2TgmGenChartReport("OdsPath", string(odsPath));
+    report.loaded = true;
+catch exception
+    report = struct();
+    report.loaded = false;
+    report.message = string(exception.message);
+    report.chart_count = 0;
+    report.series_count = 0;
 end
 end

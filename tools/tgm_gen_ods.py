@@ -39,6 +39,8 @@ NS = {
     "table": "urn:oasis:names:tc:opendocument:xmlns:table:1.0",
     "text": "urn:oasis:names:tc:opendocument:xmlns:text:1.0",
     "chart": "urn:oasis:names:tc:opendocument:xmlns:chart:1.0",
+    "svg": "urn:oasis:names:tc:opendocument:xmlns:svg-compatible:1.0",
+    "xlink": "http://www.w3.org/1999/xlink",
 }
 
 Q = {prefix: f"{{{uri}}}" for prefix, uri in NS.items()}
@@ -1963,6 +1965,128 @@ def extract_input_model(ods: Path, sheets: list[str] | None = None, out_path: Pa
     return report
 
 
+def address_report(address: str, default_sheet: str = "") -> dict[str, Any]:
+    cleaned = address.replace("$", "").strip()
+    if cleaned == "":
+        return {"raw": address}
+    try:
+        parsed = parse_ref_token(cleaned, default_sheet)
+        report: dict[str, Any] = {"raw": address, **parsed}
+        if parsed["type"] == "cell":
+            row, col = a1_to_row_col(parsed["address"])
+            report["row"] = row
+            report["col"] = col
+        else:
+            start_row, start_col = a1_to_row_col(parsed["start"])
+            end_row, end_col = a1_to_row_col(parsed["end"])
+            report["startRow"] = start_row
+            report["startCol"] = start_col
+            report["endRow"] = end_row
+            report["endCol"] = end_col
+            report["rowCount"] = abs(end_row - start_row) + 1
+            report["colCount"] = abs(end_col - start_col) + 1
+            report["cellCount"] = report["rowCount"] * report["colCount"]
+        return report
+    except ValueError:
+        return {"raw": address, "parseError": True}
+
+
+def chart_member_sort_key(member: str) -> tuple[int, str]:
+    match = re.match(r"Object\s+(\d+)/", member)
+    if match:
+        return int(match.group(1)), member
+    return sys.maxsize, member
+
+
+def element_text(element: ET.Element | None) -> str:
+    if element is None:
+        return ""
+    return " ".join(part.strip() for part in element.itertext() if part.strip())
+
+
+def inspect_charts(ods: Path) -> dict:
+    charts: list[dict[str, Any]] = []
+    with ZipFile(ods) as zf:
+        members = sorted(
+            (name for name in zf.namelist() if name.startswith("Object ") and name.endswith("/content.xml")),
+            key=chart_member_sort_key,
+        )
+        for member in members:
+            root = ET.fromstring(zf.read(member))
+            for chart_index, chart in enumerate(root.findall(".//chart:chart", NS), start=1):
+                title = element_text(chart.find("chart:title", NS))
+                plot_area = chart.find("chart:plot-area", NS)
+                plot_range = attr(plot_area, "table", "cell-range-address") if plot_area is not None else ""
+                series_reports: list[dict[str, Any]] = []
+                sheet_counts: dict[str, int] = {}
+                for series_index, series in enumerate(chart.findall(".//chart:series", NS), start=1):
+                    values_range = attr(series, "chart", "values-cell-range-address")
+                    label_address = attr(series, "chart", "label-cell-address")
+                    attached_axis = attr(series, "chart", "attached-axis")
+                    default_sheet = ""
+                    if values_range:
+                        values_meta = address_report(values_range)
+                        default_sheet = str(values_meta.get("sheet", ""))
+                    else:
+                        values_meta = {"raw": values_range}
+                    label_meta = address_report(label_address, default_sheet) if label_address else {"raw": label_address}
+                    domain_reports = [
+                        address_report(attr(domain, "table", "cell-range-address"), default_sheet)
+                        for domain in series.findall("chart:domain", NS)
+                        if attr(domain, "table", "cell-range-address") != ""
+                    ]
+                    sheet = str(values_meta.get("sheet", ""))
+                    if sheet:
+                        sheet_counts[sheet] = sheet_counts.get(sheet, 0) + 1
+                    series_reports.append(
+                        {
+                            "index": series_index,
+                            "class": attr(series, "chart", "class"),
+                            "values": values_meta,
+                            "label": label_meta,
+                            "domains": domain_reports,
+                            "attachedAxis": attached_axis,
+                        }
+                    )
+
+                charts.append(
+                    {
+                        "object": member.split("/", 1)[0],
+                        "member": member,
+                        "index": chart_index,
+                        "title": title,
+                        "class": attr(chart, "chart", "class"),
+                        "width": attr(chart, "svg", "width"),
+                        "height": attr(chart, "svg", "height"),
+                        "plotRange": address_report(plot_range) if plot_range else {"raw": plot_range},
+                        "seriesCount": len(series_reports),
+                        "sheets": dict(sorted(sheet_counts.items())),
+                        "series": series_reports,
+                    }
+                )
+
+    title_counts: dict[str, int] = {}
+    class_counts: dict[str, int] = {}
+    sheet_counts: dict[str, int] = {}
+    for chart in charts:
+        title = chart["title"] or "(untitled)"
+        title_counts[title] = title_counts.get(title, 0) + 1
+        chart_class = chart["class"] or "(unknown)"
+        class_counts[chart_class] = class_counts.get(chart_class, 0) + 1
+        for sheet, count in chart["sheets"].items():
+            sheet_counts[sheet] = sheet_counts.get(sheet, 0) + count
+
+    return {
+        "ods": str(ods),
+        "chart_count": len(charts),
+        "series_count": sum(chart["seriesCount"] for chart in charts),
+        "title_counts": dict(sorted(title_counts.items())),
+        "class_counts": dict(sorted(class_counts.items())),
+        "sheet_series_counts": dict(sorted(sheet_counts.items())),
+        "charts": charts,
+    }
+
+
 def load_project_overrides(project_path: Path | None) -> dict[tuple[str, int, int], Any]:
     if project_path is None:
         return {}
@@ -2211,6 +2335,9 @@ def main() -> int:
     inspect_parser = subparsers.add_parser("inspect", help="Print ODS formula and sheet inventory")
     inspect_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
 
+    chart_parser = subparsers.add_parser("chart-report", help="Print embedded ODS chart inventory and source ranges")
+    chart_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+
     export_parser = subparsers.add_parser("export-reference", help="Write reference .tgm/.tbc files reconstructed from ODS outputs")
     export_parser.add_argument("--out-dir", type=Path, default=Path("tmp/tgm_gen_port"))
     export_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
@@ -2243,11 +2370,13 @@ def main() -> int:
     compare_parser.add_argument("--json", action="store_true")
 
     args = parser.parse_args()
-    if args.command in {"inspect", "export-reference", "generate", "formula-report", "extract-inputs"} and not args.ods.exists():
+    if args.command in {"inspect", "chart-report", "export-reference", "generate", "formula-report", "extract-inputs"} and not args.ods.exists():
         raise FileNotFoundError(f"ODS not found: {args.ods}")
 
     if args.command == "inspect":
         report = inspect_ods(args.ods)
+    elif args.command == "chart-report":
+        report = inspect_charts(args.ods)
     elif args.command == "export-reference":
         report = export_reference(args.ods, args.out_dir)
     elif args.command == "generate":
