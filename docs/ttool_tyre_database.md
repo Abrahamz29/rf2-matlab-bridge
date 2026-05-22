@@ -44,3 +44,24 @@ Installation deutlich laenger:
 ```powershell
 & "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\build_tyre_database.py --include-workshop-packages
 ```
+
+## MATLAB-Smoke fuer alle bekannten Reifen
+
+Alle lokal bekannten Arbeitskopien unter `tools\cache\tyres\tgm` koennen gegen
+den MATLAB-TGM-Parser, die Plotdaten-Erzeugung, Gurtlagen-/Querschnittsdaten
+und den verlustfreien Writer-Roundtrip geprueft werden:
+
+```powershell
+.\tools\Test-TgmAllKnownTyres.ps1
+```
+
+Der Test schreibt:
+
+```text
+tmp\tgm_all_known_tyres_smoke_report.json
+```
+
+Dieser Smoke ist kein ODS-Formelvergleich pro Reifen. Dafuer waeren die
+jeweiligen TGM-Gen-ODS-Projektmappen noetig. Er stellt aber sicher, dass alle
+bekannten `.tgm`-Reifen vom MATLAB-Tool gelesen, geplottet und ohne
+Textverlust wieder geschrieben werden koennen.
