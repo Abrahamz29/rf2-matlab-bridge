@@ -83,6 +83,15 @@ report = rf2TgmGenGenerate;
 assert(report.equal)
 ```
 
+Als reproduzierbarer Regressionstest:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\test_tgm_gen_ods_acceptance.py --json
+```
+
+Der Test erzeugt Referenz und Kandidat neu, prueft `.tgm`/`.tbc` und laesst
+den rekursiven Full-Sheet-Formelreport ohne Fallback laufen.
+
 ODS-Eingabezellen als Projektmodell extrahieren:
 
 ```powershell
@@ -202,8 +211,11 @@ Implementiert:
 - Rekonstruktion der gespeicherten ODS-`.tgm`- und `.tbc`-Exporttexte.
 - TGM-Parser, Roundtrip-Writer ohne generated Lookup/Patch.
 - Plotdaten fuer Nodes, Materialien, TreadDepth und PlyParams.
+- Behaviour-Plotdaten aus dem neuesten tTool `CustomRealtimeTable.csv`.
 - Moderne MATLAB-`uihtml`-App-Shell mit ersten Plots und Acceptance-Test-Button.
 - UI-Tabelle fuer extrahierte ODS-Eingabezellen mit `Generate From Inputs`.
+- UI-Behaviour-Plots fuer `Fy` ueber Schraeglaufwinkel, `Fx` ueber Slip Ratio
+  und Kraftverlauf ueber Realtime-Testindex.
 
 Noch offen:
 

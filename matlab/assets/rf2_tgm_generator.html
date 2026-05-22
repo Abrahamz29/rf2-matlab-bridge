@@ -411,6 +411,18 @@
           ${renderInputBlock("construction")}`;
         drawPly(state.plotData?.plyParams || [], "ply");
         drawPlyTable(state.plotData?.plyParams || []);
+      } else if (activeView === "behaviour") {
+        content.innerHTML = `${renderBehaviourSummary()}
+          <div class="two-col">
+            ${plotShell("latforce", "Lat Force vs Slip Angle")}
+            ${plotShell("longforce", "Long Force vs Slip Ratio")}
+          </div>
+          ${plotShell("forcehistory", "Force History")}
+          ${tableShell("behaviour-table", ["Index", "Slip deg", "Slip %", "Fz N", "Fx N", "Fy N", "Mz Nm"])}`;
+        drawScatter(state.behaviour?.records || [], "latforce", "slipAngleDeg", "latForceN", "#72b7ff");
+        drawScatter(state.behaviour?.records || [], "longforce", "slipRatioPct", "longForceN", "#f0b85a");
+        drawForceHistory(state.behaviour?.records || [], "forcehistory");
+        drawBehaviourTable(state.behaviour?.records || []);
       } else if (["realtime", "wlf", "contactprops", "loadsens", "tbcexport", "tgmexport"].includes(activeView)) {
         content.innerHTML = `${renderInputBlock(activeView)}${renderValidationBlock()}${renderExportBlock()}`;
       } else if (activeView === "validation") {
@@ -490,6 +502,18 @@
         <tr><td>TGM without Lookup/Patch</td><td>${tgm.equal === true ? "yes" : "-"}</td><td>${tgm.candidate_lines ?? "-"}</td><td>${formatDiff(tgm.first_diff)}</td></tr>
         <tr><td>TBC</td><td>${tbc.equal === true ? "yes" : "-"}</td><td>${tbc.candidate_lines ?? "-"}</td><td>${formatDiff(tbc.first_diff)}</td></tr>
       </tbody></table></section>`;
+    }
+
+    function renderBehaviourSummary() {
+      const behaviour = state.behaviour || {};
+      const summary = behaviour.summary || {};
+      return `<div class="grid">
+        <div class="metric"><div class="value">${behaviour.loaded ? "yes" : "no"}</div><div class="label">Realtime CSV</div></div>
+        <div class="metric"><div class="value">${behaviour.sampleCount ?? 0}</div><div class="label">Samples</div></div>
+        <div class="metric"><div class="value">${fmt(summary.maxLatForceN)}</div><div class="label">Max |Fy| N</div></div>
+        <div class="metric"><div class="value">${fmt(summary.maxVerticalForceN)}</div><div class="label">Max |Fz| N</div></div>
+      </div>
+      <section class="table-panel" style="margin-bottom:14px"><table><tbody><tr><td>Source</td><td>${escapeHtml(behaviour.path || "")}</td></tr></tbody></table></section>`;
     }
 
     function renderExportBlock() {
@@ -581,6 +605,46 @@
       svg.insertAdjacentHTML("beforeend", `<text x="${pad}" y="18" fill="#9aa7b3">Ply angle [deg] over node index</text>`);
     }
 
+    function drawScatter(rows, targetId, xKey, yKey, color) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
+      svg.innerHTML = "";
+      const data = rows.filter(r => Number.isFinite(Number(r[xKey])) && Number.isFinite(Number(r[yKey])));
+      if (!data.length) return;
+      const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 28;
+      const xs = data.map(r => Number(r[xKey]));
+      const ys = data.map(r => Number(r[yKey]));
+      const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
+      const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
+      const sy = y => h - pad - (y - minY) / safeRange(minY, maxY) * (h - 2 * pad);
+      data.forEach(r => svg.insertAdjacentHTML("beforeend",
+        `<circle cx="${sx(Number(r[xKey])).toFixed(1)}" cy="${sy(Number(r[yKey])).toFixed(1)}" r="2" fill="${color}"><title>${xKey}: ${fmt(r[xKey])}, ${yKey}: ${fmt(r[yKey])}</title></circle>`));
+    }
+
+    function drawForceHistory(rows, targetId) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
+      svg.innerHTML = "";
+      const data = rows.filter(r => Number.isFinite(Number(r.testIndex)));
+      if (!data.length) return;
+      const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 30;
+      const xs = data.map(r => Number(r.testIndex));
+      const ys = data.flatMap(r => [Number(r.verticalForceN), Number(r.longForceN), Number(r.latForceN)]).filter(Number.isFinite);
+      const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
+      const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
+      const sy = y => h - pad - (y - minY) / safeRange(minY, maxY) * (h - 2 * pad);
+      const series = [
+        ["verticalForceN", "#6be675"],
+        ["longForceN", "#f0b85a"],
+        ["latForceN", "#72b7ff"]
+      ];
+      series.forEach(([key, color]) => {
+        const subset = data.filter(r => Number.isFinite(Number(r[key])));
+        const path = subset.map((r, i) => `${i ? "L" : "M"}${sx(Number(r.testIndex)).toFixed(1)},${sy(Number(r[key])).toFixed(1)}`).join(" ");
+        svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${color}" stroke-width="1.3"><title>${key}</title></path>`);
+      });
+    }
+
     function drawMaterialTable(rows) {
       if (!document.getElementById("material-table")) return;
       document.getElementById("material-table").innerHTML = rows.slice(0, 120).map(r =>
@@ -599,6 +663,13 @@
       if (!document.getElementById("ply-table")) return;
       document.getElementById("ply-table").innerHTML = rows.slice(0, 240).map(r =>
         `<tr><td>${r.nodeIndex}</td><td>${fmt(r.angleDeg)}</td><td>${fmt(r.thicknessM)}</td><td>${fmt(r.connectFlag)}</td></tr>`
+      ).join("");
+    }
+
+    function drawBehaviourTable(rows) {
+      if (!document.getElementById("behaviour-table")) return;
+      document.getElementById("behaviour-table").innerHTML = rows.slice(0, 300).map(r =>
+        `<tr><td>${fmt(r.testIndex)}</td><td>${fmt(r.slipAngleDeg)}</td><td>${fmt(r.slipRatioPct)}</td><td>${fmt(r.verticalForceN)}</td><td>${fmt(r.longForceN)}</td><td>${fmt(r.latForceN)}</td><td>${fmt(r.aligningTorqueNm)}</td></tr>`
       ).join("");
     }
 

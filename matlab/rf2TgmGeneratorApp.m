@@ -30,6 +30,7 @@ state.loaded = false;
 state.message = "No TGM loaded.";
 state.summary = struct();
 state.plotData = struct();
+state.behaviour = localEncodeBehaviourData(rf2TgmBehaviourPlotData);
 state.odsPath = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY F1 1975 Front.ods");
 state.validation = struct("available", true, "message", "Acceptance test not run.");
 state.inputModel = struct("loaded", false, "input_count", 0, "sheet_counts", struct());
@@ -113,6 +114,15 @@ encoded.geometry = localTableToRecords(plotData.geometry);
 encoded.treadDepth = localTableToRecords(plotData.treadDepth);
 encoded.plyParams = localTableToRecords(plotData.plyParams);
 encoded.materials = localTableToRecords(plotData.materials);
+end
+
+function encoded = localEncodeBehaviourData(behaviour)
+encoded = struct();
+encoded.loaded = behaviour.loaded;
+encoded.path = behaviour.path;
+encoded.sampleCount = behaviour.sampleCount;
+encoded.summary = behaviour.summary;
+encoded.records = localTableToRecords(behaviour.data);
 end
 
 function records = localTableToRecords(T)
