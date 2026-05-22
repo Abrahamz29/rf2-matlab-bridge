@@ -13,6 +13,7 @@ import json
 import re
 import sys
 from dataclasses import dataclass
+from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any, Callable, Iterable
 from xml.etree import ElementTree as ET
@@ -221,6 +222,14 @@ class ExcelScalar:
         error = self._error_operand(other)
         if error:
             return error
+        left = unwrap_scalar(self)
+        if isinstance(left, str) and is_number_like(other):
+            match = re.match(r"^(>=|<=|<>|>|<|=)([-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)$", left)
+            if match:
+                return ExcelScalar(f"{match.group(1)}{to_number(match.group(2)) + self._other_num(other):g}")
+            match = re.match(r"^(.*?)([-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)$", left)
+            if match:
+                return ExcelScalar(f"{match.group(1)}{to_number(match.group(2)) + self._other_num(other):g}")
         if isinstance(unwrap_scalar(self), str) or isinstance(unwrap_scalar(other), str):
             return ExcelScalar(str(self) + format_excel_scalar(other))
         return ExcelScalar(self._num() + self._other_num(other))
@@ -493,9 +502,40 @@ def parse_scalar(value: str) -> Any:
 def formula_display_for_cell(cell: FormulaCell) -> str:
     if cell.formula:
         return cell.display
+    if cell.display.lstrip().startswith("+") and cell.value != "":
+        try:
+            if is_number_like(cell.display) and is_number_like(cell.value):
+                if abs(to_number(cell.display) - to_number(cell.value)) <= 1e-12 * max(1.0, abs(to_number(cell.value))):
+                    return cell.display
+        except FormulaEvaluationError:
+            pass
     if cell.value != "":
         return cell.value
     return format_excel_scalar(parse_scalar(cell.display)) if "\n" in cell.display else cell.display
+
+
+def recursive_display_for_cell(cell: FormulaCell, value: Any) -> str:
+    """Text form for references to recursively evaluated formula cells.
+
+    Calc concatenation uses the stored numeric cell value more often than the
+    shortened visible display. If our recomputed numeric value is only different
+    by floating point noise, keep the ODS value text so strict exports do not
+    drift by a final digit.
+    """
+    if cell.value != "":
+        if str(cell.value).lstrip().startswith("+") and format_excel_scalar(value).lstrip("+") == str(cell.value).lstrip("+"):
+            return cell.value
+        try:
+            stored = parse_scalar(cell.value)
+            if is_number_like(stored) and is_number_like(value):
+                expected = to_number(stored)
+                actual = to_number(value)
+                scale = max(1.0, abs(expected))
+                if abs(expected - actual) <= 1e-12 * scale:
+                    return format_excel_scalar(stored)
+        except FormulaEvaluationError:
+            pass
+    return format_excel_scalar(value)
 
 
 def flatten(values: Iterable[Any]) -> list[Any]:
@@ -1014,7 +1054,8 @@ class CachedFormulaEvaluator:
             "AND": lambda *args: all(bool(arg) for arg in args),
             "ASIN": lambda x: excel_unary(x, math.asin),
             "ATAN": lambda x: excel_unary(x, math.atan),
-            "ATAN2": lambda y, x: excel_binary(y, x, math.atan2),
+            # ODS/Calc ATAN2 takes (x; y), while Python's atan2 takes (y, x).
+            "ATAN2": lambda x, y: excel_binary(y, x, math.atan2),
             "AVERAGE": lambda *args: excel_average(*args),
             "AVERAGEIF": excel_averageif,
             "CEILING": lambda x, significance=1: math.ceil(to_number(x) / to_number(significance)) * to_number(significance),
@@ -1128,7 +1169,7 @@ class RecursiveFormulaEvaluator(CachedFormulaEvaluator):
             return ExcelScalar(parse_scalar(cell.value if cell.value != "" else cell.display), sheet=sheet, row=row, col=col, display=cell.display)
         if cell.formula:
             value = self.evaluate(cell)
-            return ExcelScalar(value, sheet=sheet, row=row, col=col, display=format_excel_scalar(value))
+            return ExcelScalar(value, sheet=sheet, row=row, col=col, display=recursive_display_for_cell(cell, value))
         display = formula_display_for_cell(cell)
         return ExcelScalar(parse_scalar(cell.value if cell.value != "" else cell.display), sheet=sheet, row=row, col=col, display=display)
 
@@ -1261,7 +1302,9 @@ def excel_round(value: Any, digits: Any = 0) -> float | ExcelError:
     try:
         if isinstance(value, list):
             return ExcelArray([excel_round(item, digits) for item in flatten(value)])
-        return round(to_number(value), int(to_number(digits)))
+        digit_count = int(to_number(digits))
+        quantum = Decimal("1").scaleb(-digit_count)
+        return float(Decimal(str(to_number(value))).quantize(quantum, rounding=ROUND_HALF_UP))
     except (FormulaEvaluationError, ValueError) as exc:
         return excel_error_from_exception(exc)
 
@@ -1415,16 +1458,42 @@ def excel_log(x: Any, base: Any = math.e) -> float | ExcelError:
 
 
 def excel_text(value: Any, format_code: str) -> str:
-    if "e" in str(format_code).lower():
-        return format_excel_sci(value, str(format_code))
-    if "." in str(format_code):
-        decimal_pattern = str(format_code).split(".", 1)[1]
-        decimals = len(decimal_pattern)
-        text = f"{to_number(value):.{decimals}f}"
-        if "0" in decimal_pattern:
-            return text
-        return text.rstrip("0").rstrip(".")
+    format_text = str(format_code)
+    sci_match = re.fullmatch(r"([^0#]*)([0#]+(?:\.[0#]+)?[eE][+-]?[0#]+)(.*)", format_text)
+    if sci_match:
+        return sci_match.group(1) + format_excel_sci(value, sci_match.group(2)) + sci_match.group(3)
+
+    fixed_match = re.fullmatch(r"([^0#]*)([0#]+(?:\.[0#]+)?)(.*)", format_text)
+    if fixed_match:
+        return fixed_match.group(1) + format_fixed_number(value, fixed_match.group(2)) + fixed_match.group(3)
+
     return format_excel_scalar(value)
+
+
+def format_fixed_number(value: Any, pattern: str) -> str:
+    numeric = to_number(value)
+    if "." not in pattern:
+        return str(int(Decimal(str(numeric)).quantize(Decimal("1"), rounding=ROUND_HALF_UP)))
+
+    integer_pattern, decimal_pattern = pattern.split(".", 1)
+    max_decimals = len(decimal_pattern)
+    required_decimals = decimal_pattern.count("0")
+    quantum = Decimal("1").scaleb(-max_decimals)
+    rounded = Decimal(str(numeric)).quantize(quantum, rounding=ROUND_HALF_UP)
+    text = f"{rounded:.{max_decimals}f}"
+    integer_text, fraction_text = text.split(".", 1)
+
+    if max_decimals > required_decimals:
+        while len(fraction_text) > required_decimals and fraction_text.endswith("0"):
+            fraction_text = fraction_text[:-1]
+
+    if not fraction_text:
+        return integer_text
+    if not integer_pattern.startswith("0") and integer_text == "0":
+        integer_text = ""
+    if not integer_pattern.startswith("0") and integer_text == "-0":
+        integer_text = "-"
+    return integer_text + "." + fraction_text
 
 
 def criteria_match(value: Any, criteria: Any) -> bool:
@@ -2107,7 +2176,7 @@ def formula_report(
 
     return {
         "ods": str(ods),
-        "formula_engine_status": "partial_cached_dependency_evaluator",
+        "formula_engine_status": "cached_dependency_evaluator" if mode == "cached" else "recursive_dependency_evaluator",
         "dependency_mode": "referenced cells use stored ODS values" if mode == "cached" else "referenced formulas are recursively evaluated",
         "evaluator_mode": mode,
         "fallback_on_error": fallback_on_error,
@@ -2148,14 +2217,14 @@ def main() -> int:
 
     generate_parser = subparsers.add_parser("generate", help="Write generated .tgm/.tbc files from evaluated ODS formulas")
     generate_parser.add_argument("--out-dir", type=Path, default=Path("tmp/tgm_gen_port"))
-    generate_parser.add_argument("--mode", choices=["cached", "recursive"], default="cached", help="Formula evaluator mode")
+    generate_parser.add_argument("--mode", choices=["cached", "recursive"], default="recursive", help="Formula evaluator mode")
     generate_parser.add_argument("--fallback-on-error", action="store_true", help="Recursive mode: use stored ODS value for unresolved dependency edges")
     generate_parser.add_argument("--project", type=Path, default=None, help="Input project JSON produced by extract-inputs")
     generate_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
 
     formula_parser = subparsers.add_parser("formula-report", help="Evaluate supported formulas against stored ODS values")
     formula_parser.add_argument("--sheets", nargs="*", default=["General", "Realtime", "Materials"], help="Sheet names to include")
-    formula_parser.add_argument("--mode", choices=["cached", "recursive"], default="cached", help="Formula evaluator mode")
+    formula_parser.add_argument("--mode", choices=["cached", "recursive"], default="recursive", help="Formula evaluator mode")
     formula_parser.add_argument("--fallback-on-error", action="store_true", help="Recursive mode: use stored ODS value for unresolved dependency edges")
     formula_parser.add_argument("--project", type=Path, default=None, help="Input project JSON produced by extract-inputs")
     formula_parser.add_argument("--tolerance", type=float, default=1e-9)

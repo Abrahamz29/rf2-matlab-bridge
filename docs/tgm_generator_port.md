@@ -31,7 +31,7 @@ Generierte Dateien aus dem aktuellen Formel-Harness schreiben:
 ```powershell
 & "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
   --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
-  generate --out-dir .\tmp\tgm_gen_port --json
+  generate --out-dir .\tmp\tgm_gen_port --mode recursive --json
 ```
 
 Erzeugt:
@@ -104,22 +104,21 @@ werden:
 & "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
   --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
   generate --out-dir .\tmp\tgm_gen_port_edit `
-  --mode recursive --fallback-on-error `
+  --mode recursive `
   --project .\tmp\tgm_gen_port\inputs.json --json
 ```
 
 ## Formel-Harness
 
 Der aktuelle Port kann die ODS-Formeln inventarisieren, Zellabhaengigkeiten
-extrahieren und einen ersten Teil der Formeln gegen gespeicherte ODS-Werte
-auswerten. Fuer den Zwischenstand nutzt der Evaluator gespeicherte ODS-Werte fuer
-referenzierte Zellen; damit pruefen wir Parser, Referenzen und Funktionssemantik,
-bevor der komplette 80k-Zellgraph rekursiv frei gerechnet wird.
+extrahieren und die relevanten Formeln rekursiv gegen gespeicherte ODS-Werte
+auswerten. `cached` bleibt als Diagnosemodus vorhanden, der Standardpfad ist
+aber der freie rekursive Zellgraph ohne Fallback.
 
 ```powershell
 & "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
   --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
-  formula-report --sheets General Realtime Materials --json
+  formula-report --sheets General Realtime Materials --mode recursive --json
 ```
 
 Aus MATLAB:
@@ -144,23 +143,23 @@ Aktueller Full-Sheet-Stand fuer die relevanten Sheets `About`, `General`,
 - 80.882 Formeln mit implementierten Funktionsnamen.
 - 80.882 Formeln ausfuehrbar.
 - 0 harte Evaluator-Fehler.
-- 5.004 Zellwert-Abweichungen bleiben im cached Zellwerttest, vor allem Anzeigeformatierung,
+- 4.091 Zellwert-Abweichungen bleiben im cached Zellwerttest, vor allem Anzeigeformatierung,
   gerundete Displaywerte, LookupData-Ausschluss und ODS-iterative
   Selbstreferenzen.
 
-Zusaetzlich gibt es einen rekursiven Rechenmodus:
+Der alte cached Diagnosemodus kann bei Bedarf explizit genutzt werden:
 
 ```powershell
 & "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
   --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
-  formula-report --sheets General Realtime Materials --mode recursive `
-  --fallback-on-error --json
+  formula-report --sheets General Realtime Materials --mode cached --json
 ```
 
 Der rekursive Modus berechnet referenzierte Formelzellen neu und kann
 uebergangsweise einzelne unresolved dependency edges auf gespeicherte ODS-Werte
-zurueckfallen lassen. Fuer die offizielle Beispiel-ODS laeuft der rekursive
-Modus inzwischen ohne Fallback und ohne harte Formel-Fehler.
+zurueckfallen lassen. Fuer die offizielle Beispiel-ODS ist dieser Fallback nicht
+mehr noetig: der rekursive Modus laeuft ohne Fallback und ohne harte
+Formel-Fehler.
 
 Rekursiver Full-Sheet-Stand:
 
@@ -168,19 +167,17 @@ Rekursiver Full-Sheet-Stand:
 - 80.882 Formeln rekursiv ausfuehrbar.
 - 0 harte Evaluator-Fehler.
 - 0 Fallback-Kanten.
-- 10.682 Zellwert-Abweichungen bleiben gegen gespeicherte ODS-Displays.
+- 4.842 Zellwert-Abweichungen bleiben gegen gespeicherte ODS-Displays.
 
 Aktueller rekursiver Exportstand:
 
 - `.tbc` ist rekursiv ohne Fallback textgleich zur ODS-Referenz.
-- `.tgm` hat nach `LookupV2`/`PatchV1`-Ausschluss dieselbe Zeilenzahl wie die
-  Referenz, unterscheidet sich aber noch in numerischen
-  QuasiStatic-/Massen-/Materialwerten.
+- `.tgm` ist rekursiv ohne Fallback textgleich zur ODS-Referenz, wenn nur
+  `LookupV2` und `PatchV1` ausgeschlossen werden.
 
 Projektdateien aus `extract-inputs` wirken im rekursiven Modus als
-Zell-Overrides. Damit ist der Pfad fuer editierbare Eingaben vorhanden; die
-vollstaendige `.tgm`-Dateigleichheit nach beliebigen Edits haengt noch an den
-verbleibenden numerischen QSA-/Massen-/Material-Abweichungen.
+Zell-Overrides. Damit ist der Pfad fuer editierbare Eingaben vorhanden; der
+freie rekursive Export bleibt der Standardpfad.
 
 ## Status
 
@@ -189,16 +186,16 @@ Implementiert:
 - ODS-Inventar und Formula-Coverage-Report.
 - Formel-Harness fuer Zellreferenzen, benannte Bereiche, Array-Arithmetik,
   Lazy-`IF`/`IFERROR`, `INDIRECT`/`ADDRESS`, Lookup-Funktionen, Kriterienfunktionen
-  und cached dependency evaluation.
+  und rekursive dependency evaluation.
 - Evaluierter Generatorpfad fuer `generated.tgm` und `generated.tbc`.
 - MATLAB-Wrapper `rf2TgmGenGenerate` fuer den finalen Datei-Akzeptanztest.
-- Rekursiver Formelmodus mit kontrolliertem Fallback fuer noch nicht freie
-  Dependency-Kanten.
+- Rekursiver Formelmodus ohne Fallback fuer die offizielle Beispiel-ODS.
 - Port der originalen `Basic/Standard/CubSpline.xml`-Makrologik fuer
   `CUBSPLINE` inklusive Numerical-Recipes-Spline und monotonem `SplineX3`.
 - ODS-Merge-/Span-Parser fuer korrekte Koordinaten von zusammengefuehrten
   Eingabezellen.
-- Rekursive `.tbc`-Dateigleichheit ohne Fallback.
+- Rekursive `.tgm`-/`.tbc`-Dateigleichheit ohne Fallback; `.tgm` ignoriert
+  nur die bewusst ausgeschlossenen `LookupV2`-/`PatchV1`-Bloecke.
 - ODS-Input-Projektmodell via `extract-inputs` und MATLAB-Wrapper
   `rf2TgmGenExtractInputs`.
 - Projekt-Override-Pfad fuer rekursive Generatorlaeufe (`--project`).
@@ -210,8 +207,6 @@ Implementiert:
 
 Noch offen:
 
-- Rekursive `.tgm`-Dateigleichheit ohne gespeicherte Abhaengigkeitswerte.
-  Aktuell verbleiben numerische QSA-/Massen-/Material-Abweichungen.
 - Zellwert-Golden-Tests gegen dynamisch neu berechnete ODS-Werte nach
   Eingabeaenderungen.
 - Vollstaendige Plotdatenabdeckung aller ODS-Charts.

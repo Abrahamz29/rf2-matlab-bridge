@@ -3,7 +3,7 @@ function report = rf2TgmGenFormulaReport(options)
 arguments
     options.OdsPath (1,1) string = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY F1 1975 Front.ods")
     options.Sheets string = ["General", "Realtime", "Materials"]
-    options.Mode (1,1) string {mustBeMember(options.Mode, ["cached", "recursive"])} = "cached"
+    options.Mode (1,1) string {mustBeMember(options.Mode, ["cached", "recursive"])} = "recursive"
     options.FallbackOnError (1,1) logical = false
     options.ProjectPath (1,1) string = ""
     options.PythonExe (1,1) string = ""
