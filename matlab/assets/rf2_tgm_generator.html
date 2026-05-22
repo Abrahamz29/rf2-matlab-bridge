@@ -636,11 +636,11 @@
       if (!countRows) return `<div class="empty" style="margin-bottom:14px">ODS input model is not loaded.</div>`;
       const sheet = sheetForView(view);
       const sheetTabs = renderInputSheetTabs(sheet);
-      const allInputs = (model.inputs || []).map((item, index) => ({...item, index})).filter(item => item.sheet === sheet);
+      const allInputs = buildInputPresentation((model.inputs || []).map((item, index) => ({...item, index})).filter(item => item.sheet === sheet));
       const filter = inputFilter.trim().toLowerCase();
       const editableFiltered = editableOnlyFilter ? allInputs.filter(item => item.isLikelyEditable === true) : allInputs;
       const filtered = filter ? editableFiltered.filter(item =>
-        [item.address, item.display, item.value, item.parsed].some(value => String(value || "").toLowerCase().includes(filter))
+        [item.address, item.contextLabel, item.parameterLabel, item.display, item.value, item.parsed].some(value => String(value || "").toLowerCase().includes(filter))
       ) : editableFiltered;
       const pageSize = 160;
       const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
@@ -651,8 +651,9 @@
         const projectValue = item.value !== undefined && item.value !== "" ? item.value : (item.parsed || "");
         const canEdit = item.isPossibleInput === true;
         const disabled = canEdit ? "" : "disabled";
-        return `<tr>
-          <td>${item.address}</td>
+        return `<tr title="${escapeAttr(`${item.sheet}!${item.address}`)}">
+          <td>${escapeHtml(item.contextLabel || "")}</td>
+          <td>${escapeHtml(item.parameterLabel || "")}</td>
           <td>${escapeHtml(item.editableConfidence || "")}</td>
           <td>${escapeHtml(item.inputRole || "")}</td>
           <td>${renderSwatch(item.backgroundColor)}</td>
@@ -673,7 +674,101 @@
       return `${sheetTabs}
         <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>ODS Input Sheet</th><th>Cells</th></tr></thead><tbody>${countRows}</tbody></table></section>
         ${controls}
-        <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>${sheet} Cell</th><th>Confidence</th><th>Role</th><th>Background</th><th>ODS Display</th><th>Stored Value</th><th>Project Value</th></tr></thead><tbody>${inputRows || `<tr><td colspan="7">No extracted inputs for ${sheet}</td></tr>`}</tbody></table></section>`;
+        <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Context</th><th>Parameter</th><th>Confidence</th><th>Role</th><th>Background</th><th>ODS Display</th><th>Stored Value</th><th>Project Value</th></tr></thead><tbody>${inputRows || `<tr><td colspan="8">No extracted inputs for ${sheet}</td></tr>`}</tbody></table></section>`;
+    }
+
+    function buildInputPresentation(items) {
+      const sorted = [...items].sort((a, b) => (Number(a.row) - Number(b.row)) || (Number(a.col) - Number(b.col)));
+      const rows = new Map();
+      sorted.forEach(item => {
+        const key = Number(item.row);
+        if (!rows.has(key)) rows.set(key, []);
+        rows.get(key).push(item);
+      });
+      rows.forEach(rowItems => rowItems.sort((a, b) => Number(a.col) - Number(b.col)));
+      const rowKeys = [...rows.keys()].sort((a, b) => a - b);
+      return sorted.map(item => {
+        const rowItems = rows.get(Number(item.row)) || [];
+        const leftLabel = nearestLeftLabel(rowItems, item);
+        const aboveLabel = nearestAboveLabel(rows, rowKeys, item);
+        const sectionLabel = nearestSectionLabel(rows, rowKeys, item);
+        const ownText = cleanInputText(item.display || item.parsed || item.value || "");
+        const parameterLabel = leftLabel || aboveLabel || ownText || `${item.sheet} value`;
+        const contextLabel = sectionLabel && sectionLabel !== parameterLabel ? sectionLabel : sheetContextLabel(item.sheet);
+        return { ...item, parameterLabel, contextLabel };
+      });
+    }
+
+    function nearestLeftLabel(rowItems, item) {
+      const col = Number(item.col);
+      for (let index = rowItems.length - 1; index >= 0; index -= 1) {
+        const candidate = rowItems[index];
+        if (Number(candidate.col) >= col) continue;
+        const text = cleanInputText(candidate.display || candidate.parsed || "");
+        if (isUsefulLabel(candidate, text) && col - Number(candidate.col) <= 6) return text;
+      }
+      return "";
+    }
+
+    function nearestAboveLabel(rows, rowKeys, item) {
+      const row = Number(item.row);
+      const col = Number(item.col);
+      for (let index = rowKeys.indexOf(row) - 1; index >= 0; index -= 1) {
+        const candidateRow = rowKeys[index];
+        if (row - candidateRow > 8) break;
+        const candidates = (rows.get(candidateRow) || []).filter(candidate => Math.abs(Number(candidate.col) - col) <= 1);
+        for (const candidate of candidates.reverse()) {
+          const text = cleanInputText(candidate.display || candidate.parsed || "");
+          if (isUsefulLabel(candidate, text)) return text;
+        }
+      }
+      return "";
+    }
+
+    function nearestSectionLabel(rows, rowKeys, item) {
+      const row = Number(item.row);
+      for (let index = rowKeys.indexOf(row); index >= 0; index -= 1) {
+        const candidateRow = rowKeys[index];
+        if (row - candidateRow > 20) break;
+        const candidates = rows.get(candidateRow) || [];
+        for (const candidate of candidates) {
+          const text = cleanInputText(candidate.display || candidate.parsed || "");
+          if (isSectionLabel(candidate, text)) return text;
+        }
+      }
+      return sheetContextLabel(item.sheet);
+    }
+
+    function cleanInputText(value) {
+      return String(value || "").replace(/\s+/g, " ").trim();
+    }
+
+    function isUsefulLabel(item, text) {
+      if (!text || text.length > 90) return false;
+      if (item.isPossibleInput === true && item.valueType !== "string") return false;
+      return /[A-Za-z\]\[]/.test(text);
+    }
+
+    function isSectionLabel(item, text) {
+      if (!isUsefulLabel(item, text)) return false;
+      const background = String(item.backgroundColor || "");
+      return item.inputRole === "label-or-helper" || background !== "" && background !== "transparent";
+    }
+
+    function sheetContextLabel(sheet) {
+      const labels = {
+        General: "General tyre metadata",
+        Geometry: "Geometry and node layout",
+        Construction: "Construction and ply stack",
+        Compound: "Compound and realtime tyre data",
+        Realtime: "Realtime parameters",
+        WLF: "WLF temperature model",
+        ContactProps: "Contact patch properties",
+        LoadSens: "Load sensitivity",
+        Materials: "Material definitions",
+        TBC: "TBC export parameters"
+      };
+      return labels[sheet] || sheet;
     }
 
     function renderInputSheetTabs(activeSheet) {

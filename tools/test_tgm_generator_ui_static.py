@@ -128,6 +128,23 @@ def run_check() -> dict:
         if function_name not in function_names:
             errors.append(f"plot helper function missing: {function_name}")
 
+    for function_name in [
+        "buildInputPresentation",
+        "nearestLeftLabel",
+        "nearestAboveLabel",
+        "nearestSectionLabel",
+        "sheetContextLabel",
+    ]:
+        if function_name not in function_names:
+            errors.append(f"input presentation helper missing: {function_name}")
+
+    if "<th>Context</th><th>Parameter</th>" not in html:
+        errors.append("input table does not lead with context/parameter columns")
+    if "<th>${sheet} Cell</th>" in html:
+        errors.append("input table still leads with raw cell addresses")
+    if 'title="${escapeAttr(`${item.sheet}!${item.address}`)}"' not in html:
+        errors.append("input cell address is not preserved as tooltip")
+
     if "equalScale: true" not in html:
         errors.append("cross-section plot does not request equalScale: true")
     expected_geometry_call = (
