@@ -255,6 +255,23 @@ Aktueller Stand fuer die offizielle Beispiel-ODS:
 - Die UI zeigt diese Chart-Coverage im Tab `ODS Charts`; der Button
   `Load ODS Chart Data` zeichnet die ausgewerteten ODS-Serien nach.
 
+## Dynamische LibreOffice-Diagnose
+
+LibreOffice ist lokal vorhanden, aber der Headless-Recalc dieser alten ODS ist
+aktuell keine verlaessliche Golden Reference: schon ein unveraenderter Recalc
+erzeugt im Export `#WERT!` und lokal formatierte Dezimalkommas. Damit bleibt
+der gespeicherte ODS-Export die harte Referenz. Fuer die Diagnose gibt es ein
+separates Tool:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\diagnose_tgm_gen_lo_dynamic.py `
+  --set General!B3=278 --json
+```
+
+Mit `--strict` liefert das Tool einen Fehlercode, falls der dynamische
+LibreOffice-Vergleich nicht textgleich ist. Ohne `--strict` erzeugt es einen
+Diagnose-Report, damit der Zustand reproduzierbar bleibt.
+
 ## Status
 
 Implementiert:
@@ -277,6 +294,9 @@ Implementiert:
 - Projekt-Override-Pfad fuer rekursive Generatorlaeufe (`--project`).
 - Regressionstest fuer unveraenderte Projektinputs: ODS -> `inputs.json` ->
   rekursiver Export bleibt dateigleich zur ODS-Referenz.
+- LibreOffice/UNO-Diagnose fuer dynamische ODS-Recalc-Vergleiche
+  (`diagnose_tgm_gen_lo_dynamic.py`); lokal nicht als Acceptance-Golden nutzbar,
+  weil Calc nach Recalc `#WERT!` in Exportzellen schreibt.
 - Rekonstruktion der gespeicherten ODS-`.tgm`- und `.tbc`-Exporttexte.
 - TGM-Parser, Roundtrip-Writer ohne generated Lookup/Patch.
 - Plotdaten fuer Nodes, Materialien, TreadDepth und PlyParams.
@@ -295,7 +315,8 @@ Implementiert:
 
 Noch offen:
 
-- Zellwert-Golden-Tests gegen dynamisch neu berechnete ODS-Werte nach
-  Eingabeaenderungen.
+- Eine externe dynamische Golden Reference nach Eingabeaenderungen. Der lokale
+  LibreOffice-Recalc ist diagnostiziert, aber wegen `#WERT!`-Exportwerten nicht
+  als harte Referenz geeignet.
 - Vollstaendige Nachrechnung aller ODS-Chart-Serien als MATLAB-Plotdaten.
 - Vollstaendige Editier- und Exportoberflaeche.
