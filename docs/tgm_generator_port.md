@@ -131,8 +131,9 @@ Aktueller Full-Sheet-Stand fuer die relevanten Sheets `About`, `General`,
 - 80.882 Formeln mit implementierten Funktionsnamen.
 - 80.882 Formeln ausfuehrbar.
 - 0 harte Evaluator-Fehler.
-- 5.333 Zellwert-Abweichungen bleiben, vor allem Anzeigeformatierung,
-  gerundete Displaywerte und der noch approximierte `CUBSPLINE`-Kern.
+- 5.004 Zellwert-Abweichungen bleiben, vor allem Anzeigeformatierung,
+  gerundete Displaywerte, LookupData-Ausschluss und ODS-iterative
+  Selbstreferenzen.
 
 Zusaetzlich gibt es einen rekursiven Rechenmodus:
 
@@ -160,6 +161,8 @@ Implementiert:
 - MATLAB-Wrapper `rf2TgmGenGenerate` fuer den finalen Datei-Akzeptanztest.
 - Rekursiver Formelmodus mit kontrolliertem Fallback fuer noch nicht freie
   Dependency-Kanten.
+- Port der originalen `Basic/Standard/CubSpline.xml`-Makrologik fuer
+  `CUBSPLINE` inklusive Numerical-Recipes-Spline und monotonem `SplineX3`.
 - ODS-Input-Projektmodell via `extract-inputs` und MATLAB-Wrapper
   `rf2TgmGenExtractInputs`.
 - Rekonstruktion der gespeicherten ODS-`.tgm`- und `.tbc`-Exporttexte.

@@ -1518,40 +1518,123 @@ def excel_sumproduct(*arrays: list[Any]) -> float:
 
 
 def excel_cubspline(*args: Any) -> float:
-    """Approximate the ODS Basic CUBSPLINE helper with monotonic linear interpolation.
-
-    The first checkpoint uses this as a deterministic placeholder so dependent
-    formula coverage is measurable. The final port can replace this with the
-    workbook's Basic CubSpline algorithm.
-    """
+    """Port of the ODS Basic CUBSPLINE helper from Basic/Standard/CubSpline.xml."""
     if len(args) >= 4 and not isinstance(args[1], list) and isinstance(args[2], list) and isinstance(args[3], list):
+        method = int(to_number(args[0]))
         x = args[1]
         x_values = args[2]
         y_values = args[3]
     elif len(args) >= 3:
+        method = 3
         x = args[0]
         x_values = args[1]
         y_values = args[2]
     else:
         return ExcelError("#VALUE!")
-    xs = [to_number(value) for value in flatten(x_values) if value != "" and is_number_like(value)]
-    ys = [to_number(value) for value in flatten(y_values) if value != "" and is_number_like(value)]
-    count = min(len(xs), len(ys))
-    if count == 0:
+    xs_raw = flatten(x_values)
+    ys_raw = flatten(y_values)
+    pairs: list[tuple[float, float]] = []
+    for x_value, y_value in zip(xs_raw, ys_raw):
+        if y_value == "" or not is_number_like(y_value) or not is_number_like(x_value):
+            continue
+        pairs.append((to_number(x_value), to_number(y_value)))
+    if not pairs:
         return ExcelError("#VALUE!")
-    pairs = sorted(zip(xs[:count], ys[:count]), key=lambda item: item[0])
+    pairs = sorted(pairs, key=lambda item: item[0])
     x_num = to_number(x)
-    if x_num <= pairs[0][0]:
+    if len(pairs) == 1:
         return pairs[0][1]
-    if x_num >= pairs[-1][0]:
-        return pairs[-1][1]
-    for (x0, y0), (x1, y1) in zip(pairs, pairs[1:]):
-        if x0 <= x_num <= x1:
-            if x1 == x0:
-                return y0
-            ratio = (x_num - x0) / (x1 - x0)
-            return y0 + ratio * (y1 - y0)
-    return pairs[-1][1]
+    if method == 1:
+        return natural_cubic_spline(x_num, pairs)
+    if method == 3:
+        return monotonic_spline_x3(x_num, pairs)
+    return natural_cubic_spline(x_num, pairs)
+
+
+def natural_cubic_spline(x_value: float, pairs: list[tuple[float, float]]) -> float:
+    x = [item[0] for item in pairs]
+    y = [item[1] for item in pairs]
+    n = len(x)
+    y2 = [0.0] * n
+    u = [0.0] * n
+    y2[0] = 0.0
+    u[0] = 0.0
+    for i in range(1, n - 1):
+        sig = (x[i] - x[i - 1]) / dxx(x[i + 1], x[i - 1])
+        p = sig * y2[i - 1] + 2.0
+        y2[i] = (sig - 1.0) / p
+        u[i] = (
+            6.0
+            * ((y[i + 1] - y[i]) / dxx(x[i + 1], x[i]) - (y[i] - y[i - 1]) / dxx(x[i], x[i - 1]))
+            / dxx(x[i + 1], x[i - 1])
+            - sig * u[i - 1]
+        ) / p
+    y2[-1] = 0.0
+    for k in range(n - 2, -1, -1):
+        y2[k] = y2[k] * y2[k + 1] + u[k]
+
+    klo = 0
+    khi = n - 1
+    while khi - klo > 1:
+        k = (khi + klo) // 2
+        if x[k] > x_value:
+            khi = k
+        else:
+            klo = k
+    h = dxx(x[khi], x[klo])
+    a = (x[khi] - x_value) / h
+    b = (x_value - x[klo]) / h
+    return a * y[klo] + b * y[khi] + ((a**3 - a) * y2[klo] + (b**3 - b) * y2[khi]) * (h**2) / 6.0
+
+
+def monotonic_spline_x3(x_value: float, pairs: list[tuple[float, float]]) -> float:
+    x = [item[0] for item in pairs]
+    y = [item[1] for item in pairs]
+    n_max = len(x) - 1
+    if x_value < x[0] or x_value > x[n_max]:
+        num = 1 if x_value < x[0] else n_max
+        b = (y[num] - y[num - 1]) / dxx(x[num], x[num - 1])
+        a = y[num] - b * x[num]
+        return a + b * x_value
+
+    num = 1
+    for i in range(1, n_max + 1):
+        if x_value <= x[i]:
+            num = i
+            break
+
+    gxx = [0.0, 0.0]
+    ggxx = [0.0, 0.0]
+    for j in range(2):
+        i = num - 1 + j
+        if i == 0 or i == n_max:
+            gxx[j] = 10.0**30
+        elif (y[i + 1] - y[i] == 0) or (y[i] - y[i - 1] == 0):
+            gxx[j] = 0.0
+        elif (dxx(x[i + 1], x[i]) / (y[i + 1] - y[i]) + dxx(x[i], x[i - 1]) / (y[i] - y[i - 1])) == 0:
+            gxx[j] = 0.0
+        elif (y[i + 1] - y[i]) * (y[i] - y[i - 1]) < 0:
+            gxx[j] = 0.0
+        else:
+            gxx[j] = 2.0 / (dxx(x[i + 1], x[i]) / (y[i + 1] - y[i]) + dxx(x[i], x[i - 1]) / (y[i] - y[i - 1]))
+
+    if num == 1:
+        gxx[0] = 1.5 * (y[num] - y[num - 1]) / dxx(x[num], x[num - 1]) - gxx[1] / 2.0
+    if num == n_max:
+        gxx[1] = 1.5 * (y[num] - y[num - 1]) / dxx(x[num], x[num - 1]) - gxx[0] / 2.0
+
+    ggxx[0] = -2.0 * (gxx[1] + 2.0 * gxx[0]) / dxx(x[num], x[num - 1]) + 6.0 * (y[num] - y[num - 1]) / dxx(x[num], x[num - 1]) ** 2
+    ggxx[1] = 2.0 * (2.0 * gxx[1] + gxx[0]) / dxx(x[num], x[num - 1]) - 6.0 * (y[num] - y[num - 1]) / dxx(x[num], x[num - 1]) ** 2
+    d = (ggxx[1] - ggxx[0]) / dxx(x[num], x[num - 1]) / 6.0
+    c = 0.5 * (x[num] * ggxx[0] - x[num - 1] * ggxx[1]) / dxx(x[num], x[num - 1])
+    b = (y[num] - y[num - 1] - c * (x[num] ** 2 - x[num - 1] ** 2) - d * (x[num] ** 3 - x[num - 1] ** 3)) / dxx(x[num], x[num - 1])
+    a = y[num - 1] - b * x[num - 1] - c * x[num - 1] ** 2 - d * x[num - 1] ** 3
+    return a + b * x_value + c * x_value**2 + d * x_value**3
+
+
+def dxx(x1: float, x0: float) -> float:
+    delta = x1 - x0
+    return 10.0**30 if delta == 0 else delta
 
 
 def excel_linest(y_values: list[Any], x_values: list[Any] | None = None, const: Any = True, stats: Any = False) -> list[list[float]]:
