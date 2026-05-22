@@ -20,6 +20,18 @@ from zipfile import ZipFile
 
 
 DEFAULT_ODS = Path("tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods")
+DEFAULT_INPUT_SHEETS = [
+    "General",
+    "Geometry",
+    "Construction",
+    "Compound",
+    "Realtime",
+    "WLF",
+    "ContactProps",
+    "LoadSens",
+    "Materials",
+    "TBC",
+]
 
 NS = {
     "office": "urn:oasis:names:tc:opendocument:xmlns:office:1.0",
@@ -37,6 +49,8 @@ class Cell:
     value: str = ""
     formula: str = ""
     repeat: int = 1
+    value_type: str = ""
+    style_name: str = ""
 
     @property
     def display(self) -> str:
@@ -52,6 +66,8 @@ class FormulaCell:
     display: str
     value: str
     formula: str
+    value_type: str = ""
+    style_name: str = ""
 
 
 class FormulaEvaluationError(Exception):
@@ -340,6 +356,8 @@ def iter_row_cells(row: ET.Element) -> Iterable[tuple[int, Cell]]:
             value=cell_value(cell),
             formula=attr(cell, "table", "formula"),
             repeat=repeat,
+            value_type=attr(cell, "office", "value-type"),
+            style_name=attr(cell, "table", "style-name"),
         )
         col += repeat
 
@@ -453,6 +471,14 @@ def parse_scalar(value: str) -> Any:
         return float(value)
     except ValueError:
         return value
+
+
+def formula_display_for_cell(cell: FormulaCell) -> str:
+    if cell.formula:
+        return cell.display
+    if cell.value != "":
+        return cell.value
+    return format_excel_scalar(parse_scalar(cell.display)) if "\n" in cell.display else cell.display
 
 
 def flatten(values: Iterable[Any]) -> list[Any]:
@@ -774,6 +800,8 @@ def load_formula_cells(ods: Path) -> dict[tuple[str, int, int], FormulaCell]:
                         display=cell.display,
                         value=cell.value,
                         formula=cell.formula,
+                        value_type=cell.value_type,
+                        style_name=cell.style_name,
                     )
                 col_index = col + cell.repeat
             row_index += row_repeat
@@ -907,11 +935,14 @@ class CachedFormulaEvaluator:
     def ref(self, sheet: str, address: str) -> Any:
         row, col = a1_to_row_col(address)
         cell = self.cells.get((sheet, row, col))
+        if sheet == "General" and address.upper().replace("$", "") == "I47" and cell and "Filename used by Macro" in cell.display:
+            cell = self.cells.get((sheet, row, col - 1), cell)
         if sheet == "General" and address.upper().replace("$", "") == "I47" and cell and cell.display.startswith("←"):
             cell = self.cells.get((sheet, row, col - 1), cell)
         if cell is None:
             return ExcelScalar("", sheet=sheet, row=row, col=col, display="")
-        return ExcelScalar(parse_scalar(cell.value if cell.value != "" else cell.display), sheet=sheet, row=row, col=col, display=cell.display)
+        display = formula_display_for_cell(cell)
+        return ExcelScalar(parse_scalar(cell.value if cell.value != "" else cell.display), sheet=sheet, row=row, col=col, display=display)
 
     def range_values(self, sheet: str, start: str, end: str) -> list[Any]:
         start_row, start_col = a1_to_row_col(start)
@@ -921,13 +952,14 @@ class CachedFormulaEvaluator:
             row_values: list[Any] = []
             for col in range(min(start_col, end_col), max(start_col, end_col) + 1):
                 cell = self.cells.get((sheet, row, col))
+                display = formula_display_for_cell(cell) if cell else ""
                 row_values.append(
                     ExcelScalar(
                         parse_scalar((cell.value if cell.value != "" else cell.display)) if cell else "",
                         sheet=sheet,
                         row=row,
                         col=col,
-                        display=cell.display if cell else "",
+                        display=display,
                     )
                 )
             rows.append(row_values)
@@ -1035,6 +1067,112 @@ class CachedFormulaEvaluator:
             start, end = address.split(":", 1)
             return self.range_values(sheet, start, end)
         return self.ref(sheet, address)
+
+
+class RecursiveFormulaEvaluator(CachedFormulaEvaluator):
+    """ODS evaluator that recursively recalculates referenced formula cells."""
+
+    def __init__(
+        self,
+        cells: dict[tuple[str, int, int], FormulaCell],
+        named_ranges: dict[str, dict[str, str]] | None = None,
+        overrides: dict[tuple[str, int, int], Any] | None = None,
+        fallback_on_error: bool = False,
+    ):
+        super().__init__(cells, named_ranges)
+        self.cache: dict[tuple[str, int, int], Any] = {}
+        self.stack: list[tuple[str, int, int]] = []
+        self.overrides = overrides or {}
+        self.fallback_on_error = fallback_on_error
+        self.fallback_count = 0
+        self.fallback_cells: list[str] = []
+
+    def ref(self, sheet: str, address: str) -> Any:
+        row, col = a1_to_row_col(address)
+        key = (sheet, row, col)
+        if key in self.overrides:
+            return ExcelScalar(self.overrides[key], sheet=sheet, row=row, col=col, display=format_excel_scalar(self.overrides[key]))
+        cell = self.cells.get(key)
+        if sheet == "General" and address.upper().replace("$", "") == "I47" and cell and "Filename used by Macro" in cell.display:
+            col -= 1
+            key = (sheet, row, col)
+            cell = self.cells.get(key, cell)
+        if sheet == "General" and address.upper().replace("$", "") == "I47" and cell and cell.display.startswith("â†"):
+            col -= 1
+            key = (sheet, row, col)
+            cell = self.cells.get(key, cell)
+        if cell is None:
+            return ExcelScalar("", sheet=sheet, row=row, col=col, display="")
+        if key in self.stack:
+            return ExcelScalar(parse_scalar(cell.value if cell.value != "" else cell.display), sheet=sheet, row=row, col=col, display=cell.display)
+        if cell.formula:
+            value = self.evaluate(cell)
+            return ExcelScalar(value, sheet=sheet, row=row, col=col, display=format_excel_scalar(value))
+        display = formula_display_for_cell(cell)
+        return ExcelScalar(parse_scalar(cell.value if cell.value != "" else cell.display), sheet=sheet, row=row, col=col, display=display)
+
+    def range_values(self, sheet: str, start: str, end: str) -> list[Any]:
+        start_row, start_col = a1_to_row_col(start)
+        end_row, end_col = a1_to_row_col(end)
+        rows: list[list[Any]] = []
+        for row in range(min(start_row, end_row), max(start_row, end_row) + 1):
+            row_values: list[Any] = []
+            for col in range(min(start_col, end_col), max(start_col, end_col) + 1):
+                row_values.append(self.ref(sheet, row_col_to_a1(row, col)))
+            rows.append(row_values)
+        if len(rows) == 1:
+            return ExcelArray(rows[0])
+        if rows and len(rows[0]) == 1:
+            return ExcelArray([row[0] for row in rows])
+        return ExcelArray(rows)
+
+    def evaluate(self, cell: FormulaCell) -> Any:
+        key = (cell.sheet, cell.row, cell.col)
+        if key in self.overrides:
+            return self.overrides[key]
+        if not cell.formula:
+            return parse_scalar(cell.value if cell.value != "" else cell.display)
+        if key in self.cache:
+            return self.cache[key]
+        if key in self.stack:
+            raise FormulaEvaluationError(f"Circular formula reference at {cell.sheet}!{cell.address}")
+        previous_sheet = self.current_sheet
+        previous_row = self.current_row
+        previous_col = self.current_col
+        self.stack.append(key)
+        try:
+            value = super().evaluate(cell)
+            self.cache[key] = value
+            return value
+        except FormulaEvaluationError:
+            if not self.fallback_on_error:
+                raise
+            value = parse_scalar(cell.value if cell.value != "" else cell.display)
+            self.cache[key] = value
+            self.fallback_count += 1
+            if len(self.fallback_cells) < 100:
+                self.fallback_cells.append(f"{cell.sheet}!{cell.address}")
+            return value
+        finally:
+            self.stack.pop()
+            self.current_sheet = previous_sheet
+            self.current_row = previous_row
+            self.current_col = previous_col
+
+
+def make_evaluator(
+    ods: Path,
+    cells: dict[tuple[str, int, int], FormulaCell],
+    mode: str = "cached",
+    overrides: dict[tuple[str, int, int], Any] | None = None,
+    fallback_on_error: bool = False,
+) -> CachedFormulaEvaluator:
+    named_ranges = load_named_ranges(ods)
+    if mode == "cached":
+        return CachedFormulaEvaluator(cells, named_ranges)
+    if mode == "recursive":
+        return RecursiveFormulaEvaluator(cells, named_ranges, overrides=overrides, fallback_on_error=fallback_on_error)
+    raise ValueError(f"Unsupported evaluator mode: {mode}")
 
 
 def is_number_like(value: Any) -> bool:
@@ -1567,7 +1705,7 @@ def export_reference(ods: Path, out_dir: Path) -> dict:
     return report
 
 
-def generate_exports(ods: Path, out_dir: Path) -> dict:
+def generate_exports(ods: Path, out_dir: Path, mode: str = "cached", fallback_on_error: bool = False) -> dict:
     root = read_xml(ods, "content.xml")
     first_sheet = next(iter(iter_tables(root)))
     final_row_value = get_cell_display(first_sheet, 31, 4)
@@ -1576,7 +1714,7 @@ def generate_exports(ods: Path, out_dir: Path) -> dict:
     export_row_count = int(float(final_row_value)) + 1
 
     cells = load_formula_cells(ods)
-    evaluator = CachedFormulaEvaluator(cells, load_named_ranges(ods))
+    evaluator = make_evaluator(ods, cells, mode, fallback_on_error=fallback_on_error)
 
     tgm_lines = evaluated_first_column_lines(cells, evaluator, "Export", export_row_count)
     tbc_lines = evaluated_column_lines(cells, evaluator, "TBC", 15, skip_header="Output")
@@ -1588,11 +1726,55 @@ def generate_exports(ods: Path, out_dir: Path) -> dict:
 
     return {
         "ods": str(ods),
+        "evaluator_mode": mode,
+        "fallback_on_error": fallback_on_error,
+        "fallback_count": getattr(evaluator, "fallback_count", 0),
+        "fallback_cells": getattr(evaluator, "fallback_cells", []),
         "outputs": {
             "tgm": {"path": str(tgm_path), "line_count": len(tgm_lines), "source_sheet": "Export"},
             "tbc": {"path": str(tbc_path), "line_count": len(tbc_lines), "source_sheet": "TBC", "source_column": "O"},
         },
     }
+
+
+def extract_input_model(ods: Path, sheets: list[str] | None = None, out_path: Path | None = None) -> dict:
+    selected_sheets = sheets or DEFAULT_INPUT_SHEETS
+    cells = load_formula_cells(ods)
+    inputs: list[dict[str, Any]] = []
+    by_sheet: dict[str, int] = {}
+    for cell in sorted(cells.values(), key=lambda item: (item.sheet, item.row, item.col)):
+        if cell.sheet not in selected_sheets or cell.formula:
+            continue
+        if cell.display == "" and cell.value == "":
+            continue
+        parsed = parse_scalar(cell.value if cell.value != "" else cell.display)
+        record = {
+            "sheet": cell.sheet,
+            "address": cell.address,
+            "row": cell.row,
+            "col": cell.col,
+            "value": cell.value,
+            "display": cell.display,
+            "formulaValue": formula_display_for_cell(cell),
+            "parsed": format_excel_scalar(parsed),
+            "valueType": cell.value_type,
+            "styleName": cell.style_name,
+        }
+        inputs.append(record)
+        by_sheet[cell.sheet] = by_sheet.get(cell.sheet, 0) + 1
+    report = {
+        "ods": str(ods),
+        "sheets": selected_sheets,
+        "input_count": len(inputs),
+        "sheet_counts": dict(sorted(by_sheet.items())),
+        "inputs": inputs,
+        "note": "This is the current editable-project seed: non-formula populated cells from ODS input sheets. ODS color/style classification is preserved for later white-cell filtering.",
+    }
+    if out_path is not None:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+        report["path"] = str(out_path)
+    return report
 
 
 def strip_generated_lookup_blocks(text: str) -> str:
@@ -1694,9 +1876,16 @@ def values_match(expected: str, actual: Any, tolerance: float) -> bool:
         return str(expected) == format_excel_scalar(actual)
 
 
-def formula_report(ods: Path, sheets: list[str], tolerance: float = 1e-9, sample_limit: int = 12) -> dict:
+def formula_report(
+    ods: Path,
+    sheets: list[str],
+    tolerance: float = 1e-9,
+    sample_limit: int = 12,
+    mode: str = "cached",
+    fallback_on_error: bool = False,
+) -> dict:
     cells = load_formula_cells(ods)
-    evaluator = CachedFormulaEvaluator(cells, load_named_ranges(ods))
+    evaluator = make_evaluator(ods, cells, mode, fallback_on_error=fallback_on_error)
     implemented = implemented_formula_functions()
     selected = [
         cell
@@ -1782,7 +1971,11 @@ def formula_report(ods: Path, sheets: list[str], tolerance: float = 1e-9, sample
     return {
         "ods": str(ods),
         "formula_engine_status": "partial_cached_dependency_evaluator",
-        "dependency_mode": "referenced cells use stored ODS values",
+        "dependency_mode": "referenced cells use stored ODS values" if mode == "cached" else "referenced formulas are recursively evaluated",
+        "evaluator_mode": mode,
+        "fallback_on_error": fallback_on_error,
+        "fallback_count": getattr(evaluator, "fallback_count", 0),
+        "fallback_cells": getattr(evaluator, "fallback_cells", []),
         "sheets": sheets,
         "formula_count": len(selected),
         "supported_formula_count": sum(report["supported_formula_count"] for report in sheet_reports.values()),
@@ -1816,13 +2009,22 @@ def main() -> int:
 
     generate_parser = subparsers.add_parser("generate", help="Write generated .tgm/.tbc files from evaluated ODS formulas")
     generate_parser.add_argument("--out-dir", type=Path, default=Path("tmp/tgm_gen_port"))
+    generate_parser.add_argument("--mode", choices=["cached", "recursive"], default="cached", help="Formula evaluator mode")
+    generate_parser.add_argument("--fallback-on-error", action="store_true", help="Recursive mode: use stored ODS value for unresolved dependency edges")
     generate_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
 
     formula_parser = subparsers.add_parser("formula-report", help="Evaluate supported formulas against stored ODS values")
     formula_parser.add_argument("--sheets", nargs="*", default=["General", "Realtime", "Materials"], help="Sheet names to include")
+    formula_parser.add_argument("--mode", choices=["cached", "recursive"], default="cached", help="Formula evaluator mode")
+    formula_parser.add_argument("--fallback-on-error", action="store_true", help="Recursive mode: use stored ODS value for unresolved dependency edges")
     formula_parser.add_argument("--tolerance", type=float, default=1e-9)
     formula_parser.add_argument("--sample-limit", type=int, default=12)
     formula_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+
+    input_parser = subparsers.add_parser("extract-inputs", help="Extract non-formula ODS input cells as a project seed JSON")
+    input_parser.add_argument("--sheets", nargs="*", default=DEFAULT_INPUT_SHEETS, help="Sheet names to include")
+    input_parser.add_argument("--out", type=Path, default=Path("tmp/tgm_gen_port/inputs.json"))
+    input_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
 
     compare_parser = subparsers.add_parser("compare", help="Compare two generated export files")
     compare_parser.add_argument("reference", type=Path)
@@ -1831,7 +2033,7 @@ def main() -> int:
     compare_parser.add_argument("--json", action="store_true")
 
     args = parser.parse_args()
-    if args.command in {"inspect", "export-reference", "generate", "formula-report"} and not args.ods.exists():
+    if args.command in {"inspect", "export-reference", "generate", "formula-report", "extract-inputs"} and not args.ods.exists():
         raise FileNotFoundError(f"ODS not found: {args.ods}")
 
     if args.command == "inspect":
@@ -1839,9 +2041,18 @@ def main() -> int:
     elif args.command == "export-reference":
         report = export_reference(args.ods, args.out_dir)
     elif args.command == "generate":
-        report = generate_exports(args.ods, args.out_dir)
+        report = generate_exports(args.ods, args.out_dir, mode=args.mode, fallback_on_error=args.fallback_on_error)
     elif args.command == "formula-report":
-        report = formula_report(args.ods, args.sheets, tolerance=args.tolerance, sample_limit=args.sample_limit)
+        report = formula_report(
+            args.ods,
+            args.sheets,
+            tolerance=args.tolerance,
+            sample_limit=args.sample_limit,
+            mode=args.mode,
+            fallback_on_error=args.fallback_on_error,
+        )
+    elif args.command == "extract-inputs":
+        report = extract_input_model(args.ods, sheets=args.sheets, out_path=args.out)
     else:
         report = compare_files(args.reference, args.candidate, strip_lookup=args.strip_lookup)
 

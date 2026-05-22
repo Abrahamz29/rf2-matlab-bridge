@@ -32,6 +32,7 @@ state.summary = struct();
 state.plotData = struct();
 state.odsPath = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY F1 1975 Front.ods");
 state.validation = struct("available", true, "message", "Acceptance test not run.");
+state.inputModel = struct("loaded", false, "input_count", 0, "sheet_counts", struct());
 
 if inputPath ~= "" && isfile(inputPath)
     model = rf2ReadTgm(inputPath);
@@ -66,6 +67,12 @@ try
                 state.message = "ODS acceptance test failed.";
                 state.status = "validation failed";
             end
+            html.Data = state;
+        case "loadOdsInputs"
+            state = localBuildState(string(data.inputPath));
+            state.inputModel = rf2TgmGenExtractInputs("OdsPath", string(data.odsPath));
+            state.inputModel.loaded = true;
+            state.message = "Loaded ODS input model.";
             html.Data = state;
         otherwise
             html.Data = struct("kind", "error", "message", "Unknown command: " + string(data.command));

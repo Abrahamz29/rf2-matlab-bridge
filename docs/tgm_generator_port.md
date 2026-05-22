@@ -81,6 +81,20 @@ report = rf2TgmGenGenerate;
 assert(report.equal)
 ```
 
+ODS-Eingabezellen als Projektmodell extrahieren:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
+  --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  extract-inputs --out .\tmp\tgm_gen_port\inputs.json --json
+```
+
+Aus MATLAB:
+
+```matlab
+inputs = rf2TgmGenExtractInputs;
+```
+
 ## Formel-Harness
 
 Der aktuelle Port kann die ODS-Formeln inventarisieren, Zellabhaengigkeiten
@@ -117,8 +131,22 @@ Aktueller Full-Sheet-Stand fuer die relevanten Sheets `About`, `General`,
 - 80.882 Formeln mit implementierten Funktionsnamen.
 - 80.882 Formeln ausfuehrbar.
 - 0 harte Evaluator-Fehler.
-- 5.345 Zellwert-Abweichungen bleiben, vor allem Anzeigeformatierung,
+- 5.333 Zellwert-Abweichungen bleiben, vor allem Anzeigeformatierung,
   gerundete Displaywerte und der noch approximierte `CUBSPLINE`-Kern.
+
+Zusaetzlich gibt es einen rekursiven Rechenmodus:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
+  --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  formula-report --sheets General Realtime Materials --mode recursive `
+  --fallback-on-error --json
+```
+
+Der rekursive Modus berechnet referenzierte Formelzellen neu und kann
+uebergangsweise einzelne unresolved dependency edges auf gespeicherte ODS-Werte
+zurueckfallen lassen. Der dateigleiche finale Export bleibt aktuell bewusst im
+validierten `cached`-Modus.
 
 ## Status
 
@@ -130,6 +158,10 @@ Implementiert:
   und cached dependency evaluation.
 - Evaluierter Generatorpfad fuer `generated.tgm` und `generated.tbc`.
 - MATLAB-Wrapper `rf2TgmGenGenerate` fuer den finalen Datei-Akzeptanztest.
+- Rekursiver Formelmodus mit kontrolliertem Fallback fuer noch nicht freie
+  Dependency-Kanten.
+- ODS-Input-Projektmodell via `extract-inputs` und MATLAB-Wrapper
+  `rf2TgmGenExtractInputs`.
 - Rekonstruktion der gespeicherten ODS-`.tgm`- und `.tbc`-Exporttexte.
 - TGM-Parser, Roundtrip-Writer ohne generated Lookup/Patch.
 - Plotdaten fuer Nodes, Materialien, TreadDepth und PlyParams.
@@ -138,7 +170,7 @@ Implementiert:
 Noch offen:
 
 - Vollstaendige rekursive Formel-Engine fuer editierte Eingabezellen ohne
-  gespeicherte Abhaengigkeitswerte.
+  gespeicherte Abhaengigkeitswerte oder Fallback-Kanten.
 - Zellwert-Golden-Tests gegen dynamisch neu berechnete ODS-Werte nach
   Eingabeaenderungen.
 - Vollstaendige Plotdatenabdeckung aller ODS-Charts.

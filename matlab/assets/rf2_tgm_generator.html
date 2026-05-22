@@ -227,6 +227,7 @@
       <span class="pill" id="file-pill">No file</span>
       <span class="pill warn">LookupV2/PatchV1: tTool required</span>
       <div class="toolbar">
+        <button id="inputs-button" type="button">Load ODS Inputs</button>
         <button id="acceptance-button" type="button">Run Acceptance</button>
         <button id="reload-button" type="button">Reload</button>
         <button id="ping-button" type="button">Ping MATLAB</button>
@@ -317,6 +318,16 @@
           };
         }
       });
+      document.getElementById("inputs-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("loading ODS input model");
+          matlabComponent.Data = {
+            command: "loadOdsInputs",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods"
+          };
+        }
+      });
     }
 
     function render() {
@@ -374,7 +385,7 @@
         drawPly(state.plotData?.plyParams || [], "ply");
         drawPlyTable(state.plotData?.plyParams || []);
       } else {
-        content.innerHTML = `${metricHtml}${renderValidationBlock()}<div class="empty">${viewTitle(activeView)} is wired as a real clickable tab. The ODS formula port for this page is still pending.</div>`;
+        content.innerHTML = `${metricHtml}${renderInputBlock(activeView)}${renderValidationBlock()}<div class="empty">${viewTitle(activeView)} is wired as a real clickable tab. Full editors are still being wired to the extracted ODS input model.</div>`;
       }
     }
 
@@ -388,9 +399,18 @@
             <tr><td>Realtime rows</td><td>${summary.realtimeParameterCount ?? "-"}</td></tr>
             <tr><td>LookupV2</td><td>${summary.lookupV2LineCount ?? 0} lines</td></tr>
             <tr><td>PatchV1</td><td>${summary.patchV1LineCount ?? 0} lines</td></tr>
+            <tr><td>Inputs</td><td>${state.inputModel?.input_count ?? 0}</td></tr>
             <tr><td>ODS test</td><td>${state.validation?.equal === true ? "pass" : (state.validation?.message || "not run")}</td></tr>
           </tbody>
         </table>`;
+    }
+
+    function renderInputBlock(view) {
+      const model = state.inputModel || {};
+      const counts = model.sheet_counts || {};
+      const rows = Object.keys(counts).map(sheet => `<tr><td>${sheet}</td><td>${counts[sheet]}</td></tr>`).join("");
+      if (!rows) return "";
+      return `<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>ODS Input Sheet</th><th>Cells</th></tr></thead><tbody>${rows}</tbody></table></section>`;
     }
 
     function renderValidationBlock() {

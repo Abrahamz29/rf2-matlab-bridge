@@ -3,6 +3,8 @@ function report = rf2TgmGenGenerate(options)
 arguments
     options.OdsPath (1,1) string = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY F1 1975 Front.ods")
     options.OutDir (1,1) string = fullfile("tmp", "tgm_gen_port")
+    options.Mode (1,1) string {mustBeMember(options.Mode, ["cached", "recursive"])} = "cached"
+    options.FallbackOnError (1,1) logical = false
     options.PythonExe (1,1) string = ""
 end
 
@@ -13,7 +15,11 @@ end
 
 scriptPath = fullfile("tools", "tgm_gen_ods.py");
 localRunJson(pythonExe, scriptPath, options.OdsPath, "export-reference", ["--out-dir", options.OutDir]);
-generateReport = localRunJson(pythonExe, scriptPath, options.OdsPath, "generate", ["--out-dir", options.OutDir]);
+generateArgs = ["--out-dir", options.OutDir, "--mode", options.Mode];
+if options.FallbackOnError
+    generateArgs(end + 1) = "--fallback-on-error";
+end
+generateReport = localRunJson(pythonExe, scriptPath, options.OdsPath, "generate", generateArgs);
 
 referenceTgm = fullfile(options.OutDir, "reference_from_ods.tgm");
 referenceTbc = fullfile(options.OutDir, "reference_from_ods.tbc");
@@ -27,6 +33,8 @@ report = struct();
 report.kind = "generationReport";
 report.odsPath = options.OdsPath;
 report.outDir = options.OutDir;
+report.mode = options.Mode;
+report.fallbackOnError = options.FallbackOnError;
 report.generated = generateReport.outputs;
 report.tgm = tgmCompare;
 report.tbc = tbcCompare;

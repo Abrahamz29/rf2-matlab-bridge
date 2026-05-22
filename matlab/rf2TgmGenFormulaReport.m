@@ -3,6 +3,8 @@ function report = rf2TgmGenFormulaReport(options)
 arguments
     options.OdsPath (1,1) string = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY F1 1975 Front.ods")
     options.Sheets string = ["General", "Realtime", "Materials"]
+    options.Mode (1,1) string {mustBeMember(options.Mode, ["cached", "recursive"])} = "cached"
+    options.FallbackOnError (1,1) logical = false
     options.PythonExe (1,1) string = ""
 end
 
@@ -13,8 +15,12 @@ end
 
 sheetArgs = strjoin("""" + options.Sheets + """", " ");
 scriptPath = fullfile("tools", "tgm_gen_ods.py");
-command = sprintf('"%s" "%s" --ods "%s" formula-report --sheets %s --json', ...
-    pythonExe, scriptPath, options.OdsPath, sheetArgs);
+fallbackArg = "";
+if options.FallbackOnError
+    fallbackArg = " --fallback-on-error";
+end
+command = sprintf('"%s" "%s" --ods "%s" formula-report --sheets %s --mode %s%s --json', ...
+    pythonExe, scriptPath, options.OdsPath, sheetArgs, options.Mode, fallbackArg);
 [status, output] = system(command);
 if status ~= 0
     error("rf2TgmGenFormulaReport:CommandFailed", "Formula report failed:\n%s", output);
