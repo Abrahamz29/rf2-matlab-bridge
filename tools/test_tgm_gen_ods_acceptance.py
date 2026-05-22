@@ -41,6 +41,7 @@ def run_acceptance(ods: Path, out_dir: Path, mode: str) -> dict:
     project_path = out_dir / "inputs.json"
     project_out_dir = out_dir / "project_roundtrip"
     project_inputs = tgm.extract_input_model(ods, out_path=project_path)
+    editable_inputs = tgm.extract_input_model(ods, out_path=out_dir / "inputs_editable.json", editable_only=True)
     project_generated = tgm.generate_exports(
         ods,
         project_out_dir,
@@ -71,6 +72,21 @@ def run_acceptance(ods: Path, out_dir: Path, mode: str) -> dict:
         fallback_on_error=False,
         sample_limit=3,
     )
+    chart_report = tgm.inspect_charts(ods)
+    chart_data = tgm.inspect_chart_data(ods, mode=mode, fallback_on_error=False)
+    chart_series_with_values = sum(
+        1
+        for chart in chart_data["charts"]
+        for series in chart["series"]
+        if series["valuesData"]["values"]
+    )
+    chart_numeric_points = sum(
+        1
+        for chart in chart_data["charts"]
+        for series in chart["series"]
+        for value in series["valuesData"]["values"]
+        if value["isNumeric"]
+    )
 
     return {
         "ods": str(ods),
@@ -83,6 +99,12 @@ def run_acceptance(ods: Path, out_dir: Path, mode: str) -> dict:
                 "path": str(project_path),
                 "input_count": project_inputs["input_count"],
                 "sheet_counts": project_inputs["sheet_counts"],
+                "editable_confidence_counts": project_inputs["editable_confidence_counts"],
+            },
+            "editable_inputs": {
+                "path": str(out_dir / "inputs_editable.json"),
+                "input_count": editable_inputs["input_count"],
+                "editable_confidence_counts": editable_inputs["editable_confidence_counts"],
             },
             "generated": project_generated["outputs"],
             "override_count": project_generated["override_count"],
@@ -94,6 +116,20 @@ def run_acceptance(ods: Path, out_dir: Path, mode: str) -> dict:
         "evaluated_count": report["evaluated_count"],
         "error_count": report["error_count"],
         "fallback_count": report["fallback_count"],
+        "charts": {
+            "chart_count": chart_report["chart_count"],
+            "series_count": chart_report["series_count"],
+            "evaluated_series_count": chart_series_with_values,
+            "numeric_point_count": chart_numeric_points,
+            "fallback_count": chart_data["fallback_count"],
+            "passed": bool(
+                chart_report["chart_count"] == 12
+                and chart_report["series_count"] == 79
+                and chart_series_with_values == chart_report["series_count"]
+                and chart_numeric_points > 0
+                and chart_data["fallback_count"] == 0
+            ),
+        },
         "tgm": tgm_compare,
         "tbc": tbc_compare,
         "passed": bool(
@@ -103,6 +139,11 @@ def run_acceptance(ods: Path, out_dir: Path, mode: str) -> dict:
             and project_tbc_compare["equal"]
             and report["error_count"] == 0
             and report["fallback_count"] == 0
+            and chart_report["chart_count"] == 12
+            and chart_report["series_count"] == 79
+            and chart_series_with_values == chart_report["series_count"]
+            and chart_numeric_points > 0
+            and chart_data["fallback_count"] == 0
         ),
     }
 
@@ -123,6 +164,7 @@ def main() -> int:
         print(f"formulas: {report['evaluated_count']}/{report['formula_count']}")
         print(f"errors: {report['error_count']}")
         print(f"fallback: {report['fallback_count']}")
+        print(f"charts: {report['charts']['evaluated_series_count']}/{report['charts']['series_count']}")
         print(f"tgm_equal_without_lookup_patch: {report['tgm']['equal']}")
         print(f"tbc_equal: {report['tbc']['equal']}")
         print(f"project_roundtrip: {report['project_roundtrip']['passed']}")

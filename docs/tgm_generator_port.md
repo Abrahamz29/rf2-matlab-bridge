@@ -97,7 +97,8 @@ Der Test erzeugt Referenz und Kandidat neu, prueft `.tgm`/`.tbc` und laesst
 den rekursiven Full-Sheet-Formelreport ohne Fallback laufen. Zusaetzlich
 extrahiert er die editierbaren Projektinputs in `inputs.json`, speist diese
 unveraendert wieder in den Generator ein und vergleicht auch diesen
-Projekt-Roundtrip gegen die ODS-Referenz.
+Projekt-Roundtrip gegen die ODS-Referenz. Der Test prueft ausserdem die
+Style-/Editierklassifizierung und die ODS-Chartdatenextraktion.
 
 tTool-Vorbereitung aus MATLAB:
 
@@ -307,6 +308,7 @@ Implementiert:
 - Projekt-Override-Pfad fuer rekursive Generatorlaeufe (`--project`).
 - Regressionstest fuer unveraenderte Projektinputs: ODS -> `inputs.json` ->
   rekursiver Export bleibt dateigleich zur ODS-Referenz.
+- Regressionstest fuer ODS-Chart-Inventar und ausgewertete Chartdaten.
 - LibreOffice/UNO-Diagnose fuer dynamische ODS-Recalc-Vergleiche
   (`diagnose_tgm_gen_lo_dynamic.py`); lokal nicht als Acceptance-Golden nutzbar,
   weil Calc nach Recalc `#WERT!` in Exportzellen schreibt.
