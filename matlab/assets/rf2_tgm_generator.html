@@ -255,6 +255,7 @@
         <button id="chart-data-button" type="button">Load ODS Chart Data</button>
         <button id="generate-inputs-button" type="button">Generate From Inputs</button>
         <button id="acceptance-button" type="button">Run Acceptance</button>
+        <button id="formula-button" type="button">Run Formula Report</button>
         <button id="prepare-ttool-button" type="button">Prepare tTool</button>
         <button id="reload-button" type="button">Reload</button>
         <button id="ping-button" type="button">Ping MATLAB</button>
@@ -346,6 +347,17 @@
             command: "runAcceptance",
             inputPath: state?.inputPath || "",
             odsPath: state?.odsPath || "tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods"
+          };
+        }
+      });
+      document.getElementById("formula-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("running formula report");
+          matlabComponent.Data = {
+            command: "runFormulaReport",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods",
+            inputModel: state?.inputModel || {}
           };
         }
       });
@@ -496,7 +508,7 @@
       } else if (["realtime", "wlf", "contactprops", "loadsens", "tbcexport", "tgmexport"].includes(activeView)) {
         content.innerHTML = `${renderInputBlock(activeView)}${renderValidationBlock()}${renderExportBlock()}`;
       } else if (activeView === "validation") {
-        content.innerHTML = `${renderValidationBlock()}${renderExportBlock()}${metricHtml}`;
+        content.innerHTML = `${renderValidationBlock()}${renderFormulaReportBlock()}${renderExportBlock()}${metricHtml}`;
       } else {
         content.innerHTML = `${metricHtml}${renderInputBlock(activeView)}${renderValidationBlock()}<div class="empty">${viewTitle(activeView)} has no additional data loaded yet.</div>`;
       }
@@ -517,6 +529,7 @@
             <tr><td>Project</td><td>${escapeHtml(state.projectPath || "")}</td></tr>
             <tr><td>ODS charts</td><td>${state.chartReport?.chart_count ?? 0} / ${state.chartReport?.series_count ?? 0} series</td></tr>
             <tr><td>ODS test</td><td>${state.validation?.equal === true ? "pass" : (state.validation?.message || "not run")}</td></tr>
+            <tr><td>Formulas</td><td>${formatFormulaSummary(state.formulaReport)}</td></tr>
           </tbody>
         </table>`;
     }
@@ -614,6 +627,22 @@
       </tbody></table></section>`;
     }
 
+    function renderFormulaReportBlock() {
+      const report = state.formulaReport || {};
+      const sheetReports = report.sheet_reports || {};
+      const rows = Object.keys(sheetReports).map(sheet => {
+        const item = sheetReports[sheet] || {};
+        return `<tr><td>${escapeHtml(sheet)}</td><td>${item.formula_count ?? "-"}</td><td>${item.evaluated_count ?? "-"}</td><td>${item.error_count ?? "-"}</td><td>${item.mismatch_count ?? "-"}</td></tr>`;
+      }).join("");
+      const summary = `<div class="grid">
+        <div class="metric"><div class="value">${report.formula_count ?? "-"}</div><div class="label">Formula Cells</div></div>
+        <div class="metric"><div class="value">${report.evaluated_count ?? "-"}</div><div class="label">Evaluated</div></div>
+        <div class="metric"><div class="value">${report.error_count ?? "-"}</div><div class="label">Errors</div></div>
+        <div class="metric"><div class="value">${report.fallback_count ?? "-"}</div><div class="label">Fallbacks</div></div>
+      </div>`;
+      return `${summary}<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Sheet</th><th>Formulas</th><th>Evaluated</th><th>Errors</th><th>Mismatches</th></tr></thead><tbody>${rows || `<tr><td colspan="5">Formula report not run.</td></tr>`}</tbody></table></section>`;
+    }
+
     function renderBehaviourSummary() {
       const behaviour = state.behaviour || {};
       const summary = behaviour.summary || {};
@@ -677,6 +706,11 @@
         .filter(key => counts[key] !== undefined)
         .map(key => `${key}:${counts[key]}`)
         .join(" ");
+    }
+
+    function formatFormulaSummary(report) {
+      if (!report || report.formula_count === undefined) return "not run";
+      return `${report.evaluated_count}/${report.formula_count}, errors:${report.error_count}, fallback:${report.fallback_count}`;
     }
 
     function plotShell(id, title) {

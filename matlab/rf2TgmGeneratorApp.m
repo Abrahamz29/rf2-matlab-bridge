@@ -35,6 +35,7 @@ state.odsPath = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY 
 state.chartReport = localLoadChartReport(state.odsPath);
 state.chartData = struct("loaded", false, "chart_count", 0, "series_count", 0);
 state.validation = struct("available", true, "message", "Acceptance test not run.");
+state.formulaReport = struct("available", true, "message", "Formula report not run.");
 state.ttool = struct("available", true, "message", "Not prepared.");
 state.inputModel = struct("loaded", false, "input_count", 0, "sheet_counts", struct());
 state.projectPath = localUiProjectPath();
@@ -72,6 +73,34 @@ try
                 state.message = "ODS acceptance test failed.";
                 state.status = "validation failed";
             end
+            html.Data = state;
+        case "runFormulaReport"
+            state = localBuildState(string(data.inputPath));
+            state.status = "running formula report";
+            projectPath = "";
+            if isfield(data, "inputModel") && isfield(data.inputModel, "inputs")
+                projectPath = localUiProjectPath();
+                localWriteJson(projectPath, data.inputModel);
+                state.inputModel = data.inputModel;
+                state.projectPath = projectPath;
+            end
+            if projectPath ~= ""
+                state.formulaReport = rf2TgmGenFormulaReport( ...
+                    "OdsPath", string(data.odsPath), ...
+                    "Sheets", localFormulaSheets(), ...
+                    "Mode", "recursive", ...
+                    "FallbackOnError", false, ...
+                    "ProjectPath", projectPath);
+            else
+                state.formulaReport = rf2TgmGenFormulaReport( ...
+                    "OdsPath", string(data.odsPath), ...
+                    "Sheets", localFormulaSheets(), ...
+                    "Mode", "recursive", ...
+                    "FallbackOnError", false);
+            end
+            state.formulaReport.available = true;
+            state.message = "Formula report completed.";
+            state.status = "formula report ready";
             html.Data = state;
         case "prepareTTool"
             state = localBuildState(string(data.inputPath));
@@ -186,6 +215,11 @@ end
 
 function projectPath = localUiProjectPath()
 projectPath = fullfile("tmp", "tgm_gen_port_ui", "inputs_from_ui.json");
+end
+
+function sheets = localFormulaSheets()
+sheets = ["About", "General", "Geometry", "Construction", "TGM", "Compound", ...
+    "Realtime", "WLF", "ContactProps", "LoadSens", "Export", "TBC", "Materials"];
 end
 
 function localWriteJson(path, data)

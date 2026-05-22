@@ -53,7 +53,8 @@ den Projektzellen tabweise bearbeiten und einen rekursiven
 `tmp\tgm_gen_port_ui\inputs_from_ui.json` gespeichert und wieder geladen werden.
 Die Input-Tabellen haben Suche, Pagination und einen `Likely editable`-Filter,
 damit auch grosse Sheets wie `Compound` vollstaendig erreichbar bleiben.
-Der dateigleiche Acceptance-Test bleibt als eigener Button vorhanden.
+Der dateigleiche Acceptance-Test und der Full-Sheet-Formelreport bleiben als
+eigene Buttons vorhanden.
 
 ## Akzeptanztest
 
@@ -320,6 +321,7 @@ Implementiert:
 - UI-Tabelle fuer extrahierte ODS-Eingabezellen mit `Generate From Inputs`.
 - UI-Suche und Pagination fuer alle extrahierten Eingabezellen.
 - UI-Projektpersistenz fuer bearbeitete Inputs (`Save Project` / `Load Project`).
+- UI-Button `Run Formula Report` fuer den rekursiven Full-Sheet-Formelreport.
 - UI-Behaviour-Plots fuer `Fy` ueber Schraeglaufwinkel, `Fx` ueber Slip Ratio
   und Kraftverlauf ueber Realtime-Testindex.
 - tTool-Vorbereitung aus MATLAB und UI: gepruefte `.tgm`/`.tbc` nach `pTool`
