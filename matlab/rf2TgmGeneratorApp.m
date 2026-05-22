@@ -30,6 +30,8 @@ state.loaded = false;
 state.message = "No TGM loaded.";
 state.summary = struct();
 state.plotData = struct();
+state.odsPath = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY F1 1975 Front.ods");
+state.validation = struct("available", true, "message", "Acceptance test not run.");
 
 if inputPath ~= "" && isfile(inputPath)
     model = rf2ReadTgm(inputPath);
@@ -53,6 +55,18 @@ try
             html.Data = struct("kind", "pong", "message", "MATLAB backend ready");
         case "loadTgm"
             html.Data = localBuildState(string(data.path));
+        case "runAcceptance"
+            state = localBuildState(string(data.inputPath));
+            state.status = "running acceptance";
+            state.validation = rf2TgmGenGenerate("OdsPath", string(data.odsPath));
+            if state.validation.equal
+                state.message = "ODS acceptance test passed.";
+                state.status = "validated";
+            else
+                state.message = "ODS acceptance test failed.";
+                state.status = "validation failed";
+            end
+            html.Data = state;
         otherwise
             html.Data = struct("kind", "error", "message", "Unknown command: " + string(data.command));
     end

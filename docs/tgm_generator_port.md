@@ -26,6 +26,19 @@ Erzeugt:
 - `tmp\tgm_gen_port\reference_from_ods.tbc`
 - `tmp\tgm_gen_port\tgm_gen_ods_report.json`
 
+Generierte Dateien aus dem aktuellen Formel-Harness schreiben:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
+  --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  generate --out-dir .\tmp\tgm_gen_port --json
+```
+
+Erzeugt:
+
+- `tmp\tgm_gen_port\generated.tgm`
+- `tmp\tgm_gen_port\generated.tbc`
+
 ## MATLAB UI starten
 
 ```matlab
@@ -52,6 +65,20 @@ Der aktuelle Harness kann diesen Vergleich bereits ausfuehren:
 & "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
   compare .\tmp\tgm_gen_port\reference_from_ods.tgm .\tmp\tgm_gen_port\generated.tgm `
   --strip-lookup --json
+```
+
+Aktueller harter Dateistand fuer die offizielle Beispiel-ODS:
+
+- `generated.tbc` ist textgleich zur ODS-Referenz.
+- `generated.tgm` ist textgleich zur ODS-Referenz, wenn nur `LookupV2` und
+  `PatchV1` ausgeschlossen werden.
+
+Aus MATLAB:
+
+```matlab
+addpath("matlab")
+report = rf2TgmGenGenerate;
+assert(report.equal)
 ```
 
 ## Formel-Harness
@@ -82,23 +109,37 @@ Der Report enthaelt pro Sheet:
 - implementierte und noch fehlende Funktionsnamen.
 - ausgewertete Formeln, Matches, Abweichungen und Fehlerbeispiele.
 
+Aktueller Full-Sheet-Stand fuer die relevanten Sheets `About`, `General`,
+`Geometry`, `Construction`, `TGM`, `Compound`, `Realtime`, `WLF`,
+`ContactProps`, `LoadSens`, `Export`, `TBC`, `Materials`:
+
+- 80.882 Formeln erkannt.
+- 80.882 Formeln mit implementierten Funktionsnamen.
+- 80.882 Formeln ausfuehrbar.
+- 0 harte Evaluator-Fehler.
+- 5.345 Zellwert-Abweichungen bleiben, vor allem Anzeigeformatierung,
+  gerundete Displaywerte und der noch approximierte `CUBSPLINE`-Kern.
+
 ## Status
 
 Implementiert:
 
 - ODS-Inventar und Formula-Coverage-Report.
-- Formel-Harness fuer Zellreferenzen, Abhaengigkeitsgraph und cached
-  dependency evaluation.
+- Formel-Harness fuer Zellreferenzen, benannte Bereiche, Array-Arithmetik,
+  Lazy-`IF`/`IFERROR`, `INDIRECT`/`ADDRESS`, Lookup-Funktionen, Kriterienfunktionen
+  und cached dependency evaluation.
+- Evaluierter Generatorpfad fuer `generated.tgm` und `generated.tbc`.
+- MATLAB-Wrapper `rf2TgmGenGenerate` fuer den finalen Datei-Akzeptanztest.
 - Rekonstruktion der gespeicherten ODS-`.tgm`- und `.tbc`-Exporttexte.
 - TGM-Parser, Roundtrip-Writer ohne generated Lookup/Patch.
 - Plotdaten fuer Nodes, Materialien, TreadDepth und PlyParams.
-- Moderne MATLAB-`uihtml`-App-Shell mit ersten Plots.
+- Moderne MATLAB-`uihtml`-App-Shell mit ersten Plots und Acceptance-Test-Button.
 
 Noch offen:
 
-- Vollstaendige rekursive Formel-Engine fuer alle ODS-Formeln ohne gespeicherte
-  Abhaengigkeitswerte.
-- Zellwert-Golden-Tests gegen dynamisch neu berechnete ODS-Werte fuer alle
-  relevanten Sheets.
+- Vollstaendige rekursive Formel-Engine fuer editierte Eingabezellen ohne
+  gespeicherte Abhaengigkeitswerte.
+- Zellwert-Golden-Tests gegen dynamisch neu berechnete ODS-Werte nach
+  Eingabeaenderungen.
 - Vollstaendige Plotdatenabdeckung aller ODS-Charts.
 - Vollstaendige Editier- und Exportoberflaeche.

@@ -227,6 +227,7 @@
       <span class="pill" id="file-pill">No file</span>
       <span class="pill warn">LookupV2/PatchV1: tTool required</span>
       <div class="toolbar">
+        <button id="acceptance-button" type="button">Run Acceptance</button>
         <button id="reload-button" type="button">Reload</button>
         <button id="ping-button" type="button">Ping MATLAB</button>
       </div>
@@ -306,6 +307,16 @@
           matlabComponent.Data = { command: "ping" };
         }
       });
+      document.getElementById("acceptance-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("running ODS acceptance");
+          matlabComponent.Data = {
+            command: "runAcceptance",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods"
+          };
+        }
+      });
     }
 
     function render() {
@@ -363,7 +374,7 @@
         drawPly(state.plotData?.plyParams || [], "ply");
         drawPlyTable(state.plotData?.plyParams || []);
       } else {
-        content.innerHTML = `${metricHtml}<div class="empty">${viewTitle(activeView)} is wired as a real clickable tab. The ODS formula port for this page is still pending.</div>`;
+        content.innerHTML = `${metricHtml}${renderValidationBlock()}<div class="empty">${viewTitle(activeView)} is wired as a real clickable tab. The ODS formula port for this page is still pending.</div>`;
       }
     }
 
@@ -377,8 +388,24 @@
             <tr><td>Realtime rows</td><td>${summary.realtimeParameterCount ?? "-"}</td></tr>
             <tr><td>LookupV2</td><td>${summary.lookupV2LineCount ?? 0} lines</td></tr>
             <tr><td>PatchV1</td><td>${summary.patchV1LineCount ?? 0} lines</td></tr>
+            <tr><td>ODS test</td><td>${state.validation?.equal === true ? "pass" : (state.validation?.message || "not run")}</td></tr>
           </tbody>
         </table>`;
+    }
+
+    function renderValidationBlock() {
+      const validation = state.validation || {};
+      const tgm = validation.tgm || {};
+      const tbc = validation.tbc || {};
+      return `<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Check</th><th>Equal</th><th>Lines</th><th>First diff</th></tr></thead><tbody>
+        <tr><td>TGM without Lookup/Patch</td><td>${tgm.equal === true ? "yes" : "-"}</td><td>${tgm.candidate_lines ?? "-"}</td><td>${formatDiff(tgm.first_diff)}</td></tr>
+        <tr><td>TBC</td><td>${tbc.equal === true ? "yes" : "-"}</td><td>${tbc.candidate_lines ?? "-"}</td><td>${formatDiff(tbc.first_diff)}</td></tr>
+      </tbody></table></section>`;
+    }
+
+    function formatDiff(diff) {
+      if (!diff) return "";
+      return `L${diff.line}: ${diff.reference || ""} != ${diff.candidate || ""}`;
     }
 
     function plotShell(id, title) {
