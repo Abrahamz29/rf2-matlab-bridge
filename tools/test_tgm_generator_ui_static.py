@@ -45,13 +45,43 @@ EXPECTED_TABS = {
     "plystack",
     "behaviour",
     "odscharts",
+    "input-general",
+    "input-geometry",
+    "input-construction",
+    "input-compound",
+    "input-realtime",
+    "input-wlf",
+    "input-contactprops",
+    "input-loadsens",
+    "input-materials",
+    "input-tbc",
 }
 
 EXPECTED_INLINE_FUNCTIONS = {
+    "activateInputSheet",
     "changeInputPage",
     "updateInputValue",
     "setInputFilter",
     "setEditableOnlyFilter",
+}
+
+EXPECTED_AXIS_LABELS = {
+    "Lateral coordinate Y [m]",
+    "Radial coordinate X [m]",
+    "Temperature [K]",
+    "Young's modulus [MPa]",
+    "Young's modulus [Pa, log]",
+    "Node index [-]",
+    "Ply angle [deg]",
+    "Ply thickness [m]",
+    "Slip angle [deg]",
+    "Lateral force Fy [N]",
+    "Slip ratio [%]",
+    "Longitudinal force Fx [N]",
+    "Realtime test index [-]",
+    "Force [N]",
+    "Domain",
+    "Value",
 }
 
 
@@ -89,6 +119,17 @@ def run_check() -> dict:
     tabs = set(re.findall(r'data-view="([^"]+)"', html))
     for tab in sorted(EXPECTED_TABS - tabs):
         errors.append(f"missing tab data-view: {tab}")
+
+    for label in sorted(EXPECTED_AXIS_LABELS):
+        if label not in html:
+            errors.append(f"missing plot axis label: {label}")
+
+    for function_name in ["makePlotFrame", "drawAxes", "drawLegend", "drawPlyThickness"]:
+        if function_name not in function_names:
+            errors.append(f"plot helper function missing: {function_name}")
+
+    if "equalScale: true" not in html:
+        errors.append("cross-section plot does not request equalScale: true")
 
     for function_name in sorted(EXPECTED_INLINE_FUNCTIONS):
         if function_name not in function_names:

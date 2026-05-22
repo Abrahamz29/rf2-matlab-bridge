@@ -74,6 +74,11 @@
       padding: 5px 7px;
       font: inherit;
     }
+    input:disabled {
+      color: var(--muted);
+      opacity: 0.78;
+      cursor: default;
+    }
     .pill {
       color: var(--muted);
       border: 1px solid var(--line);
@@ -240,6 +245,48 @@
     .input-controls .spacer {
       flex: 1;
     }
+    .sheet-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0 0 10px;
+    }
+    .sheet-tab {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+    .sheet-tab.active {
+      color: var(--text);
+      border-color: var(--accent);
+      background: var(--panel-2);
+    }
+    .swatch {
+      display: inline-block;
+      width: 42px;
+      height: 16px;
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      vertical-align: middle;
+    }
+    .axis line, .axis path {
+      stroke: #64717d;
+      stroke-width: 1;
+      shape-rendering: crispEdges;
+    }
+    .axis text, .axis-label, .plot-title, .plot-legend {
+      fill: var(--muted);
+      font-size: 11px;
+    }
+    .axis-label {
+      font-size: 12px;
+    }
+    .plot-title {
+      font-weight: 650;
+    }
   </style>
 </head>
 <body>
@@ -277,6 +324,19 @@
         <div class="tab" data-view="tbcexport">TBC Export</div>
         <div class="tab" data-view="validation">Validation</div>
       </div>
+      <div class="section-title">Excel Inputs</div>
+      <div class="tabs">
+        <div class="tab" data-view="input-general">General</div>
+        <div class="tab" data-view="input-geometry">Geometry</div>
+        <div class="tab" data-view="input-construction">Construction</div>
+        <div class="tab" data-view="input-compound">Compound</div>
+        <div class="tab" data-view="input-realtime">Realtime</div>
+        <div class="tab" data-view="input-wlf">WLF</div>
+        <div class="tab" data-view="input-contactprops">ContactProps</div>
+        <div class="tab" data-view="input-loadsens">LoadSens</div>
+        <div class="tab" data-view="input-materials">Materials</div>
+        <div class="tab" data-view="input-tbc">TBC</div>
+      </div>
       <div class="section-title">Plots</div>
       <div class="tabs">
         <div class="tab" data-view="crosssection">Cross-section</div>
@@ -304,6 +364,20 @@
     let inputFilter = "";
     let editableOnlyFilter = false;
     const inputPages = {};
+    const ODS_INPUT_SHEETS = ["General", "Geometry", "Construction", "Compound", "Realtime", "WLF", "ContactProps", "LoadSens", "Materials", "TBC"];
+    const INPUT_VIEW_TO_SHEET = {
+      "input-general": "General",
+      "input-geometry": "Geometry",
+      "input-construction": "Construction",
+      "input-compound": "Compound",
+      "input-realtime": "Realtime",
+      "input-wlf": "WLF",
+      "input-contactprops": "ContactProps",
+      "input-loadsens": "LoadSens",
+      "input-materials": "Materials",
+      "input-tbc": "TBC"
+    };
+    const PLOT_COLORS = ["#72b7ff", "#f0b85a", "#6be675", "#ff7a90", "#b594ff", "#65d6d0", "#e0a84f", "#c7d0d9"];
 
     function setup(htmlComponent) {
       matlabComponent = htmlComponent;
@@ -456,6 +530,7 @@
         ["Nodes", summary.nodeCount],
         ["Material Rows", summary.materialRows],
         ["Ply Rows", summary.plyParamRows],
+        ["Ply Layers", summary.maxPlyLayers],
         ["ODS Charts", state.chartReport?.chart_count],
         ["Library", state.materialLibrary?.material_count],
         ["Lookup Lines", `${summary.lookupV2LineCount || 0} / ${summary.patchV1LineCount || 0}`]
@@ -464,7 +539,9 @@
         `<div class="metric"><div class="value">${value ?? "-"}</div><div class="label">${label}</div></div>`
       ).join("")}</div>`;
 
-      if (activeView === "overview") {
+      if (activeView.startsWith("input-")) {
+        content.innerHTML = `${renderInputBlock(activeView)}${renderValidationBlock()}`;
+      } else if (activeView === "overview") {
         content.innerHTML = `${metricHtml}
           <div class="two-col">
             ${plotShell("geometry", "Tyre Cross-section Nodes")}
@@ -495,10 +572,12 @@
         drawMaterialLibraryPlot(state.materialLibrary?.points || [], "library-modulus");
         drawMaterialLibraryTables(state.materialLibrary || {});
       } else if (activeView === "construction" || activeView === "plystack") {
-        content.innerHTML = `${plotShell("ply", "Ply Angle / Thickness")}
-          ${tableShell("ply-table", ["Node", "Angle deg", "Thickness m", "Connect"])}
+        content.innerHTML = `${plotShell("ply", "Ply Angle By Gurtellage")}
+          ${plotShell("ply-thickness", "Ply Thickness By Gurtellage")}
+          ${tableShell("ply-table", ["Node", "Layer", "Angle deg", "Thickness m", "Connect"])}
           ${renderInputBlock("construction")}`;
         drawPly(state.plotData?.plyParams || [], "ply");
+        drawPlyThickness(state.plotData?.plyParams || [], "ply-thickness");
         drawPlyTable(state.plotData?.plyParams || []);
       } else if (activeView === "behaviour") {
         content.innerHTML = `${renderBehaviourSummary()}
@@ -508,8 +587,8 @@
           </div>
           ${plotShell("forcehistory", "Force History")}
           ${tableShell("behaviour-table", ["Index", "Slip deg", "Slip %", "Fz N", "Fx N", "Fy N", "Mz Nm"])}`;
-        drawScatter(state.behaviour?.records || [], "latforce", "slipAngleDeg", "latForceN", "#72b7ff");
-        drawScatter(state.behaviour?.records || [], "longforce", "slipRatioPct", "longForceN", "#f0b85a");
+        drawScatter(state.behaviour?.records || [], "latforce", "slipAngleDeg", "latForceN", "#72b7ff", "Slip angle [deg]", "Lateral force Fy [N]");
+        drawScatter(state.behaviour?.records || [], "longforce", "slipRatioPct", "longForceN", "#f0b85a", "Slip ratio [%]", "Longitudinal force Fx [N]");
         drawForceHistory(state.behaviour?.records || [], "forcehistory");
         drawBehaviourTable(state.behaviour?.records || []);
       } else if (activeView === "odscharts") {
@@ -554,8 +633,9 @@
       const model = state.inputModel || {};
       const counts = model.sheet_counts || {};
       const countRows = Object.keys(counts).map(sheet => `<tr><td>${sheet}</td><td>${counts[sheet]}</td></tr>`).join("");
-      if (!countRows) return "";
+      if (!countRows) return `<div class="empty" style="margin-bottom:14px">ODS input model is not loaded.</div>`;
       const sheet = sheetForView(view);
+      const sheetTabs = renderInputSheetTabs(sheet);
       const allInputs = (model.inputs || []).map((item, index) => ({...item, index})).filter(item => item.sheet === sheet);
       const filter = inputFilter.trim().toLowerCase();
       const editableFiltered = editableOnlyFilter ? allInputs.filter(item => item.isLikelyEditable === true) : allInputs;
@@ -567,7 +647,20 @@
       const page = Math.min(inputPages[sheet] || 0, pageCount - 1);
       inputPages[sheet] = page;
       const inputs = filtered.slice(page * pageSize, (page + 1) * pageSize);
-      const inputRows = inputs.map(item => `<tr><td>${item.address}</td><td>${escapeHtml(item.editableConfidence || "")}</td><td>${escapeHtml(item.inputRole || "")}</td><td>${escapeHtml(item.display || "")}</td><td><input value="${escapeAttr(item.value || item.parsed || "")}" onchange="updateInputValue(${item.index}, this.value)" /></td></tr>`).join("");
+      const inputRows = inputs.map(item => {
+        const projectValue = item.value !== undefined && item.value !== "" ? item.value : (item.parsed || "");
+        const canEdit = item.isPossibleInput === true;
+        const disabled = canEdit ? "" : "disabled";
+        return `<tr>
+          <td>${item.address}</td>
+          <td>${escapeHtml(item.editableConfidence || "")}</td>
+          <td>${escapeHtml(item.inputRole || "")}</td>
+          <td>${renderSwatch(item.backgroundColor)}</td>
+          <td>${escapeHtml(item.display || "")}</td>
+          <td>${escapeHtml(item.value || "")}</td>
+          <td><input value="${escapeAttr(projectValue)}" ${disabled} onchange="updateInputValue(${item.index}, this.value)" /></td>
+        </tr>`;
+      }).join("");
       const controls = `<div class="input-controls">
         <input value="${escapeAttr(inputFilter)}" placeholder="Filter cells" oninput="setInputFilter(this.value)" />
         <label class="pill"><input type="checkbox" ${editableOnlyFilter ? "checked" : ""} onchange="setEditableOnlyFilter(this.checked)" style="width:auto;min-width:0;margin-right:6px" />Likely editable</label>
@@ -577,12 +670,38 @@
         <span class="pill">${filtered.length} / ${allInputs.length} cells</span>
         <span class="spacer"></span>
       </div>`;
-      return `<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>ODS Input Sheet</th><th>Cells</th></tr></thead><tbody>${countRows}</tbody></table></section>
+      return `${sheetTabs}
+        <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>ODS Input Sheet</th><th>Cells</th></tr></thead><tbody>${countRows}</tbody></table></section>
         ${controls}
-        <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>${sheet} Cell</th><th>Confidence</th><th>Role</th><th>ODS Display</th><th>Project Value</th></tr></thead><tbody>${inputRows || `<tr><td colspan="5">No extracted inputs for ${sheet}</td></tr>`}</tbody></table></section>`;
+        <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>${sheet} Cell</th><th>Confidence</th><th>Role</th><th>Background</th><th>ODS Display</th><th>Stored Value</th><th>Project Value</th></tr></thead><tbody>${inputRows || `<tr><td colspan="7">No extracted inputs for ${sheet}</td></tr>`}</tbody></table></section>`;
+    }
+
+    function renderInputSheetTabs(activeSheet) {
+      return `<div class="sheet-tabs">${ODS_INPUT_SHEETS.map(sheet => {
+        const view = inputViewForSheet(sheet);
+        const activeClass = sheet === activeSheet ? " active" : "";
+        return `<button class="sheet-tab${activeClass}" type="button" onclick="activateInputSheet('${view}')">${sheet}</button>`;
+      }).join("")}</div>`;
+    }
+
+    function activateInputSheet(view) {
+      activeView = view;
+      document.querySelectorAll(".tab").forEach(item => item.classList.toggle("active", item.dataset.view === view));
+      renderActiveView();
+    }
+
+    function inputViewForSheet(sheet) {
+      const entry = Object.entries(INPUT_VIEW_TO_SHEET).find(([, value]) => value === sheet);
+      return entry ? entry[0] : "input-general";
+    }
+
+    function renderSwatch(backgroundColor) {
+      const color = backgroundColor && backgroundColor !== "(none)" ? backgroundColor : "transparent";
+      return `<span class="swatch" title="${escapeAttr(color)}" style="background:${escapeAttr(color)}"></span>`;
     }
 
     function sheetForView(view) {
+      if (INPUT_VIEW_TO_SHEET[view]) return INPUT_VIEW_TO_SHEET[view];
       const map = {
         overview: "General",
         geometry: "Geometry",
@@ -755,21 +874,114 @@
       return view.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, c => c.toUpperCase());
     }
 
+    function makePlotFrame(svg, xs, ys, xLabel, yLabel, options = {}) {
+      const w = svg.clientWidth || 800;
+      const h = svg.clientHeight || 280;
+      const margin = { left: 68, right: 22, top: 28, bottom: 54 };
+      let [minX, maxX] = extent(xs);
+      let [minY, maxY] = extent(ys);
+      const rangeX = safeRange(minX, maxX);
+      const rangeY = safeRange(minY, maxY);
+      const padX = rangeX * (options.padFraction ?? 0.05);
+      const padY = rangeY * (options.padFraction ?? 0.08);
+      minX -= padX;
+      maxX += padX;
+      minY -= padY;
+      maxY += padY;
+
+      if (options.equalScale) {
+        const plotW = w - margin.left - margin.right;
+        const plotH = h - margin.top - margin.bottom;
+        const scale = Math.min(plotW / safeRange(minX, maxX), plotH / safeRange(minY, maxY));
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+        const visibleX = plotW / scale;
+        const visibleY = plotH / scale;
+        minX = centerX - visibleX / 2;
+        maxX = centerX + visibleX / 2;
+        minY = centerY - visibleY / 2;
+        maxY = centerY + visibleY / 2;
+      }
+
+      const frame = {
+        w, h, margin, minX, maxX, minY, maxY,
+        sx: x => margin.left + (x - minX) / safeRange(minX, maxX) * (w - margin.left - margin.right),
+        sy: y => h - margin.bottom - (y - minY) / safeRange(minY, maxY) * (h - margin.top - margin.bottom),
+        scaleX: (w - margin.left - margin.right) / safeRange(minX, maxX),
+        scaleY: (h - margin.top - margin.bottom) / safeRange(minY, maxY)
+      };
+      drawAxes(svg, frame, xLabel, yLabel, options);
+      return frame;
+    }
+
+    function drawAxes(svg, frame, xLabel, yLabel, options = {}) {
+      const xTicks = niceTicks(frame.minX, frame.maxX, 5);
+      const yTicks = niceTicks(frame.minY, frame.maxY, 5);
+      const left = frame.margin.left;
+      const right = frame.w - frame.margin.right;
+      const top = frame.margin.top;
+      const bottom = frame.h - frame.margin.bottom;
+      svg.insertAdjacentHTML("beforeend", `<g class="axis">
+        <line x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}"></line>
+        <line x1="${left}" y1="${top}" x2="${left}" y2="${bottom}"></line>
+      </g>`);
+      xTicks.forEach(value => {
+        const x = frame.sx(value);
+        svg.insertAdjacentHTML("beforeend", `<g class="axis"><line x1="${x.toFixed(1)}" y1="${bottom}" x2="${x.toFixed(1)}" y2="${bottom + 5}"></line><text x="${x.toFixed(1)}" y="${bottom + 18}" text-anchor="middle">${tickFormat(value)}</text></g>`);
+      });
+      yTicks.forEach(value => {
+        const y = frame.sy(value);
+        svg.insertAdjacentHTML("beforeend", `<g class="axis"><line x1="${left - 5}" y1="${y.toFixed(1)}" x2="${left}" y2="${y.toFixed(1)}"></line><text x="${left - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${tickFormat(value)}</text></g>`);
+      });
+      svg.insertAdjacentHTML("beforeend", `<text class="axis-label" x="${(left + right) / 2}" y="${frame.h - 12}" text-anchor="middle">${escapeHtml(xLabel)}</text>`);
+      svg.insertAdjacentHTML("beforeend", `<text class="axis-label" transform="translate(16 ${(top + bottom) / 2}) rotate(-90)" text-anchor="middle">${escapeHtml(yLabel)}</text>`);
+      if (options.title) {
+        svg.insertAdjacentHTML("beforeend", `<text class="plot-title" x="${left}" y="18">${escapeHtml(options.title)}</text>`);
+      }
+    }
+
+    function drawLegend(svg, items, y = 18) {
+      const left = 76;
+      items.slice(0, 8).forEach((item, index) => {
+        const x = left + index * 92;
+        svg.insertAdjacentHTML("beforeend", `<g class="plot-legend"><line x1="${x}" y1="${y}" x2="${x + 16}" y2="${y}" stroke="${item.color}" stroke-width="2"></line><text x="${x + 20}" y="${y + 4}">${escapeHtml(item.label)}</text></g>`);
+      });
+    }
+
+    function niceTicks(min, max, count) {
+      const span = safeRange(min, max);
+      const rawStep = span / Math.max(count - 1, 1);
+      const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+      const residual = rawStep / magnitude;
+      const niceResidual = residual >= 5 ? 5 : residual >= 2 ? 2 : 1;
+      const step = niceResidual * magnitude;
+      const start = Math.ceil(min / step) * step;
+      const ticks = [];
+      for (let value = start; value <= max + step * 0.5; value += step) {
+        ticks.push(Number(value.toPrecision(12)));
+      }
+      return ticks.length ? ticks : [min, max];
+    }
+
+    function tickFormat(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "";
+      if (Math.abs(n) >= 10000 || (Math.abs(n) > 0 && Math.abs(n) < 0.001)) return n.toExponential(1);
+      return n.toFixed(Math.abs(n) >= 10 ? 1 : 3).replace(/\.?0+$/, "");
+    }
+
     function drawGeometry(points, targetId) {
       const svg = document.getElementById(targetId);
       if (!svg) return;
       svg.innerHTML = "";
       if (!points.length) return;
-      const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 22;
       const xs = points.map(p => Number(p.y));
       const ys = points.map(p => Number(p.x));
-      const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
-      const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
-      const sy = y => h - pad - (y - minY) / safeRange(minY, maxY) * (h - 2 * pad);
-      const path = points.map((p, i) => `${i ? "L" : "M"}${sx(Number(p.y)).toFixed(1)},${sy(Number(p.x)).toFixed(1)}`).join(" ");
+      const frame = makePlotFrame(svg, xs, ys, "Lateral coordinate Y [m]", "Radial coordinate X [m]", { equalScale: true, title: "Equal meter scale" });
+      const path = points.map((p, i) => `${i ? "L" : "M"}${frame.sx(Number(p.y)).toFixed(1)},${frame.sy(Number(p.x)).toFixed(1)}`).join(" ");
       svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="#4fb3ff" stroke-width="1.4"/>`);
       points.forEach(p => svg.insertAdjacentHTML("beforeend",
-        `<circle cx="${sx(Number(p.y)).toFixed(1)}" cy="${sy(Number(p.x)).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}</title></circle>`));
+        `<circle cx="${frame.sx(Number(p.y)).toFixed(1)}" cy="${frame.sy(Number(p.x)).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}</title></circle>`));
     }
 
     function drawMaterials(rows, targetId) {
@@ -778,22 +990,19 @@
       svg.innerHTML = "";
       const data = rows.filter(r => Number.isFinite(Number(r.temperatureK)) && Number.isFinite(Number(r.youngsModulusPa)));
       if (!data.length) return;
-      const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 28;
       const xs = data.map(r => Number(r.temperatureK));
       const ys = data.map(r => Number(r.youngsModulusPa) / 1e6);
-      const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
-      const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
-      const sy = y => h - pad - (y - minY) / safeRange(minY, maxY) * (h - 2 * pad);
+      const frame = makePlotFrame(svg, xs, ys, "Temperature [K]", "Young's modulus [MPa]");
       const colors = { BulkMaterial: "#6be675", TreadMaterial: "#f0b85a", PlyMaterial: "#72b7ff" };
       for (const kind of [...new Set(data.map(r => String(r.kind)))]) {
         const subset = data.filter(r => String(r.kind) === kind).slice(0, 240);
         subset.forEach(r => {
-          const x = sx(Number(r.temperatureK));
-          const y = sy(Number(r.youngsModulusPa) / 1e6);
+          const x = frame.sx(Number(r.temperatureK));
+          const y = frame.sy(Number(r.youngsModulusPa) / 1e6);
           svg.insertAdjacentHTML("beforeend", `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="${colors[kind] || "#ddd"}"><title>${kind} node ${r.nodeIndex}</title></circle>`);
         });
       }
-      svg.insertAdjacentHTML("beforeend", `<text x="${pad}" y="18" fill="#9aa7b3">E-Modulus [MPa] vs Temperature [K]</text>`);
+      drawLegend(svg, Object.entries(colors).map(([label, color]) => ({ label: label.replace("Material", ""), color })));
     }
 
     function drawPly(rows, targetId) {
@@ -802,31 +1011,47 @@
       svg.innerHTML = "";
       const data = rows.filter(r => Number.isFinite(Number(r.angleDeg)));
       if (!data.length) return;
-      const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 28;
       const xs = data.map(r => Number(r.nodeIndex));
       const ys = data.map(r => Number(r.angleDeg));
-      const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
-      const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
-      const sy = y => h - pad - (y - minY) / safeRange(minY, maxY) * (h - 2 * pad);
-      const path = data.map((r, i) => `${i ? "L" : "M"}${sx(Number(r.nodeIndex)).toFixed(1)},${sy(Number(r.angleDeg)).toFixed(1)}`).join(" ");
-      svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="#72b7ff" stroke-width="1.4"/>`);
-      svg.insertAdjacentHTML("beforeend", `<text x="${pad}" y="18" fill="#9aa7b3">Ply angle [deg] over node index</text>`);
+      const frame = makePlotFrame(svg, xs, ys, "Node index [-]", "Ply angle [deg]");
+      const layers = [...new Set(data.map(r => Number(r.plyIndex || 1)))].sort((a, b) => a - b);
+      layers.forEach((layer, index) => {
+        const subset = data.filter(r => Number(r.plyIndex || 1) === layer);
+        const path = subset.map((r, i) => `${i ? "L" : "M"}${frame.sx(Number(r.nodeIndex)).toFixed(1)},${frame.sy(Number(r.angleDeg)).toFixed(1)}`).join(" ");
+        svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${PLOT_COLORS[index % PLOT_COLORS.length]}" stroke-width="1.4"><title>Layer ${layer}</title></path>`);
+      });
+      drawLegend(svg, layers.map((layer, index) => ({ label: `Layer ${layer}`, color: PLOT_COLORS[index % PLOT_COLORS.length] })));
     }
 
-    function drawScatter(rows, targetId, xKey, yKey, color) {
+    function drawPlyThickness(rows, targetId) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
+      svg.innerHTML = "";
+      const data = rows.filter(r => Number.isFinite(Number(r.thicknessM)));
+      if (!data.length) return;
+      const xs = data.map(r => Number(r.nodeIndex));
+      const ys = data.map(r => Number(r.thicknessM));
+      const frame = makePlotFrame(svg, xs, ys, "Node index [-]", "Ply thickness [m]");
+      const layers = [...new Set(data.map(r => Number(r.plyIndex || 1)))].sort((a, b) => a - b);
+      layers.forEach((layer, index) => {
+        const subset = data.filter(r => Number(r.plyIndex || 1) === layer);
+        const path = subset.map((r, i) => `${i ? "L" : "M"}${frame.sx(Number(r.nodeIndex)).toFixed(1)},${frame.sy(Number(r.thicknessM)).toFixed(1)}`).join(" ");
+        svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${PLOT_COLORS[index % PLOT_COLORS.length]}" stroke-width="1.4"><title>Layer ${layer}</title></path>`);
+      });
+      drawLegend(svg, layers.map((layer, index) => ({ label: `Layer ${layer}`, color: PLOT_COLORS[index % PLOT_COLORS.length] })));
+    }
+
+    function drawScatter(rows, targetId, xKey, yKey, color, xLabel, yLabel) {
       const svg = document.getElementById(targetId);
       if (!svg) return;
       svg.innerHTML = "";
       const data = rows.filter(r => Number.isFinite(Number(r[xKey])) && Number.isFinite(Number(r[yKey])));
       if (!data.length) return;
-      const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 28;
       const xs = data.map(r => Number(r[xKey]));
       const ys = data.map(r => Number(r[yKey]));
-      const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
-      const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
-      const sy = y => h - pad - (y - minY) / safeRange(minY, maxY) * (h - 2 * pad);
+      const frame = makePlotFrame(svg, xs, ys, xLabel, yLabel);
       data.forEach(r => svg.insertAdjacentHTML("beforeend",
-        `<circle cx="${sx(Number(r[xKey])).toFixed(1)}" cy="${sy(Number(r[yKey])).toFixed(1)}" r="2" fill="${color}"><title>${xKey}: ${fmt(r[xKey])}, ${yKey}: ${fmt(r[yKey])}</title></circle>`));
+        `<circle cx="${frame.sx(Number(r[xKey])).toFixed(1)}" cy="${frame.sy(Number(r[yKey])).toFixed(1)}" r="2" fill="${color}"><title>${xKey}: ${fmt(r[xKey])}, ${yKey}: ${fmt(r[yKey])}</title></circle>`));
     }
 
     function drawForceHistory(rows, targetId) {
@@ -835,12 +1060,9 @@
       svg.innerHTML = "";
       const data = rows.filter(r => Number.isFinite(Number(r.testIndex)));
       if (!data.length) return;
-      const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 30;
       const xs = data.map(r => Number(r.testIndex));
       const ys = data.flatMap(r => [Number(r.verticalForceN), Number(r.longForceN), Number(r.latForceN)]).filter(Number.isFinite);
-      const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
-      const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
-      const sy = y => h - pad - (y - minY) / safeRange(minY, maxY) * (h - 2 * pad);
+      const frame = makePlotFrame(svg, xs, ys, "Realtime test index [-]", "Force [N]");
       const series = [
         ["verticalForceN", "#6be675"],
         ["longForceN", "#f0b85a"],
@@ -848,9 +1070,10 @@
       ];
       series.forEach(([key, color]) => {
         const subset = data.filter(r => Number.isFinite(Number(r[key])));
-        const path = subset.map((r, i) => `${i ? "L" : "M"}${sx(Number(r.testIndex)).toFixed(1)},${sy(Number(r[key])).toFixed(1)}`).join(" ");
+        const path = subset.map((r, i) => `${i ? "L" : "M"}${frame.sx(Number(r.testIndex)).toFixed(1)},${frame.sy(Number(r[key])).toFixed(1)}`).join(" ");
         svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${color}" stroke-width="1.3"><title>${key}</title></path>`);
       });
+      drawLegend(svg, series.map(([label, color]) => ({ label, color })));
     }
 
     function drawMaterialTable(rows) {
@@ -869,8 +1092,8 @@
 
     function drawPlyTable(rows) {
       if (!document.getElementById("ply-table")) return;
-      document.getElementById("ply-table").innerHTML = rows.slice(0, 240).map(r =>
-        `<tr><td>${r.nodeIndex}</td><td>${fmt(r.angleDeg)}</td><td>${fmt(r.thicknessM)}</td><td>${fmt(r.connectFlag)}</td></tr>`
+      document.getElementById("ply-table").innerHTML = rows.map(r =>
+        `<tr><td>${r.nodeIndex}</td><td>${r.plyIndex ?? ""}</td><td>${fmt(r.angleDeg)}</td><td>${fmt(r.thicknessM)}</td><td>${fmt(r.connectFlag)}</td></tr>`
       ).join("");
     }
 
@@ -887,19 +1110,15 @@
       svg.innerHTML = "";
       const data = points.filter(point => Number.isFinite(Number(point.temperatureK)) && Number.isFinite(Number(point.youngsModulusPa)));
       if (!data.length) return;
-      const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 30;
       const xs = data.map(point => Number(point.temperatureK));
-      const ys = data.map(point => Number(point.youngsModulusPa));
-      const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
-      const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
-      const sy = y => h - pad - (Math.log10(Math.max(y, 1)) - Math.log10(Math.max(minY, 1))) / safeRange(Math.log10(Math.max(minY, 1)), Math.log10(Math.max(maxY, 1))) * (h - 2 * pad);
-      const colors = ["#72b7ff", "#f0b85a", "#6be675", "#ff7a90", "#b594ff", "#65d6d0", "#e0a84f"];
+      const ys = data.map(point => Math.log10(Math.max(Number(point.youngsModulusPa), 1)));
+      const frame = makePlotFrame(svg, xs, ys, "Temperature [K]", "Young's modulus [Pa, log]");
       const categories = [...new Set(data.map(point => point.category))];
       data.forEach(point => {
-        const color = colors[Math.max(0, categories.indexOf(point.category)) % colors.length];
-        svg.insertAdjacentHTML("beforeend", `<circle cx="${sx(Number(point.temperatureK)).toFixed(1)}" cy="${sy(Number(point.youngsModulusPa)).toFixed(1)}" r="2.2" fill="${color}"><title>${escapeHtml(point.material)} ${fmt(point.temperatureK)} K ${fmt(point.youngsModulusPa)} Pa</title></circle>`);
+        const color = PLOT_COLORS[Math.max(0, categories.indexOf(point.category)) % PLOT_COLORS.length];
+        svg.insertAdjacentHTML("beforeend", `<circle cx="${frame.sx(Number(point.temperatureK)).toFixed(1)}" cy="${frame.sy(Math.log10(Math.max(Number(point.youngsModulusPa), 1))).toFixed(1)}" r="2.2" fill="${color}"><title>${escapeHtml(point.material)} ${fmt(point.temperatureK)} K ${fmt(point.youngsModulusPa)} Pa</title></circle>`);
       });
-      svg.insertAdjacentHTML("beforeend", `<text x="${pad}" y="18" fill="#9aa7b3">Young's modulus [Pa, log] vs temperature [K]</text>`);
+      drawLegend(svg, categories.map((category, index) => ({ label: String(category), color: PLOT_COLORS[index % PLOT_COLORS.length] })));
     }
 
     function drawMaterialLibraryTables(library) {
@@ -951,22 +1170,19 @@
           };
         }).filter(item => item.points.length);
         if (!seriesWithData.length || !pointsBySeries.length) return;
-        const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 32;
         const xs = pointsBySeries.flatMap(item => item.points.map(point => point.x));
         const ys = pointsBySeries.flatMap(item => item.points.map(point => point.y));
-        const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
-        const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
-        const sy = y => h - pad - (y - minY) / safeRange(minY, maxY) * (h - 2 * pad);
+        const frame = makePlotFrame(svg, xs, ys, "Domain", "Value", { title: `${chart.object || ""} ${chart.class || ""}`.trim() });
         pointsBySeries.forEach((item, seriesIndex) => {
           const color = palette[seriesIndex % palette.length];
-          const path = item.points.map((point, index) => `${index ? "L" : "M"}${sx(point.x).toFixed(1)},${sy(point.y).toFixed(1)}`).join(" ");
+          const path = item.points.map((point, index) => `${index ? "L" : "M"}${frame.sx(point.x).toFixed(1)},${frame.sy(point.y).toFixed(1)}`).join(" ");
           if ((chart.class || "").includes("scatter")) {
             item.points.forEach(point => svg.insertAdjacentHTML("beforeend",
-              `<circle cx="${sx(point.x).toFixed(1)}" cy="${sy(point.y).toFixed(1)}" r="1.9" fill="${color}"><title>${escapeHtml(item.label)}: ${fmt(point.x)}, ${fmt(point.y)}</title></circle>`));
+              `<circle cx="${frame.sx(point.x).toFixed(1)}" cy="${frame.sy(point.y).toFixed(1)}" r="1.9" fill="${color}"><title>${escapeHtml(item.label)}: ${fmt(point.x)}, ${fmt(point.y)}</title></circle>`));
           }
           svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${color}" stroke-width="1.2"><title>${escapeHtml(item.label)}</title></path>`);
         });
-        svg.insertAdjacentHTML("beforeend", `<text x="${pad}" y="18" fill="#9aa7b3">${escapeHtml(chart.object || "")} ${escapeHtml(chart.class || "")}</text>`);
+        drawLegend(svg, pointsBySeries.map((item, index) => ({ label: item.label, color: palette[index % palette.length] })), 32);
       });
     }
 

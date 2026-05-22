@@ -38,7 +38,7 @@ state.materialLibrary = localLoadMaterialLibrary(state.odsPath);
 state.validation = struct("available", true, "message", "Acceptance test not run.");
 state.formulaReport = struct("available", true, "message", "Formula report not run.");
 state.ttool = struct("available", true, "message", "Not prepared.");
-state.inputModel = struct("loaded", false, "input_count", 0, "sheet_counts", struct());
+state.inputModel = localLoadInputModel(state.odsPath);
 state.projectPath = localUiProjectPath();
 
 if inputPath ~= "" && isfile(inputPath)
@@ -227,6 +227,21 @@ catch exception
     library.category_counts = struct();
     library.materials = [];
     library.points = [];
+end
+end
+
+function inputModel = localLoadInputModel(odsPath)
+try
+    inputModel = rf2TgmGenExtractInputs("OdsPath", string(odsPath));
+    inputModel.loaded = true;
+catch exception
+    inputModel = struct();
+    inputModel.loaded = false;
+    inputModel.message = string(exception.message);
+    inputModel.input_count = 0;
+    inputModel.sheet_counts = struct();
+    inputModel.editable_confidence_counts = struct();
+    inputModel.inputs = [];
 end
 end
 

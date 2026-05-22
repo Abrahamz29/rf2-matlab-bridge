@@ -46,13 +46,15 @@ addpath("matlab")
 rf2TgmGeneratorApp("tools/cache/tyres/tgm/BFGoodrich_g-ForceR1_225-50-R16x7__c2bfff1f1528.tgm")
 ```
 
-Die erste UI-Version zeigt TGM-Zusammenfassung, Querschnitt, Materialpunkte und
-Materialtabelle. Zusaetzlich kann die UI das ODS-Input-Modell laden, Werte in
-den Projektzellen tabweise bearbeiten und einen rekursiven
-`Generate From Inputs`-Lauf starten. Bearbeitete Inputs koennen als
-`tmp\tgm_gen_port_ui\inputs_from_ui.json` gespeichert und wieder geladen werden.
-Die Input-Tabellen haben Suche, Pagination und einen `Likely editable`-Filter,
-damit auch grosse Sheets wie `Compound` vollstaendig erreichbar bleiben.
+Die UI zeigt TGM-Zusammenfassung, Querschnitt, Materialpunkte, Materialtabelle,
+ODS-Inputmodell und Plotdaten. Das vollstaendige ODS-Input-Modell wird beim
+Start geladen: 28.254 Nichtformel-Zellen aus `General`, `Geometry`,
+`Construction`, `Compound`, `Realtime`, `WLF`, `ContactProps`, `LoadSens`,
+`Materials` und `TBC`. Die Input-Tabellen haben echte Sheet-Tabs, Suche,
+Pagination und einen optionalen `Likely editable`-Filter, damit auch grosse
+Sheets wie `Compound` vollstaendig erreichbar bleiben. Bearbeitete Inputs
+koennen als `tmp\tgm_gen_port_ui\inputs_from_ui.json` gespeichert, wieder
+geladen und mit `Generate From Inputs` rekursiv exportiert werden.
 Der dateigleiche Acceptance-Test und der Full-Sheet-Formelreport bleiben als
 eigene Buttons vorhanden.
 
@@ -395,12 +397,17 @@ Implementiert:
 - Strukturierte ODS-Materialbibliothek mit MATLAB-Wrapper
   `rf2TgmGenMaterialLibrary`.
 - Moderne MATLAB-`uihtml`-App-Shell mit ersten Plots und Acceptance-Test-Button.
-- UI-Tabelle fuer extrahierte ODS-Eingabezellen mit `Generate From Inputs`.
-- UI-Suche und Pagination fuer alle extrahierten Eingabezellen.
+- UI-Tabelle fuer alle extrahierten ODS-Eingabezellen mit echten Excel-Sheet-
+  Tabs, `Generate From Inputs`, Suche und Pagination.
 - UI-Projektpersistenz fuer bearbeitete Inputs (`Save Project` / `Load Project`).
 - UI-Button `Run Formula Report` fuer den rekursiven Full-Sheet-Formelreport.
 - UI-Behaviour-Plots fuer `Fy` ueber Schraeglaufwinkel, `Fx` ueber Slip Ratio
   und Kraftverlauf ueber Realtime-Testindex.
+- Achsenbeschriftungen, Ticks, Einheiten und Legenden fuer alle SVG-Plots.
+- Reifenquerschnitt mit gleichem Meter-Massstab auf horizontaler und vertikaler
+  Achse, damit Hoehe/Breite physikalisch plausibel bleiben.
+- Gurtellagen-Plot mit getrenntem `plyIndex` je Node; die BFGoodrich-Referenz
+  enthaelt 277 Ply-Zeilen und maximal 6 Lagen.
 - tTool-Vorbereitung aus MATLAB und UI: gepruefte `.tgm`/`.tbc` nach `pTool`
   kopieren.
 

@@ -18,8 +18,10 @@ plotData.treadDepth = table(P.nodeIndex(treadRows), localRowsToColumn(P(treadRow
 
 plyRows = P.section == "Node" & P.key == "PlyParams";
 ply = localRowsToMatrix(P(plyRows, :), 3);
-plotData.plyParams = table(P.nodeIndex(plyRows), ply(:, 1), ply(:, 2), ply(:, 3), ...
-    'VariableNames', {'nodeIndex', 'angleDeg', 'thicknessM', 'connectFlag'});
+plyNodeIndex = P.nodeIndex(plyRows);
+plyIndex = localLayerIndexByNode(plyNodeIndex);
+plotData.plyParams = table(plyNodeIndex, plyIndex, ply(:, 1), ply(:, 2), ply(:, 3), ...
+    'VariableNames', {'nodeIndex', 'plyIndex', 'angleDeg', 'thicknessM', 'connectFlag'});
 
 materialRows = P.section == "Node" & ismember(P.key, ["BulkMaterial", "TreadMaterial", "PlyMaterial"]);
 material = localRowsToMatrix(P(materialRows, :), 7);
@@ -29,6 +31,9 @@ plotData.materials = table(P.nodeIndex(materialRows), P.key(materialRows), ...
     'poissonRatio', 'compressionMultiplier', 'specificHeatJKgK', 'conductivityWMK'});
 
 plotData.summary = model.summary;
+plotData.summary.maxPlyLayers = localMaxOrZero(plyIndex);
+plotData.summary.plyNodesWithLayers = numel(unique(plyNodeIndex(~isnan(plyNodeIndex))));
+plotData.summary.plyLayerDistribution = localLayerDistribution(plyNodeIndex);
 end
 
 function matrix = localRowsToMatrix(rows, width)
@@ -49,5 +54,35 @@ for index = 1:height(rows)
     if isnumeric(value) && isscalar(value)
         column(index) = value;
     end
+end
+end
+
+function layerIndex = localLayerIndexByNode(nodeIndex)
+layerIndex = zeros(numel(nodeIndex), 1);
+nodes = unique(nodeIndex(~isnan(nodeIndex)));
+for node = reshape(nodes, 1, [])
+    rows = find(nodeIndex == node);
+    layerIndex(rows) = (1:numel(rows)).';
+end
+end
+
+function value = localMaxOrZero(values)
+if isempty(values)
+    value = 0;
+else
+    value = max(values);
+end
+end
+
+function distribution = localLayerDistribution(nodeIndex)
+distribution = struct();
+nodes = unique(nodeIndex(~isnan(nodeIndex)));
+for node = reshape(nodes, 1, [])
+    count = nnz(nodeIndex == node);
+    field = "layers" + string(count);
+    if ~isfield(distribution, field)
+        distribution.(field) = 0;
+    end
+    distribution.(field) = distribution.(field) + 1;
 end
 end
