@@ -242,6 +242,10 @@ class ExcelScalar:
             match = re.match(r"^(>=|<=|<>|>|<|=)([-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)$", left)
             if match:
                 return ExcelScalar(f"{match.group(1)}{to_number(match.group(2)) - self._other_num(other):g}")
+        if isinstance(left, str):
+            match = re.match(r"^(.*?)([-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?)$", left)
+            if match:
+                return ExcelScalar(f"{match.group(1)}{to_number(match.group(2)) - self._other_num(other):g}")
         return ExcelScalar(self._num() - self._other_num(other))
 
     def __rsub__(self, other: Any) -> float:
@@ -349,17 +353,30 @@ def cell_value(cell: ET.Element) -> str:
 
 def iter_row_cells(row: ET.Element) -> Iterable[tuple[int, Cell]]:
     col = 1
-    for cell in row.findall("table:table-cell", NS):
+    covered_to_skip = 0
+    for cell in list(row):
+        if cell.tag == f"{Q['table']}covered-table-cell":
+            if covered_to_skip > 0:
+                covered_to_skip -= 1
+                continue
+            col += int(attr(cell, "table", "number-columns-repeated", "1"))
+            continue
+        if cell.tag != f"{Q['table']}table-cell":
+            continue
         repeat = int(attr(cell, "table", "number-columns-repeated", "1"))
-        yield col, Cell(
+        span = int(attr(cell, "table", "number-columns-spanned", "1"))
+        current = Cell(
             text=cell_text(cell),
             value=cell_value(cell),
             formula=attr(cell, "table", "formula"),
-            repeat=repeat,
+            repeat=1,
             value_type=attr(cell, "office", "value-type"),
             style_name=attr(cell, "table", "style-name"),
         )
-        col += repeat
+        for _ in range(repeat):
+            yield col, current
+            col += span
+            covered_to_skip += max(0, span - 1)
 
 
 def get_cell_display(table: ET.Element, row_index: int, col_index: int) -> str:
@@ -652,7 +669,7 @@ def replace_equals_outside_strings(text: str) -> str:
                 index += 2
                 continue
             in_string = not in_string
-        elif char == "<" and index + 1 < len(text) and text[index + 1] == ">":
+        elif char == "<" and not in_string and index + 1 < len(text) and text[index + 1] == ">":
             out.append("!=")
             index += 2
             continue
@@ -979,7 +996,11 @@ class CachedFormulaEvaluator:
         self.current_col = cell.col
         try:
             globals_env = {"__builtins__": {}, **env}
-            return eval(expr, globals_env, {})  # noqa: S307 - restricted env for local ODS formulas.
+            value = eval(expr, globals_env, {})  # noqa: S307 - restricted env for local ODS formulas.
+            if isinstance(value, list):
+                values = flatten(value)
+                return values[0] if values else ""
+            return value
         except Exception as exc:
             raise FormulaEvaluationError(str(exc)) from exc
 
@@ -1397,8 +1418,12 @@ def excel_text(value: Any, format_code: str) -> str:
     if "e" in str(format_code).lower():
         return format_excel_sci(value, str(format_code))
     if "." in str(format_code):
-        decimals = len(str(format_code).split(".", 1)[1].replace("#", "0"))
-        return f"{to_number(value):.{decimals}f}".rstrip("0").rstrip(".")
+        decimal_pattern = str(format_code).split(".", 1)[1]
+        decimals = len(decimal_pattern)
+        text = f"{to_number(value):.{decimals}f}"
+        if "0" in decimal_pattern:
+            return text
+        return text.rstrip("0").rstrip(".")
     return format_excel_scalar(value)
 
 

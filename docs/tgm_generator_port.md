@@ -144,7 +144,7 @@ Aktueller Full-Sheet-Stand fuer die relevanten Sheets `About`, `General`,
 - 80.882 Formeln mit implementierten Funktionsnamen.
 - 80.882 Formeln ausfuehrbar.
 - 0 harte Evaluator-Fehler.
-- 5.004 Zellwert-Abweichungen bleiben, vor allem Anzeigeformatierung,
+- 5.004 Zellwert-Abweichungen bleiben im cached Zellwerttest, vor allem Anzeigeformatierung,
   gerundete Displaywerte, LookupData-Ausschluss und ODS-iterative
   Selbstreferenzen.
 
@@ -159,13 +159,28 @@ Zusaetzlich gibt es einen rekursiven Rechenmodus:
 
 Der rekursive Modus berechnet referenzierte Formelzellen neu und kann
 uebergangsweise einzelne unresolved dependency edges auf gespeicherte ODS-Werte
-zurueckfallen lassen. Der dateigleiche finale Export bleibt aktuell bewusst im
-validierten `cached`-Modus.
+zurueckfallen lassen. Fuer die offizielle Beispiel-ODS laeuft der rekursive
+Modus inzwischen ohne Fallback und ohne harte Formel-Fehler.
+
+Rekursiver Full-Sheet-Stand:
+
+- 80.882 Formeln erkannt.
+- 80.882 Formeln rekursiv ausfuehrbar.
+- 0 harte Evaluator-Fehler.
+- 0 Fallback-Kanten.
+- 10.682 Zellwert-Abweichungen bleiben gegen gespeicherte ODS-Displays.
+
+Aktueller rekursiver Exportstand:
+
+- `.tbc` ist rekursiv ohne Fallback textgleich zur ODS-Referenz.
+- `.tgm` hat nach `LookupV2`/`PatchV1`-Ausschluss dieselbe Zeilenzahl wie die
+  Referenz, unterscheidet sich aber noch in numerischen
+  QuasiStatic-/Massen-/Materialwerten.
 
 Projektdateien aus `extract-inputs` wirken im rekursiven Modus als
 Zell-Overrides. Damit ist der Pfad fuer editierbare Eingaben vorhanden; die
-vollstaendige Dateigleichheit nach beliebigen Edits haengt noch an den
-verbleibenden rekursiven Fallback-Kanten und ODS-Iterationsstellen.
+vollstaendige `.tgm`-Dateigleichheit nach beliebigen Edits haengt noch an den
+verbleibenden numerischen QSA-/Massen-/Material-Abweichungen.
 
 ## Status
 
@@ -181,6 +196,9 @@ Implementiert:
   Dependency-Kanten.
 - Port der originalen `Basic/Standard/CubSpline.xml`-Makrologik fuer
   `CUBSPLINE` inklusive Numerical-Recipes-Spline und monotonem `SplineX3`.
+- ODS-Merge-/Span-Parser fuer korrekte Koordinaten von zusammengefuehrten
+  Eingabezellen.
+- Rekursive `.tbc`-Dateigleichheit ohne Fallback.
 - ODS-Input-Projektmodell via `extract-inputs` und MATLAB-Wrapper
   `rf2TgmGenExtractInputs`.
 - Projekt-Override-Pfad fuer rekursive Generatorlaeufe (`--project`).
@@ -192,8 +210,8 @@ Implementiert:
 
 Noch offen:
 
-- Vollstaendige rekursive Formel-Engine fuer editierte Eingabezellen ohne
-  gespeicherte Abhaengigkeitswerte oder Fallback-Kanten.
+- Rekursive `.tgm`-Dateigleichheit ohne gespeicherte Abhaengigkeitswerte.
+  Aktuell verbleiben numerische QSA-/Massen-/Material-Abweichungen.
 - Zellwert-Golden-Tests gegen dynamisch neu berechnete ODS-Werte nach
   Eingabeaenderungen.
 - Vollstaendige Plotdatenabdeckung aller ODS-Charts.
