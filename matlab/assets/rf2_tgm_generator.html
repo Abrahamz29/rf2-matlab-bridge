@@ -50,6 +50,9 @@
       display: flex;
       gap: 8px;
       margin-left: auto;
+      align-items: center;
+      min-width: 0;
+      overflow-x: auto;
     }
     button {
       background: var(--panel-2);
@@ -64,7 +67,7 @@
       border-color: var(--accent);
       color: var(--text);
     }
-    input {
+    input, select {
       width: 100%;
       min-width: 90px;
       background: #0c0f12;
@@ -85,6 +88,28 @@
       padding: 3px 8px;
       border-radius: 4px;
       white-space: nowrap;
+    }
+    #file-pill {
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tyre-picker {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .tyre-picker span {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .tyre-picker select {
+      width: 270px;
+      min-width: 210px;
+      height: 31px;
+      padding: 5px 8px;
     }
     nav, aside {
       background: var(--panel);
@@ -407,6 +432,7 @@
       <span class="pill" id="file-pill">No file</span>
       <span class="pill warn">LookupV2/PatchV1: tTool required</span>
       <div class="toolbar">
+        <label class="tyre-picker"><span>Tyre</span><select id="tyre-select"><option value="">No tyres loaded</option></select></label>
         <button id="inputs-button" type="button">Load ODS Inputs</button>
         <button id="save-project-button" type="button">Save Project</button>
         <button id="load-project-button" type="button">Load Project</button>
@@ -522,6 +548,14 @@
           setStatus("no TGM path loaded");
         }
       });
+      document.getElementById("tyre-select").addEventListener("change", event => {
+        const path = event.target.value || "";
+        if (matlabComponent && path) {
+          const label = event.target.selectedOptions?.[0]?.textContent || path;
+          setStatus("loading " + label);
+          matlabComponent.Data = { command: "loadTgm", path };
+        }
+      });
       document.getElementById("ping-button").addEventListener("click", () => {
         if (matlabComponent) {
           setStatus("pinging MATLAB");
@@ -626,12 +660,27 @@
       setStatus(state.status || state.kind || "ready");
       document.getElementById("message").textContent = state.message || "";
       document.getElementById("file-pill").textContent = state.inputPath || "No file";
+      renderTyreSelect();
       renderDetails();
       renderActiveView();
     }
 
     function setStatus(message) {
       document.getElementById("status").textContent = message;
+    }
+
+    function renderTyreSelect() {
+      const select = document.getElementById("tyre-select");
+      if (!select) return;
+      const tyres = state?.tyres || [];
+      const selected = tyres.find(item => item.selected === true);
+      const currentPath = selected?.path || state?.inputPath || "";
+      select.disabled = tyres.length === 0;
+      select.innerHTML = `<option value="">Select tyre...</option>${tyres.map(item => {
+        const isSelected = item.path === currentPath || item.selected === true;
+        return `<option value="${escapeAttr(item.path)}" ${isSelected ? "selected" : ""}>${escapeHtml(item.displayName || item.fileName || item.path)}</option>`;
+      }).join("")}`;
+      if (currentPath) select.value = currentPath;
     }
 
     function renderActiveView() {

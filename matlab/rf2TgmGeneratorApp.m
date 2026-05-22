@@ -26,6 +26,7 @@ state = struct();
 state.kind = "state";
 state.status = "ready";
 state.inputPath = inputPath;
+state.tyres = localListKnownTyres(inputPath);
 state.loaded = false;
 state.message = "No TGM loaded.";
 state.summary = struct();
@@ -49,6 +50,53 @@ if inputPath ~= "" && isfile(inputPath)
     state.summary = model.summary;
     state.plotData = localEncodePlotData(plotData);
 end
+end
+
+function tyres = localListKnownTyres(inputPath)
+tgmRoot = fullfile("tools", "cache", "tyres", "tgm");
+files = dir(fullfile(tgmRoot, "*.tgm"));
+tyres = repmat(struct( ...
+    "displayName", "", ...
+    "fileName", "", ...
+    "path", "", ...
+    "selected", false), 0, 1);
+
+selectedPath = localNormalizePath(inputPath);
+for index = 1:numel(files)
+    relativePath = string(fullfile(tgmRoot, files(index).name));
+    item = struct();
+    item.fileName = string(files(index).name);
+    item.displayName = localTyreDisplayName(files(index).name);
+    item.path = relativePath;
+    item.selected = selectedPath ~= "" && localNormalizePath(relativePath) == selectedPath;
+    tyres(end + 1, 1) = item; %#ok<AGROW>
+end
+end
+
+function name = localTyreDisplayName(fileName)
+[~, stem] = fileparts(fileName);
+stem = regexprep(string(stem), "__[0-9a-fA-F]{12}$", "");
+name = replace(stem, "_", " ");
+end
+
+function normalized = localNormalizePath(path)
+path = string(path);
+if path == ""
+    normalized = "";
+    return;
+end
+
+pathText = char(path);
+if isempty(regexp(pathText, "^[A-Za-z]:[\\/]|^\\\\", "once"))
+    pathText = fullfile(pwd, pathText);
+end
+
+info = dir(pathText);
+if ~isempty(info)
+    pathText = fullfile(info(1).folder, info(1).name);
+end
+
+normalized = lower(replace(string(pathText), "/", "\"));
 end
 
 function localHandleCommand(html, ~)

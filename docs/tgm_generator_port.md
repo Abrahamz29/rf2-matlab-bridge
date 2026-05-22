@@ -47,7 +47,9 @@ rf2TgmGeneratorApp("tools/cache/tyres/tgm/BFGoodrich_g-ForceR1_225-50-R16x7__c2b
 ```
 
 Die UI zeigt TGM-Zusammenfassung, Querschnitt, Materialpunkte, Materialtabelle,
-ODS-Inputmodell und Plotdaten. Das vollstaendige ODS-Input-Modell wird beim
+ODS-Inputmodell und Plotdaten. Bekannte Reifen aus `tools\cache\tyres\tgm`
+koennen direkt oben in der Toolbar per Dropdown geladen werden. Das
+vollstaendige ODS-Input-Modell wird beim
 Start geladen: 28.254 Nichtformel-Zellen aus `General`, `Geometry`,
 `Construction`, `Compound`, `Realtime`, `WLF`, `ContactProps`, `LoadSens`,
 `Materials` und `TBC`. Die Input-Ansicht nutzt echte Sheet-Tabs und eine

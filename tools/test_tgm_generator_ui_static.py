@@ -106,6 +106,17 @@ def run_check() -> dict:
     if "html.DataChangedFcn" not in app:
         errors.append("MATLAB app does not assign DataChangedFcn")
 
+    if 'id="tyre-select"' not in html:
+        errors.append("missing tyre dropdown id: tyre-select")
+    if 'getElementById("tyre-select")' not in html:
+        errors.append("missing tyre dropdown binding")
+    if "function renderTyreSelect" not in html:
+        errors.append("missing tyre dropdown render helper")
+    if "state.tyres = localListKnownTyres(inputPath)" not in app:
+        errors.append("MATLAB state does not expose known tyres")
+    if "localListKnownTyres" not in app:
+        errors.append("MATLAB known-tyre inventory helper missing")
+
     for button_id, command in EXPECTED_BUTTON_COMMANDS.items():
         if f'id="{button_id}"' not in html:
             errors.append(f"missing toolbar button id: {button_id}")
