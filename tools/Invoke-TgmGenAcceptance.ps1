@@ -6,7 +6,10 @@ param(
     [string]$Mode = "recursive",
     [string]$ReportPath = "tmp/tgm_gen_acceptance_test_report.json",
     [string]$UiReportPath = "tmp/tgm_generator_ui_static_report.json",
+    [string]$MatlabReportPath = "tmp/tgm_generator_matlab_smoke_report.json",
     [string]$PythonExe = "",
+    [string]$MatlabExe = "",
+    [switch]$RunMatlabSmoke,
     [switch]$PrepareTTool,
     [string]$PToolDir = (Join-Path ${env:ProgramFiles(x86)} "Steam/steamapps/common/rFactor 2/pTool"),
     [string]$OutputBaseName = "generated_from_matlab"
@@ -64,6 +67,31 @@ try {
 
     if (-not $uiReport.passed) {
         throw "TGM Generator UI static smoke failed."
+    }
+
+    if ($RunMatlabSmoke) {
+        if ($MatlabExe -eq "") {
+            $matlabCommand = Get-Command matlab -ErrorAction SilentlyContinue
+            if ($matlabCommand) {
+                $MatlabExe = $matlabCommand.Source
+            } else {
+                $MatlabExe = Join-Path $env:ProgramFiles "MATLAB/R2025b/bin/matlab.exe"
+            }
+        }
+        if (-not (Test-Path -LiteralPath $MatlabExe)) {
+            throw "MATLAB executable not found: $MatlabExe"
+        }
+        $matlabReportParent = Split-Path -Parent $MatlabReportPath
+        if ($matlabReportParent -and -not (Test-Path -LiteralPath $matlabReportParent)) {
+            New-Item -ItemType Directory -Force -Path $matlabReportParent | Out-Null
+        }
+        $matlabReportFullPath = (Resolve-Path (Split-Path -Parent $MatlabReportPath)).Path
+        $matlabReportFullPath = Join-Path $matlabReportFullPath (Split-Path -Leaf $MatlabReportPath)
+        $matlabReportEscaped = $matlabReportFullPath.Replace("'", "''")
+        $matlabBatch = "addpath('matlab'); report = rf2TgmGeneratorSmoke; fid = fopen('$matlabReportEscaped','w'); fwrite(fid, jsonencode(report), 'char'); fclose(fid); assert(report.passed);"
+        & $MatlabExe -batch $matlabBatch
+        Write-Host ("MATLAB headless smoke: True")
+        Write-Host ("MATLAB report: {0}" -f $matlabReportFullPath)
     }
 
     if ($PrepareTTool) {

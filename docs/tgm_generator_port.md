@@ -127,6 +127,15 @@ abweichende Installationspfade:
   -OutputBaseName generated_from_matlab
 ```
 
+MATLAB-App-State zusaetzlich als echten Headless-Smoke pruefen:
+
+```powershell
+.\tools\Invoke-TgmGenAcceptance.ps1 -RunMatlabSmoke
+```
+
+Der Smoke ruft `rf2TgmGeneratorSmoke` auf, baut den App-State ohne Fenster auf
+und prueft Pflichtfelder, ODS-Chart-Inventar, Materialbibliothek und Status.
+
 tTool-Vorbereitung aus MATLAB:
 
 ```matlab
@@ -371,6 +380,8 @@ Implementiert:
   tTool-Uebergabe.
 - Statischer UI-Smoke-Test `tools\test_tgm_generator_ui_static.py`, eingebunden
   in `tools\Invoke-TgmGenAcceptance.ps1`.
+- MATLAB-Headless-Smoke `rf2TgmGeneratorSmoke`, optional ueber
+  `tools\Invoke-TgmGenAcceptance.ps1 -RunMatlabSmoke`.
 - LibreOffice/UNO-Diagnose fuer dynamische ODS-Recalc-Vergleiche
   (`diagnose_tgm_gen_lo_dynamic.py`); lokal nicht als Acceptance-Golden nutzbar,
   weil Calc nach Recalc `#WERT!` in Exportzellen schreibt.
