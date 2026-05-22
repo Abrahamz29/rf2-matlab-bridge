@@ -37,6 +37,7 @@ state.chartData = struct("loaded", false, "chart_count", 0, "series_count", 0);
 state.validation = struct("available", true, "message", "Acceptance test not run.");
 state.ttool = struct("available", true, "message", "Not prepared.");
 state.inputModel = struct("loaded", false, "input_count", 0, "sheet_counts", struct());
+state.projectPath = localUiProjectPath();
 
 if inputPath ~= "" && isfile(inputPath)
     model = rf2ReadTgm(inputPath);
@@ -86,6 +87,23 @@ try
             state.inputModel.loaded = true;
             state.message = "Loaded ODS input model.";
             html.Data = state;
+        case "saveProjectInputs"
+            state = localBuildState(string(data.inputPath));
+            state.inputModel = data.inputModel;
+            state.inputModel.loaded = true;
+            state.projectPath = localUiProjectPath();
+            localWriteJson(state.projectPath, state.inputModel);
+            state.message = "Saved project inputs.";
+            state.status = "project saved";
+            html.Data = state;
+        case "loadProjectInputs"
+            state = localBuildState(string(data.inputPath));
+            state.projectPath = localUiProjectPath();
+            state.inputModel = jsondecode(fileread(state.projectPath));
+            state.inputModel.loaded = true;
+            state.message = "Loaded saved project inputs.";
+            state.status = "project loaded";
+            html.Data = state;
         case "loadOdsChartData"
             state = localBuildState(string(data.inputPath));
             state.status = "loading ODS chart data";
@@ -96,19 +114,10 @@ try
             html.Data = state;
         case "generateFromInputs"
             state = localBuildState(string(data.inputPath));
-            projectPath = fullfile("tmp", "tgm_gen_port_ui", "inputs_from_ui.json");
-            if ~isfolder(fileparts(projectPath))
-                mkdir(fileparts(projectPath));
-            end
-            projectText = jsonencode(data.inputModel);
-            fid = fopen(projectPath, "w");
-            if fid < 0
-                error("rf2TgmGeneratorApp:ProjectWriteFailed", "Could not write %s", projectPath);
-            end
-            cleanup = onCleanup(@() fclose(fid));
-            fwrite(fid, projectText, "char");
-            clear cleanup
+            projectPath = localUiProjectPath();
+            localWriteJson(projectPath, data.inputModel);
             state.inputModel = data.inputModel;
+            state.projectPath = projectPath;
             state.validation = rf2TgmGenGenerate( ...
                 "OdsPath", string(data.odsPath), ...
                 "OutDir", fullfile("tmp", "tgm_gen_port_ui"), ...
@@ -173,4 +182,23 @@ catch exception
     report.chart_count = 0;
     report.series_count = 0;
 end
+end
+
+function projectPath = localUiProjectPath()
+projectPath = fullfile("tmp", "tgm_gen_port_ui", "inputs_from_ui.json");
+end
+
+function localWriteJson(path, data)
+folder = fileparts(path);
+if ~isfolder(folder)
+    mkdir(folder);
+end
+projectText = jsonencode(data);
+fid = fopen(path, "w");
+if fid < 0
+    error("rf2TgmGeneratorApp:ProjectWriteFailed", "Could not write %s", path);
+end
+cleanup = onCleanup(@() fclose(fid));
+fwrite(fid, projectText, "char");
+clear cleanup
 end

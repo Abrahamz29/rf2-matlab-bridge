@@ -49,8 +49,9 @@ rf2TgmGeneratorApp("tools/cache/tyres/tgm/BFGoodrich_g-ForceR1_225-50-R16x7__c2b
 Die erste UI-Version zeigt TGM-Zusammenfassung, Querschnitt, Materialpunkte und
 Materialtabelle. Zusaetzlich kann die UI das ODS-Input-Modell laden, Werte in
 den Projektzellen tabweise bearbeiten und einen rekursiven
-`Generate From Inputs`-Lauf starten. Der dateigleiche Acceptance-Test bleibt als
-eigener Button vorhanden.
+`Generate From Inputs`-Lauf starten. Bearbeitete Inputs koennen als
+`tmp\tgm_gen_port_ui\inputs_from_ui.json` gespeichert und wieder geladen werden.
+Der dateigleiche Acceptance-Test bleibt als eigener Button vorhanden.
 
 ## Akzeptanztest
 
@@ -283,6 +284,7 @@ Implementiert:
 - Rekursive ODS-Chartdatenextraktion mit MATLAB-Wrapper `rf2TgmGenChartData`.
 - Moderne MATLAB-`uihtml`-App-Shell mit ersten Plots und Acceptance-Test-Button.
 - UI-Tabelle fuer extrahierte ODS-Eingabezellen mit `Generate From Inputs`.
+- UI-Projektpersistenz fuer bearbeitete Inputs (`Save Project` / `Load Project`).
 - UI-Behaviour-Plots fuer `Fy` ueber Schraeglaufwinkel, `Fx` ueber Slip Ratio
   und Kraftverlauf ueber Realtime-Testindex.
 - tTool-Vorbereitung aus MATLAB und UI: gepruefte `.tgm`/`.tbc` nach `pTool`

@@ -238,6 +238,8 @@
       <span class="pill warn">LookupV2/PatchV1: tTool required</span>
       <div class="toolbar">
         <button id="inputs-button" type="button">Load ODS Inputs</button>
+        <button id="save-project-button" type="button">Save Project</button>
+        <button id="load-project-button" type="button">Load Project</button>
         <button id="chart-data-button" type="button">Load ODS Chart Data</button>
         <button id="generate-inputs-button" type="button">Generate From Inputs</button>
         <button id="acceptance-button" type="button">Run Acceptance</button>
@@ -362,6 +364,27 @@
           };
         }
       });
+      document.getElementById("save-project-button").addEventListener("click", () => {
+        if (matlabComponent && state?.inputModel?.inputs?.length) {
+          setStatus("saving project inputs");
+          matlabComponent.Data = {
+            command: "saveProjectInputs",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods",
+            inputModel: state.inputModel
+          };
+        }
+      });
+      document.getElementById("load-project-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("loading saved project inputs");
+          matlabComponent.Data = {
+            command: "loadProjectInputs",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tools/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods"
+          };
+        }
+      });
       document.getElementById("generate-inputs-button").addEventListener("click", () => {
         if (matlabComponent && state?.inputModel?.inputs?.length) {
           setStatus("generating from ODS inputs");
@@ -475,6 +498,7 @@
             <tr><td>LookupV2</td><td>${summary.lookupV2LineCount ?? 0} lines</td></tr>
             <tr><td>PatchV1</td><td>${summary.patchV1LineCount ?? 0} lines</td></tr>
             <tr><td>Inputs</td><td>${state.inputModel?.input_count ?? 0}</td></tr>
+            <tr><td>Project</td><td>${escapeHtml(state.projectPath || "")}</td></tr>
             <tr><td>ODS charts</td><td>${state.chartReport?.chart_count ?? 0} / ${state.chartReport?.series_count ?? 0} series</td></tr>
             <tr><td>ODS test</td><td>${state.validation?.equal === true ? "pass" : (state.validation?.message || "not run")}</td></tr>
           </tbody>
@@ -579,7 +603,7 @@
       const rows = [
         ["Mode", state.validation?.mode || "-"],
         ["Fallback", state.validation?.fallbackOnError === true ? "enabled" : "disabled"],
-        ["Project", state.validation?.projectPath || "-"],
+        ["Project", state.validation?.projectPath || state.projectPath || "-"],
         ["TGM", tgmPath],
         ["TBC", tbcPath],
         ["pTool TGM", state.ttool?.targetTgm || "-"],
