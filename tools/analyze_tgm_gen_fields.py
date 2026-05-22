@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""Analyze TGM Gen ODS fields needed for text outputs and mark unused inputs.
+"""Analyze TGM Gen ODS fields needed for text outputs and mark field usage.
 
 By default the analysis traces the final tyre-model target:
 - TGM text from Export column A up to About!D31 + 1.
 
-Use --target tgm-tbc to additionally keep fields that only affect TBC column O.
+It also traces the optional TBC output so the marked ODS can distinguish:
+- unchanged cells that influence the final .tgm
+- light blue cells that influence only the .tbc
+- red cells that influence neither .tgm nor .tbc
 
 It combines a static formula dependency walk, a dynamic recursive-evaluator
 trace, ODS content-validations/dropdown sources, and Basic macro references.
 The generated ODS copy marks non-formula project/input-like fields that are not
-needed by those outputs in red.
+needed by any output in red.
 """
 
 from __future__ import annotations
@@ -44,6 +47,8 @@ DEFAULT_SHEETS = [
     "Materials",
     "TBC",
 ]
+UNUSED_RED = "#ff4d4d"
+TBC_ONLY_BLUE = "#b7e3ff"
 
 
 def load_tgm_module():
@@ -203,6 +208,31 @@ def dynamic_dependency_trace(ods: Path, cells: dict[tuple[str, int, int], Any], 
     return evaluator.accessed | set(targets)
 
 
+def required_for_targets(
+    ods: Path,
+    cells: dict[tuple[str, int, int], Any],
+    named_ranges: dict[str, dict[str, str]],
+    targets: set[CellKey],
+    validations: dict[str, dict[str, Any]],
+    validation_assignments: dict[CellKey, str],
+    macro_refs: set[CellKey],
+) -> tuple[set[CellKey], dict[str, int]]:
+    static_required = static_dependency_walk(cells, named_ranges, targets)
+    dynamic_required = dynamic_dependency_trace(ods, cells, targets)
+    required = set(static_required) | set(dynamic_required) | set(macro_refs)
+    validation_sources = validation_sources_for_required_inputs(required, validations, validation_assignments)
+    material_dropdown_sources = material_dropdown_block_sources(named_ranges)
+    required |= validation_sources | material_dropdown_sources
+    return required, {
+        "static_required_cells": len(static_required),
+        "dynamic_required_cells": len(dynamic_required),
+        "validation_source_cells": len(validation_sources),
+        "material_dropdown_block_cells": len(material_dropdown_sources),
+        "macro_referenced_cells": len(macro_refs),
+        "union_required_cells": len(required),
+    }
+
+
 def load_validations_and_cell_assignments(ods: Path) -> tuple[dict[str, dict[str, Any]], dict[CellKey, str]]:
     root = tgm.read_xml(ods, "content.xml")
     validations: dict[str, dict[str, Any]] = {}
@@ -314,12 +344,15 @@ def classify_fields(
     ods: Path,
     cells: dict[tuple[str, int, int], Any],
     required: set[CellKey],
+    tgm_required: set[CellKey],
+    tbc_only_required: set[CellKey],
     validations: dict[str, dict[str, Any]],
     validation_assignments: dict[CellKey, str],
-) -> tuple[list[dict[str, Any]], set[CellKey]]:
+) -> tuple[list[dict[str, Any]], set[CellKey], set[CellKey]]:
     styles = tgm.load_cell_styles(ods)
     rows: list[dict[str, Any]] = []
     mark_red: set[CellKey] = set()
+    mark_blue: set[CellKey] = set()
     for cell in sorted(cells.values(), key=lambda item: (item.sheet, item.row, item.col)):
         if cell.sheet not in DEFAULT_SHEETS or cell.formula:
             continue
@@ -331,8 +364,22 @@ def classify_fields(
         validation_name = validation_assignments.get(key, "")
         is_input_like = bool(classification["isPossibleInput"] or validation_name)
         is_required = key in required
-        if is_input_like and not is_required:
+        is_tgm_required = key in tgm_required
+        is_tbc_only = key in tbc_only_required
+        if is_input_like and is_tbc_only:
+            mark_blue.add(key)
+        elif is_input_like and not is_required:
             mark_red.add(key)
+        if not is_input_like:
+            usage_class = "non_input"
+        elif is_tbc_only:
+            usage_class = "tbc_only"
+        elif is_tgm_required:
+            usage_class = "tgm"
+        elif is_required:
+            usage_class = "output"
+        else:
+            usage_class = "unused"
         rows.append(
             {
                 "sheet": cell.sheet,
@@ -347,20 +394,36 @@ def classify_fields(
                 "validation_condition": validations.get(validation_name, {}).get("condition", "") if validation_name else "",
                 "input_like": is_input_like,
                 "needed_for_output": is_required,
+                "needed_for_tgm": is_tgm_required,
+                "tbc_only": is_tbc_only,
+                "usage_class": usage_class,
                 "mark_red": key in mark_red,
+                "mark_blue": key in mark_blue,
             }
         )
-    return rows, mark_red
+    return rows, mark_red, mark_blue
 
 
 def summarize(rows: list[dict[str, Any]], required: set[CellKey], targets: set[CellKey], macro_refs: set[CellKey]) -> dict[str, Any]:
     by_sheet: dict[str, dict[str, int]] = {}
     for row in rows:
         sheet = row["sheet"]
-        item = by_sheet.setdefault(sheet, {"fields": 0, "input_like": 0, "needed": 0, "unused_marked_red": 0})
+        item = by_sheet.setdefault(
+            sheet,
+            {
+                "fields": 0,
+                "input_like": 0,
+                "needed": 0,
+                "needed_for_tgm": 0,
+                "tbc_only_marked_blue": 0,
+                "unused_marked_red": 0,
+            },
+        )
         item["fields"] += 1
         item["input_like"] += int(bool(row["input_like"]))
         item["needed"] += int(bool(row["needed_for_output"]))
+        item["needed_for_tgm"] += int(bool(row["needed_for_tgm"]))
+        item["tbc_only_marked_blue"] += int(bool(row["mark_blue"]))
         item["unused_marked_red"] += int(bool(row["mark_red"]))
     return {
         "required_cell_count": len(required),
@@ -369,12 +432,14 @@ def summarize(rows: list[dict[str, Any]], required: set[CellKey], targets: set[C
         "field_count": len(rows),
         "input_like_field_count": sum(1 for row in rows if row["input_like"]),
         "needed_field_count": sum(1 for row in rows if row["needed_for_output"]),
+        "needed_for_tgm_field_count": sum(1 for row in rows if row["needed_for_tgm"]),
+        "tbc_only_input_like_marked_blue_count": sum(1 for row in rows if row["mark_blue"]),
         "unused_input_like_marked_red_count": sum(1 for row in rows if row["mark_red"]),
         "by_sheet": dict(sorted(by_sheet.items())),
     }
 
 
-def ensure_red_style(root: ET.Element, original_style: str, style_map: dict[str, str]) -> str:
+def ensure_mark_style(root: ET.Element, original_style: str, style_map: dict[str, str], prefix: str, color: str) -> str:
     if original_style in style_map:
         return style_map[original_style]
     automatic = root.find(".//office:automatic-styles", NS)
@@ -388,7 +453,7 @@ def ensure_red_style(root: ET.Element, original_style: str, style_map: dict[str,
                 source = style
                 break
 
-    new_name = f"codex_unused_red_{len(style_map) + 1}"
+    new_name = f"{prefix}_{len(style_map) + 1}"
     if source is None:
         new_style = ET.Element(Q["style"] + "style", {Q["style"] + "name": new_name, Q["style"] + "family": "table-cell"})
         props = ET.SubElement(new_style, Q["style"] + "table-cell-properties")
@@ -398,7 +463,7 @@ def ensure_red_style(root: ET.Element, original_style: str, style_map: dict[str,
         props = new_style.find("style:table-cell-properties", NS)
         if props is None:
             props = ET.SubElement(new_style, Q["style"] + "table-cell-properties")
-    props.set(Q["fo"] + "background-color", "#ff4d4d")
+    props.set(Q["fo"] + "background-color", color)
     automatic.append(new_style)
     style_map[original_style] = new_name
     return new_name
@@ -438,18 +503,20 @@ def split_cell_for_targets(row: ET.Element, cell_element: ET.Element, start_col:
     return targets
 
 
-def mark_ods_copy(source: Path, destination: Path, mark_red: set[CellKey]) -> dict[str, Any]:
+def mark_ods_copy(source: Path, destination: Path, mark_red: set[CellKey], mark_blue: set[CellKey]) -> dict[str, Any]:
     content = None
     with ZipFile(source, "r") as zin:
         content = zin.read("content.xml")
     root = ET.fromstring(content)
-    style_map: dict[str, str] = {}
-    marked = 0
+    style_maps: dict[str, dict[str, str]] = {"red": {}, "blue": {}}
+    marked = {"red": 0, "blue": 0}
     skipped_repeated_rows = 0
 
-    marks_by_sheet: dict[str, dict[int, set[int]]] = {}
+    marks_by_sheet: dict[str, dict[int, dict[int, str]]] = {}
     for key in mark_red:
-        marks_by_sheet.setdefault(key.sheet, {}).setdefault(key.row, set()).add(key.col)
+        marks_by_sheet.setdefault(key.sheet, {}).setdefault(key.row, {})[key.col] = "red"
+    for key in mark_blue:
+        marks_by_sheet.setdefault(key.sheet, {}).setdefault(key.row, {})[key.col] = "blue"
 
     for table in tgm.iter_tables(root):
         sheet = tgm.table_name(table)
@@ -473,10 +540,21 @@ def mark_ods_copy(source: Path, destination: Path, mark_red: set[CellKey]) -> di
                 overlap = [col for col in target_cols if col_index <= col < col_index + repeat]
                 if overlap:
                     targets = split_cell_for_targets(row, cell_element, col_index, overlap)
-                    for target_element in targets.values():
+                    for target_col, target_element in targets.items():
+                        color_name = target_cols[target_col]
                         original_style = tgm.attr(target_element, "table", "style-name")
-                        target_element.set(Q["table"] + "style-name", ensure_red_style(root, original_style, style_map))
-                        marked += 1
+                        if color_name == "blue":
+                            style_name = ensure_mark_style(
+                                root,
+                                original_style,
+                                style_maps["blue"],
+                                "codex_tbc_only_blue",
+                                TBC_ONLY_BLUE,
+                            )
+                        else:
+                            style_name = ensure_mark_style(root, original_style, style_maps["red"], "codex_unused_red", UNUSED_RED)
+                        target_element.set(Q["table"] + "style-name", style_name)
+                        marked[color_name] += 1
                 col_index += repeat
             row_index += row_repeat
 
@@ -490,7 +568,14 @@ def mark_ods_copy(source: Path, destination: Path, mark_red: set[CellKey]) -> di
             new_info.external_attr = info.external_attr
             new_info.comment = info.comment
             zout.writestr(new_info, data)
-    return {"marked_cells": marked, "skipped_repeated_rows": skipped_repeated_rows, "red_style_count": len(style_map)}
+    return {
+        "marked_cells": marked["red"] + marked["blue"],
+        "red_marked_cells": marked["red"],
+        "blue_marked_cells": marked["blue"],
+        "skipped_repeated_rows": skipped_repeated_rows,
+        "red_style_count": len(style_maps["red"]),
+        "blue_style_count": len(style_maps["blue"]),
+    }
 
 
 def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -505,7 +590,11 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
         "validation",
         "input_like",
         "needed_for_output",
+        "needed_for_tgm",
+        "tbc_only",
+        "usage_class",
         "mark_red",
+        "mark_blue",
         "background",
         "style",
         "validation_condition",
@@ -520,20 +609,44 @@ def write_csv(path: Path, rows: list[dict[str, Any]]) -> None:
 def analyze(ods: Path, out_dir: Path, target_mode: str = "tgm") -> dict[str, Any]:
     cells = tgm.load_formula_cells(ods)
     named_ranges = tgm.load_named_ranges(ods)
-    targets, target_report = export_targets(ods, cells, target_mode)
-    static_required = static_dependency_walk(cells, named_ranges, targets)
-    dynamic_required = dynamic_dependency_trace(ods, cells, targets)
     validations, validation_assignments = load_validations_and_cell_assignments(ods)
     macro_data, macro_refs = macro_report(ods)
 
-    required = set(static_required) | set(dynamic_required) | set(macro_refs)
-    validation_sources = validation_sources_for_required_inputs(required, validations, validation_assignments)
-    material_dropdown_sources = material_dropdown_block_sources(named_ranges)
-    required |= validation_sources | material_dropdown_sources
+    targets_tgm, target_report_tgm = export_targets(ods, cells, "tgm")
+    targets_combined, target_report_combined = export_targets(ods, cells, "tgm-tbc")
+    tgm_required, tgm_dependency_counts = required_for_targets(
+        ods,
+        cells,
+        named_ranges,
+        targets_tgm,
+        validations,
+        validation_assignments,
+        macro_refs,
+    )
+    combined_required, combined_dependency_counts = required_for_targets(
+        ods,
+        cells,
+        named_ranges,
+        targets_combined,
+        validations,
+        validation_assignments,
+        macro_refs,
+    )
+    tbc_only_required = combined_required - tgm_required
+    if target_mode == "tgm-tbc":
+        targets = targets_combined
+        target_report = target_report_combined
+        required = combined_required
+        selected_dependency_counts = combined_dependency_counts
+    else:
+        targets = targets_tgm
+        target_report = target_report_tgm
+        required = tgm_required
+        selected_dependency_counts = tgm_dependency_counts
 
-    rows, mark_red = classify_fields(ods, cells, required, validations, validation_assignments)
-    marked_ods = out_dir / (ods.stem + f" - unused-fields-red-{target_mode}.ods")
-    mark_report = mark_ods_copy(ods, marked_ods, mark_red)
+    rows, mark_red, mark_blue = classify_fields(ods, cells, required, tgm_required, tbc_only_required, validations, validation_assignments)
+    marked_ods = out_dir / (ods.stem + f" - field-usage-red-blue-{target_mode}.ods")
+    mark_report = mark_ods_copy(ods, marked_ods, mark_red, mark_blue)
 
     field_csv = out_dir / f"field_usage_{target_mode}.csv"
     write_csv(field_csv, rows)
@@ -545,13 +658,16 @@ def analyze(ods: Path, out_dir: Path, target_mode: str = "tgm") -> dict[str, Any
         "field_csv": str(field_csv),
         "targets": target_report,
         "summary": summary,
-        "dependency_counts": {
-            "static_required_cells": len(static_required),
-            "dynamic_required_cells": len(dynamic_required),
-            "validation_source_cells": len(validation_sources),
-            "material_dropdown_block_cells": len(material_dropdown_sources),
-            "macro_referenced_cells": len(macro_refs),
-            "union_required_cells": len(required),
+        "dependency_counts": selected_dependency_counts,
+        "required_sets": {
+            "tgm_required_cells": len(tgm_required),
+            "tgm_tbc_required_cells": len(combined_required),
+            "tbc_only_required_cells": len(tbc_only_required),
+            "tbc_only_input_like_fields": sum(1 for row in rows if row["input_like"] and row["tbc_only"]),
+            "tgm_targets": target_report_tgm,
+            "tgm_tbc_targets": target_report_combined,
+            "tgm_dependency_counts": tgm_dependency_counts,
+            "tgm_tbc_dependency_counts": combined_dependency_counts,
         },
         "validations": {
             "definition_count": len(validations),
@@ -561,11 +677,12 @@ def analyze(ods: Path, out_dir: Path, target_mode: str = "tgm") -> dict[str, Any
         "macros": macro_data,
         "marking": mark_report,
         "notes": [
-            "Red marking is applied to non-formula input-like/project fields on the main input sheets that are not required by Export/TBC outputs.",
+            f"Light blue ({TBC_ONLY_BLUE}) marking is applied to non-formula input-like/project fields that are required only by the TBC output.",
+            f"Red ({UNUSED_RED}) marking is applied to non-formula input-like/project fields on the main input sheets that are not required by TGM or TBC outputs.",
             "Formula cells are not colored red; they are internal calculation logic, not user input fields.",
             "Dropdown source ranges from output-relevant validated cells are preserved as required.",
             "LookupV2/PatchV1 generation remains outside this ODS output trace.",
-            "Use --target tgm-tbc when TBC-only setup fields should be preserved as output-relevant too.",
+            "Use --target tgm-tbc when the selected required set should include TBC output cells as output-relevant.",
         ],
     }
     report_path = out_dir / f"field_analysis_report_{target_mode}.json"
@@ -587,6 +704,7 @@ def main() -> int:
     else:
         print(f"Marked ODS: {report['marked_ods']}")
         print(f"Report: {report['report_path']}")
+        print(f"TBC-only input-like fields marked blue: {report['summary']['tbc_only_input_like_marked_blue_count']}")
         print(f"Unused input-like fields marked red: {report['summary']['unused_input_like_marked_red_count']}")
     return 0
 

@@ -2,8 +2,12 @@
 
 Dieses Werkzeug analysiert die offizielle Studio-397-TGM-Gen-ODS auf Felder,
 die das finale Reifenmodell beeinflussen. Standard ist die `.tgm`-Ausgabe als
-finales Reifenmodell. Ziel ist eine Referenzkopie, in der nicht benoetigte
-Projekt-/Eingabefelder rot markiert sind.
+finales Reifenmodell. Ziel ist eine Referenzkopie, in der Feldnutzung farblich
+sichtbar wird:
+
+- unveraendert: beeinflusst die finale `.tgm`
+- hellblau: wird nur fuer die `.tbc` benoetigt
+- rot: beeinflusst weder `.tgm` noch `.tbc`
 
 Ausgangsdatei:
 
@@ -20,12 +24,13 @@ Analyse ausfuehren:
 Erzeugt:
 
 ```text
-tmp\tgm_gen_field_analysis\TGM Gen V0.33 - GY F1 1975 Front - unused-fields-red-tgm.ods
+tmp\tgm_gen_field_analysis\TGM Gen V0.33 - GY F1 1975 Front - field-usage-red-blue-tgm.ods
 tmp\tgm_gen_field_analysis\field_analysis_report_tgm.json
 tmp\tgm_gen_field_analysis\field_usage_tgm.csv
 ```
 
-Wenn auch `.tbc`-only Felder als output-relevant gelten sollen:
+Wenn das ausgewaehlte Output-Dependency-Set `.tgm` und `.tbc` zusammen sein
+soll:
 
 ```powershell
 & "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\analyze_tgm_gen_fields.py --target tgm-tbc --json
@@ -47,14 +52,27 @@ Wenn auch `.tbc`-only Felder als output-relevant gelten sollen:
   Reichweite beruecksichtigt (`About!P28`, `About!P29`, `About!D31`,
   `General!I47`).
 
-Rot markiert werden nur nicht-formula Eingabe-/Projektfelder auf den
-Haupt-Input-Sheets, die nicht im Output-Dependency-Set liegen. Formelzellen
-werden nicht rot markiert, weil sie interne Rechenlogik sind.
+Hellblau markiert werden nur nicht-formula Eingabe-/Projektfelder auf den
+Haupt-Input-Sheets, die im `.tgm`-Dependency-Set fehlen, aber im kombinierten
+`.tgm`+`.tbc`-Dependency-Set enthalten sind. Rot markiert werden nur
+nicht-formula Eingabe-/Projektfelder, die weder `.tgm` noch `.tbc`
+beeinflussen. Formelzellen werden nicht farbig markiert, weil sie interne
+Rechenlogik sind.
 
 ## Aktueller Stand
 
-Beim letzten TGM-only-Lauf wurden `3544` unbenoetigte input-artige Felder rot
-markiert. Beim kombinierten `.tgm`+`.tbc`-Lauf waren es `3415`.
+Beim letzten TGM-only-Lauf wurden `129` input-artige Felder hellblau markiert,
+weil sie nur die `.tbc` beeinflussen. Weitere `3415` input-artige Felder wurden
+rot markiert, weil sie weder `.tgm` noch `.tbc` beeinflussen.
+
+Die hellblauen Felder liegen aktuell in:
+
+- `TBC`: `105`
+- `Compound`: `12`
+- `General`: `5`
+- `LoadSens`: `4`
+- `ContactProps`: `3`
+
 Die markierte Kopie ist ZIP/XML-valide und erzeugt dieselben Exporttexte wie
 das Original:
 
