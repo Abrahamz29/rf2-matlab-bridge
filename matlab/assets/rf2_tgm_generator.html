@@ -268,6 +268,7 @@
         <div class="tab" data-view="geometry">Geometry</div>
         <div class="tab" data-view="construction">Construction</div>
         <div class="tab" data-view="materials">Materials</div>
+        <div class="tab" data-view="materiallibrary">Material Library</div>
         <div class="tab" data-view="realtime">Realtime</div>
         <div class="tab" data-view="wlf">WLF</div>
         <div class="tab" data-view="contactprops">ContactProps</div>
@@ -450,6 +451,7 @@
         ["Material Rows", summary.materialRows],
         ["Ply Rows", summary.plyParamRows],
         ["ODS Charts", state.chartReport?.chart_count],
+        ["Library", state.materialLibrary?.material_count],
         ["Lookup Lines", `${summary.lookupV2LineCount || 0} / ${summary.patchV1LineCount || 0}`]
       ];
       const metricHtml = `<div class="grid">${metrics.map(([label, value]) =>
@@ -479,6 +481,13 @@
           ${renderInputBlock("materials")}`;
         drawMaterials(state.plotData?.materials || [], "materials");
         drawMaterialTable(state.plotData?.materials || []);
+      } else if (activeView === "materiallibrary") {
+        content.innerHTML = `${renderMaterialLibrarySummary()}
+          ${plotShell("library-modulus", "Library Young's Modulus By Temperature")}
+          ${tableShell("material-library-table", ["Category", "Material", "Points", "Temp K", "E-Modulus Pa"])}
+          ${tableShell("material-point-table", ["Category", "Material", "Temp K", "Density", "E-Modulus", "k", "Shore A"])}`;
+        drawMaterialLibraryPlot(state.materialLibrary?.points || [], "library-modulus");
+        drawMaterialLibraryTables(state.materialLibrary || {});
       } else if (activeView === "construction" || activeView === "plystack") {
         content.innerHTML = `${plotShell("ply", "Ply Angle / Thickness")}
           ${tableShell("ply-table", ["Node", "Angle deg", "Thickness m", "Connect"])}
@@ -526,6 +535,7 @@
             <tr><td>PatchV1</td><td>${summary.patchV1LineCount ?? 0} lines</td></tr>
             <tr><td>Inputs</td><td>${state.inputModel?.input_count ?? 0}</td></tr>
             <tr><td>Editable hints</td><td>${formatConfidenceCounts(state.inputModel?.editable_confidence_counts)}</td></tr>
+            <tr><td>Material library</td><td>${state.materialLibrary?.material_count ?? 0} / ${state.materialLibrary?.point_count ?? 0} points</td></tr>
             <tr><td>Project</td><td>${escapeHtml(state.projectPath || "")}</td></tr>
             <tr><td>ODS charts</td><td>${state.chartReport?.chart_count ?? 0} / ${state.chartReport?.series_count ?? 0} series</td></tr>
             <tr><td>ODS test</td><td>${state.validation?.equal === true ? "pass" : (state.validation?.message || "not run")}</td></tr>
@@ -575,6 +585,7 @@
         plystack: "Construction",
         materials: "Materials",
         materialcurves: "Materials",
+        materiallibrary: "Materials",
         realtime: "Realtime",
         wlf: "WLF",
         contactprops: "ContactProps",
@@ -653,6 +664,19 @@
         <div class="metric"><div class="value">${fmt(summary.maxVerticalForceN)}</div><div class="label">Max |Fz| N</div></div>
       </div>
       <section class="table-panel" style="margin-bottom:14px"><table><tbody><tr><td>Source</td><td>${escapeHtml(behaviour.path || "")}</td></tr></tbody></table></section>`;
+    }
+
+    function renderMaterialLibrarySummary() {
+      const library = state.materialLibrary || {};
+      const categoryCounts = library.category_counts || {};
+      const rows = Object.keys(categoryCounts).map(category => `<tr><td>${escapeHtml(category)}</td><td>${categoryCounts[category]}</td></tr>`).join("");
+      return `<div class="grid">
+        <div class="metric"><div class="value">${library.loaded ? "yes" : "no"}</div><div class="label">Loaded</div></div>
+        <div class="metric"><div class="value">${library.material_count ?? 0}</div><div class="label">Materials</div></div>
+        <div class="metric"><div class="value">${library.point_count ?? 0}</div><div class="label">Property Points</div></div>
+        <div class="metric"><div class="value">${Object.keys(categoryCounts).length}</div><div class="label">Categories</div></div>
+      </div>
+      <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Category</th><th>Materials</th></tr></thead><tbody>${rows}</tbody></table></section>`;
     }
 
     function renderChartSummary() {
@@ -849,6 +873,42 @@
       document.getElementById("behaviour-table").innerHTML = rows.slice(0, 300).map(r =>
         `<tr><td>${fmt(r.testIndex)}</td><td>${fmt(r.slipAngleDeg)}</td><td>${fmt(r.slipRatioPct)}</td><td>${fmt(r.verticalForceN)}</td><td>${fmt(r.longForceN)}</td><td>${fmt(r.latForceN)}</td><td>${fmt(r.aligningTorqueNm)}</td></tr>`
       ).join("");
+    }
+
+    function drawMaterialLibraryPlot(points, targetId) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
+      svg.innerHTML = "";
+      const data = points.filter(point => Number.isFinite(Number(point.temperatureK)) && Number.isFinite(Number(point.youngsModulusPa)));
+      if (!data.length) return;
+      const w = svg.clientWidth || 800, h = svg.clientHeight || 280, pad = 30;
+      const xs = data.map(point => Number(point.temperatureK));
+      const ys = data.map(point => Number(point.youngsModulusPa));
+      const [minX, maxX] = extent(xs), [minY, maxY] = extent(ys);
+      const sx = x => pad + (x - minX) / safeRange(minX, maxX) * (w - 2 * pad);
+      const sy = y => h - pad - (Math.log10(Math.max(y, 1)) - Math.log10(Math.max(minY, 1))) / safeRange(Math.log10(Math.max(minY, 1)), Math.log10(Math.max(maxY, 1))) * (h - 2 * pad);
+      const colors = ["#72b7ff", "#f0b85a", "#6be675", "#ff7a90", "#b594ff", "#65d6d0", "#e0a84f"];
+      const categories = [...new Set(data.map(point => point.category))];
+      data.forEach(point => {
+        const color = colors[Math.max(0, categories.indexOf(point.category)) % colors.length];
+        svg.insertAdjacentHTML("beforeend", `<circle cx="${sx(Number(point.temperatureK)).toFixed(1)}" cy="${sy(Number(point.youngsModulusPa)).toFixed(1)}" r="2.2" fill="${color}"><title>${escapeHtml(point.material)} ${fmt(point.temperatureK)} K ${fmt(point.youngsModulusPa)} Pa</title></circle>`);
+      });
+      svg.insertAdjacentHTML("beforeend", `<text x="${pad}" y="18" fill="#9aa7b3">Young's modulus [Pa, log] vs temperature [K]</text>`);
+    }
+
+    function drawMaterialLibraryTables(library) {
+      const materialTable = document.getElementById("material-library-table");
+      if (materialTable) {
+        materialTable.innerHTML = (library.materials || []).map(material =>
+          `<tr><td>${escapeHtml(material.category)}</td><td>${escapeHtml(material.name)}</td><td>${material.pointCount ?? 0}</td><td>${fmt(material.temperatureMinK)} - ${fmt(material.temperatureMaxK)}</td><td>${fmt(material.youngsModulusMinPa)} - ${fmt(material.youngsModulusMaxPa)}</td></tr>`
+        ).join("");
+      }
+      const pointTable = document.getElementById("material-point-table");
+      if (pointTable) {
+        pointTable.innerHTML = (library.points || []).slice(0, 500).map(point =>
+          `<tr><td>${escapeHtml(point.category)}</td><td>${escapeHtml(point.material)}</td><td>${fmt(point.temperatureK)}</td><td>${fmt(point.densityKgM3)}</td><td>${fmt(point.youngsModulusPa)}</td><td>${fmt(point.thermalConductivity)}</td><td>${fmt(point.shoreA)}</td></tr>`
+        ).join("");
+      }
     }
 
     function drawChartTables(report) {

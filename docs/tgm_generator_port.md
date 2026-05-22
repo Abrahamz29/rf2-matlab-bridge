@@ -98,7 +98,8 @@ den rekursiven Full-Sheet-Formelreport ohne Fallback laufen. Zusaetzlich
 extrahiert er die editierbaren Projektinputs in `inputs.json`, speist diese
 unveraendert wieder in den Generator ein und vergleicht auch diesen
 Projekt-Roundtrip gegen die ODS-Referenz. Der Test prueft ausserdem die
-Style-/Editierklassifizierung und die ODS-Chartdatenextraktion.
+Style-/Editierklassifizierung, die ODS-Chartdatenextraktion und die strukturierte
+Materialbibliothek.
 
 tTool-Vorbereitung aus MATLAB:
 
@@ -267,6 +268,33 @@ Aktueller Stand fuer die offizielle Beispiel-ODS:
 - Die UI zeigt diese Chart-Coverage im Tab `ODS Charts`; der Button
   `Load ODS Chart Data` zeichnet die ausgewerteten ODS-Serien nach.
 
+## Materialbibliothek
+
+Das ODS-`Materials`-Sheet wird in eine strukturierte Bibliothek aus Kategorien,
+Materialnamen und temperaturabhaengigen Eigenschaftspunkten zerlegt:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\tgm_gen_ods.py `
+  --ods ".\tools\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  material-library --json
+```
+
+Aus MATLAB:
+
+```matlab
+library = rf2TgmGenMaterialLibrary;
+disp(library.material_count)
+```
+
+Aktueller Stand fuer die offizielle Beispiel-ODS:
+
+- 130 Materialien.
+- 358 temperaturabhaengige Eigenschaftspunkte.
+- Kategorien fuer Ply, Tread, Tread-Sidewall, Bulk, Filler, Inner Liner und
+  Internal Gas.
+- Die UI zeigt die Bibliothek im Tab `Material Library` inklusive
+  E-Modul-ueber-Temperatur-Plot.
+
 ## Dynamische LibreOffice-Diagnose
 
 LibreOffice ist lokal vorhanden, aber der Headless-Recalc dieser alten ODS ist
@@ -309,6 +337,7 @@ Implementiert:
 - Regressionstest fuer unveraenderte Projektinputs: ODS -> `inputs.json` ->
   rekursiver Export bleibt dateigleich zur ODS-Referenz.
 - Regressionstest fuer ODS-Chart-Inventar und ausgewertete Chartdaten.
+- Regressionstest fuer strukturierte ODS-Materialbibliothek.
 - LibreOffice/UNO-Diagnose fuer dynamische ODS-Recalc-Vergleiche
   (`diagnose_tgm_gen_lo_dynamic.py`); lokal nicht als Acceptance-Golden nutzbar,
   weil Calc nach Recalc `#WERT!` in Exportzellen schreibt.
@@ -319,6 +348,8 @@ Implementiert:
 - ODS-Chart-Inventory mit Serien-/Quellbereichsauswertung und MATLAB-Wrapper
   `rf2TgmGenChartReport`.
 - Rekursive ODS-Chartdatenextraktion mit MATLAB-Wrapper `rf2TgmGenChartData`.
+- Strukturierte ODS-Materialbibliothek mit MATLAB-Wrapper
+  `rf2TgmGenMaterialLibrary`.
 - Moderne MATLAB-`uihtml`-App-Shell mit ersten Plots und Acceptance-Test-Button.
 - UI-Tabelle fuer extrahierte ODS-Eingabezellen mit `Generate From Inputs`.
 - UI-Suche und Pagination fuer alle extrahierten Eingabezellen.

@@ -74,6 +74,7 @@ def run_acceptance(ods: Path, out_dir: Path, mode: str) -> dict:
     )
     chart_report = tgm.inspect_charts(ods)
     chart_data = tgm.inspect_chart_data(ods, mode=mode, fallback_on_error=False)
+    material_library = tgm.extract_material_library(ods)
     chart_series_with_values = sum(
         1
         for chart in chart_data["charts"]
@@ -130,6 +131,12 @@ def run_acceptance(ods: Path, out_dir: Path, mode: str) -> dict:
                 and chart_data["fallback_count"] == 0
             ),
         },
+        "material_library": {
+            "material_count": material_library["material_count"],
+            "point_count": material_library["point_count"],
+            "category_counts": material_library["category_counts"],
+            "passed": bool(material_library["material_count"] >= 100 and material_library["point_count"] >= 300),
+        },
         "tgm": tgm_compare,
         "tbc": tbc_compare,
         "passed": bool(
@@ -144,6 +151,8 @@ def run_acceptance(ods: Path, out_dir: Path, mode: str) -> dict:
             and chart_series_with_values == chart_report["series_count"]
             and chart_numeric_points > 0
             and chart_data["fallback_count"] == 0
+            and material_library["material_count"] >= 100
+            and material_library["point_count"] >= 300
         ),
     }
 
@@ -165,6 +174,7 @@ def main() -> int:
         print(f"errors: {report['error_count']}")
         print(f"fallback: {report['fallback_count']}")
         print(f"charts: {report['charts']['evaluated_series_count']}/{report['charts']['series_count']}")
+        print(f"materials: {report['material_library']['material_count']} / {report['material_library']['point_count']} points")
         print(f"tgm_equal_without_lookup_patch: {report['tgm']['equal']}")
         print(f"tbc_equal: {report['tbc']['equal']}")
         print(f"project_roundtrip: {report['project_roundtrip']['passed']}")

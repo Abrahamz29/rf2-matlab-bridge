@@ -34,6 +34,7 @@ state.behaviour = localEncodeBehaviourData(rf2TgmBehaviourPlotData);
 state.odsPath = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY F1 1975 Front.ods");
 state.chartReport = localLoadChartReport(state.odsPath);
 state.chartData = struct("loaded", false, "chart_count", 0, "series_count", 0);
+state.materialLibrary = localLoadMaterialLibrary(state.odsPath);
 state.validation = struct("available", true, "message", "Acceptance test not run.");
 state.formulaReport = struct("available", true, "message", "Formula report not run.");
 state.ttool = struct("available", true, "message", "Not prepared.");
@@ -210,6 +211,22 @@ catch exception
     report.message = string(exception.message);
     report.chart_count = 0;
     report.series_count = 0;
+end
+end
+
+function library = localLoadMaterialLibrary(odsPath)
+try
+    library = rf2TgmGenMaterialLibrary("OdsPath", string(odsPath));
+    library.loaded = true;
+catch exception
+    library = struct();
+    library.loaded = false;
+    library.message = string(exception.message);
+    library.material_count = 0;
+    library.point_count = 0;
+    library.category_counts = struct();
+    library.materials = [];
+    library.points = [];
 end
 end
 

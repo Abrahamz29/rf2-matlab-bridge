@@ -34,6 +34,109 @@ DEFAULT_INPUT_SHEETS = [
     "TBC",
 ]
 
+MATERIAL_BLOCKS = [
+    {
+        "category": "Ply Materials / Reinforcement Materials",
+        "title_row": 5,
+        "name_row": 6,
+        "property_rows": {
+            "temperatureK": 7,
+            "densityKgM3": 8,
+            "youngsModulusPa": 9,
+            "poissonsRatio": 10,
+            "compressionTensionRatio": 11,
+            "specificHeat": 12,
+            "thermalConductivity": 13,
+            "longitudinalConductivity": 14,
+        },
+    },
+    {
+        "category": "Rubber Tread Compounds",
+        "title_row": 19,
+        "name_row": 20,
+        "property_rows": {
+            "temperatureK": 21,
+            "densityKgM3": 22,
+            "youngsModulusPa": 23,
+            "poissonsRatio": 24,
+            "compressionTensionRatio": 25,
+            "specificHeat": 26,
+            "thermalConductivity": 27,
+            "shoreA": 31,
+        },
+    },
+    {
+        "category": "Tread Sidewall Compounds",
+        "title_row": 34,
+        "name_row": 35,
+        "property_rows": {
+            "temperatureK": 36,
+            "densityKgM3": 37,
+            "youngsModulusPa": 38,
+            "poissonsRatio": 39,
+            "compressionTensionRatio": 40,
+            "specificHeat": 41,
+            "thermalConductivity": 42,
+            "shoreA": 46,
+        },
+    },
+    {
+        "category": "Bulk Compounds",
+        "title_row": 49,
+        "name_row": 50,
+        "property_rows": {
+            "temperatureK": 51,
+            "densityKgM3": 52,
+            "youngsModulusPa": 53,
+            "poissonsRatio": 54,
+            "compressionTensionRatio": 55,
+            "specificHeat": 56,
+            "thermalConductivity": 57,
+            "shoreA": 61,
+        },
+    },
+    {
+        "category": "Filler / Bead / Apex Compounds",
+        "title_row": 64,
+        "name_row": 65,
+        "property_rows": {
+            "temperatureK": 66,
+            "densityKgM3": 67,
+            "youngsModulusPa": 68,
+            "poissonsRatio": 69,
+            "compressionTensionRatio": 70,
+            "specificHeat": 71,
+            "thermalConductivity": 72,
+            "shoreA": 76,
+        },
+    },
+    {
+        "category": "Inner Liner",
+        "title_row": 79,
+        "name_row": 80,
+        "property_rows": {
+            "temperatureK": 81,
+            "densityKgM3": 82,
+            "youngsModulusPa": 83,
+            "poissonsRatio": 84,
+            "compressionTensionRatio": 85,
+            "specificHeat": 86,
+            "thermalConductivity": 87,
+            "shoreA": 91,
+        },
+    },
+    {
+        "category": "Internal Gas",
+        "title_row": 100,
+        "name_row": 101,
+        "property_rows": {
+            "temperatureK": 102,
+            "specificHeatConstantVolume": 103,
+            "internalGasMolarMass": 104,
+        },
+    },
+]
+
 NS = {
     "office": "urn:oasis:names:tc:opendocument:xmlns:office:1.0",
     "table": "urn:oasis:names:tc:opendocument:xmlns:table:1.0",
@@ -2272,6 +2375,123 @@ def inspect_chart_data(
     return report
 
 
+def cell_record_value(cell: FormulaCell | None) -> tuple[Any, str]:
+    if cell is None:
+        return "", ""
+    text = cell.value if cell.value != "" else cell.display
+    if text == "":
+        return "", cell.display
+    try:
+        return parse_scalar(text), cell.display
+    except FormulaEvaluationError:
+        return text, cell.display
+
+
+def numeric_record(value: Any) -> float | None:
+    try:
+        if value == "":
+            return None
+        return to_number(value)
+    except FormulaEvaluationError:
+        return None
+
+
+def material_name_cells(cells: dict[tuple[str, int, int], FormulaCell], name_row: int) -> list[FormulaCell]:
+    names = [
+        cell
+        for (sheet, row, col), cell in cells.items()
+        if sheet == "Materials" and row == name_row and col > 1 and cell.display.strip() != ""
+    ]
+    return sorted(names, key=lambda cell: cell.col)
+
+
+def material_block_max_col(cells: dict[tuple[str, int, int], FormulaCell], rows: Iterable[int]) -> int:
+    max_col = 1
+    row_set = set(rows)
+    for sheet, row, col in cells:
+        if sheet == "Materials" and row in row_set:
+            max_col = max(max_col, col)
+    return max_col
+
+
+def extract_material_library(ods: Path) -> dict:
+    cells = load_formula_cells(ods)
+    materials: list[dict[str, Any]] = []
+    points: list[dict[str, Any]] = []
+    category_counts: dict[str, int] = {}
+    category_point_counts: dict[str, int] = {}
+
+    for block in MATERIAL_BLOCKS:
+        property_rows: dict[str, int] = block["property_rows"]  # type: ignore[assignment]
+        title_row = int(block["title_row"])
+        name_row = int(block["name_row"])
+        category = str(block["category"])
+        title_cell = cells.get(("Materials", title_row, 1))
+        title = title_cell.display if title_cell and title_cell.display else category
+        names = material_name_cells(cells, name_row)
+        max_col = material_block_max_col(cells, [name_row, *property_rows.values()])
+        for index, name_cell in enumerate(names):
+            start_col = name_cell.col
+            next_col = names[index + 1].col if index + 1 < len(names) else max_col + 1
+            end_col = next_col - 1
+            sample_cols: list[int] = []
+            for col in range(start_col, end_col + 1):
+                value, _ = cell_record_value(cells.get(("Materials", property_rows["temperatureK"], col)))
+                if numeric_record(value) is not None:
+                    sample_cols.append(col)
+            if not sample_cols:
+                continue
+
+            material_points: list[dict[str, Any]] = []
+            for sample_index, col in enumerate(sample_cols, start=1):
+                record: dict[str, Any] = {
+                    "category": category,
+                    "material": name_cell.display,
+                    "materialCell": name_cell.address,
+                    "sampleIndex": sample_index,
+                    "col": col,
+                    "address": row_col_to_a1(property_rows["temperatureK"], col),
+                }
+                for key, row in property_rows.items():
+                    value, display = cell_record_value(cells.get(("Materials", row, col)))
+                    numeric = numeric_record(value)
+                    record[key] = numeric if numeric is not None else value
+                    record[f"{key}Display"] = display
+                material_points.append(record)
+                points.append(record)
+
+            numeric_temperatures = [point["temperatureK"] for point in material_points if isinstance(point.get("temperatureK"), (int, float))]
+            numeric_moduli = [point["youngsModulusPa"] for point in material_points if isinstance(point.get("youngsModulusPa"), (int, float))]
+            material = {
+                "category": category,
+                "title": title,
+                "name": name_cell.display,
+                "nameCell": name_cell.address,
+                "startCol": start_col,
+                "endCol": end_col,
+                "pointCount": len(material_points),
+                "temperatureMinK": min(numeric_temperatures) if numeric_temperatures else None,
+                "temperatureMaxK": max(numeric_temperatures) if numeric_temperatures else None,
+                "youngsModulusMinPa": min(numeric_moduli) if numeric_moduli else None,
+                "youngsModulusMaxPa": max(numeric_moduli) if numeric_moduli else None,
+                "points": material_points,
+            }
+            materials.append(material)
+            category_counts[category] = category_counts.get(category, 0) + 1
+            category_point_counts[category] = category_point_counts.get(category, 0) + len(material_points)
+
+    return {
+        "ods": str(ods),
+        "sheet": "Materials",
+        "material_count": len(materials),
+        "point_count": len(points),
+        "category_counts": dict(sorted(category_counts.items())),
+        "category_point_counts": dict(sorted(category_point_counts.items())),
+        "materials": materials,
+        "points": points,
+    }
+
+
 def load_project_overrides(project_path: Path | None) -> dict[tuple[str, int, int], Any]:
     if project_path is None:
         return {}
@@ -2529,6 +2749,9 @@ def main() -> int:
     chart_data_parser.add_argument("--project", type=Path, default=None, help="Input project JSON produced by extract-inputs")
     chart_data_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
 
+    material_parser = subparsers.add_parser("material-library", help="Extract structured material library data from the Materials sheet")
+    material_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
+
     export_parser = subparsers.add_parser("export-reference", help="Write reference .tgm/.tbc files reconstructed from ODS outputs")
     export_parser.add_argument("--out-dir", type=Path, default=Path("tmp/tgm_gen_port"))
     export_parser.add_argument("--json", action="store_true", help="Emit machine-readable JSON")
@@ -2562,7 +2785,7 @@ def main() -> int:
     compare_parser.add_argument("--json", action="store_true")
 
     args = parser.parse_args()
-    if args.command in {"inspect", "chart-report", "chart-data", "export-reference", "generate", "formula-report", "extract-inputs"} and not args.ods.exists():
+    if args.command in {"inspect", "chart-report", "chart-data", "material-library", "export-reference", "generate", "formula-report", "extract-inputs"} and not args.ods.exists():
         raise FileNotFoundError(f"ODS not found: {args.ods}")
 
     if args.command == "inspect":
@@ -2571,6 +2794,8 @@ def main() -> int:
         report = inspect_charts(args.ods)
     elif args.command == "chart-data":
         report = inspect_chart_data(args.ods, mode=args.mode, fallback_on_error=args.fallback_on_error, project_path=args.project)
+    elif args.command == "material-library":
+        report = extract_material_library(args.ods)
     elif args.command == "export-reference":
         report = export_reference(args.ods, args.out_dir)
     elif args.command == "generate":
