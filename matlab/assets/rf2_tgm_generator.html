@@ -975,13 +975,13 @@
       if (!svg) return;
       svg.innerHTML = "";
       if (!points.length) return;
-      const xs = points.map(p => Number(p.y));
-      const ys = points.map(p => Number(p.x));
-      const frame = makePlotFrame(svg, xs, ys, "Lateral coordinate Y [m]", "Radial coordinate X [m]", { equalScale: true, title: "Equal meter scale" });
-      const path = points.map((p, i) => `${i ? "L" : "M"}${frame.sx(Number(p.y)).toFixed(1)},${frame.sy(Number(p.x)).toFixed(1)}`).join(" ");
+      const xs = points.map(p => Number(p.x));
+      const ys = points.map(p => Number(p.y));
+      const frame = makePlotFrame(svg, xs, ys, "Radial coordinate X [m]", "Lateral coordinate Y [m]", { equalScale: true, title: "Equal meter scale" });
+      const path = points.map((p, i) => `${i ? "L" : "M"}${frame.sx(Number(p.x)).toFixed(1)},${frame.sy(Number(p.y)).toFixed(1)}`).join(" ");
       svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="#4fb3ff" stroke-width="1.4"/>`);
       points.forEach(p => svg.insertAdjacentHTML("beforeend",
-        `<circle cx="${frame.sx(Number(p.y)).toFixed(1)}" cy="${frame.sy(Number(p.x)).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}</title></circle>`));
+        `<circle cx="${frame.sx(Number(p.x)).toFixed(1)}" cy="${frame.sy(Number(p.y)).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}</title></circle>`));
     }
 
     function drawMaterials(rows, targetId) {

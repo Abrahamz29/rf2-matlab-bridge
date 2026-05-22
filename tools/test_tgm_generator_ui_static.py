@@ -130,6 +130,16 @@ def run_check() -> dict:
 
     if "equalScale: true" not in html:
         errors.append("cross-section plot does not request equalScale: true")
+    expected_geometry_call = (
+        'makePlotFrame(svg, xs, ys, "Radial coordinate X [m]", '
+        '"Lateral coordinate Y [m]", { equalScale: true'
+    )
+    if expected_geometry_call not in html:
+        errors.append("cross-section plot does not use swapped X/Y labels")
+    if "const xs = points.map(p => Number(p.x));" not in html:
+        errors.append("cross-section x-axis does not use Geometry.x")
+    if "const ys = points.map(p => Number(p.y));" not in html:
+        errors.append("cross-section y-axis does not use Geometry.y")
 
     for function_name in sorted(EXPECTED_INLINE_FUNCTIONS):
         if function_name not in function_names:
