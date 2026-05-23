@@ -34,8 +34,8 @@ state.database = localDatabaseInfo();
 state.tyres = localListKnownTyres(inputPath);
 
 if inputPath ~= "" && isfile(inputPath)
-    model = rf2ReadTgmImpl(inputPath);
-    plotData = rf2TgmPlotDataImpl(model);
+    model = rf2TgmGeometryReadTgmImpl(inputPath);
+    plotData = rf2TgmGeometryPlotDataImpl(model);
     state.loaded = true;
     state.status = "loaded";
     state.message = "Loaded " + string(model.fileName);
@@ -69,7 +69,7 @@ end
 end
 
 function info = localDatabaseInfo()
-dbPath = fullfile(rf2TgmProjectRoot(), "scenarios", "tyre", "database", "rf2_tyre_database.sqlite");
+dbPath = fullfile(rf2TgmGeometryProjectRoot(), "scenarios", "tyre", "database", "rf2_tyre_database.sqlite");
 info = struct();
 info.path = string(dbPath);
 info.available = isfile(dbPath) && exist("sqlite", "file") == 6;
@@ -80,7 +80,7 @@ end
 end
 
 function tyres = localListKnownTyres(inputPath)
-dbPath = fullfile(rf2TgmProjectRoot(), "scenarios", "tyre", "database", "rf2_tyre_database.sqlite");
+dbPath = fullfile(rf2TgmGeometryProjectRoot(), "scenarios", "tyre", "database", "rf2_tyre_database.sqlite");
 selectedPath = localNormalizePath(inputPath);
 try
     tyres = localListDatabaseTyres(dbPath, selectedPath);
@@ -119,7 +119,7 @@ end
 end
 
 function tyres = localListCachedTyres(selectedPath)
-tgmRoot = fullfile(rf2TgmProjectRoot(), "tools", "cache", "tyres", "tgm");
+tgmRoot = fullfile(rf2TgmGeometryProjectRoot(), "tools", "cache", "tyres", "tgm");
 files = dir(fullfile(tgmRoot, "*.tgm"));
 tyres = localEmptyTyres();
 
@@ -164,7 +164,7 @@ end
 
 pathText = char(path);
 if isempty(regexp(pathText, "^[A-Za-z]:[\\/]|^\\\\", "once"))
-    pathText = fullfile(rf2TgmProjectRoot(), pathText);
+    pathText = fullfile(rf2TgmGeometryProjectRoot(), pathText);
 end
 path = string(pathText);
 end
@@ -178,7 +178,7 @@ end
 
 pathText = char(path);
 if isempty(regexp(pathText, "^[A-Za-z]:[\\/]|^\\\\", "once"))
-    pathText = fullfile(rf2TgmProjectRoot(), pathText);
+    pathText = fullfile(rf2TgmGeometryProjectRoot(), pathText);
 end
 
 info = dir(pathText);

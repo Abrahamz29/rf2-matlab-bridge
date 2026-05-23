@@ -1,6 +1,6 @@
 function varargout = rf2TgmGeometryApp(varargin)
 %RF2TGMGEOMETRYAPP Lightweight Geometry-only TGM browser.
-rf2TgmAppPath();
+rf2TgmGeometryAppPath();
 if nargout == 0
     rf2TgmGeometryAppImpl(varargin{:});
 else
