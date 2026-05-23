@@ -39,11 +39,20 @@ def run_check() -> dict:
         "nodeThicknessM",
         "treadXMm",
         "Node thickness",
+        "drawLineCallouts",
+        "nearestLayerRow",
     ]:
         if marker not in html:
             errors.append(f"missing HTML marker: {marker}")
 
-    for function_name in ["drawGeometry", "drawRubber", "drawLayers", "makeFrame", "drawAxes"]:
+    for function_name in [
+        "drawGeometry",
+        "drawRubber",
+        "drawLayers",
+        "drawLineCallouts",
+        "makeFrame",
+        "drawAxes",
+    ]:
         if function_name not in function_names:
             errors.append(f"missing JS function: {function_name}")
 

@@ -159,6 +159,11 @@
       fill: #b9d8f2;
       font-size: 12px;
     }
+    .callout text {
+      fill: #dceaf7;
+      font-size: 11px;
+      font-weight: 650;
+    }
     .axis-label {
       font-size: 13px;
     }
@@ -335,6 +340,7 @@
       svg.insertAdjacentHTML("beforeend", `<path d="${shellPath}" fill="none" stroke="#dce6ef" stroke-width="1.2"/>`);
       points.forEach(p => svg.insertAdjacentHTML("beforeend",
         `<circle cx="${frame.sx(p.xMm).toFixed(1)}" cy="${frame.sy(p.yMm).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}</title></circle>`));
+      drawLineCallouts(svg, frame, rubber, layers);
       drawLegend(svg, [
         { label: "Surface", color: "#dce6ef" },
         { label: "Tread depth", color: "#f0b85a" },
@@ -412,6 +418,68 @@
           svg.insertAdjacentHTML("beforeend", `<path d="${pointPath(segment, frame, "xMm", "yMm")}" fill="none" stroke="${color}" stroke-width="1.2"/>`);
         });
       });
+    }
+
+    function drawLineCallouts(svg, frame, rubber, layers) {
+      if (!rubber.length) return;
+      const anchor = pickCalloutAnchor(rubber, layers);
+      if (!anchor) return;
+
+      const layerIds = [...new Set(layers.map(row => Number(row.plyIndex)))].filter(Number.isFinite).sort((a, b) => a - b);
+      const layerCallouts = layerIds.slice(0, 7).map(layer => {
+        const row = nearestLayerRow(layers, layer, Number(anchor.nodeIndex));
+        if (!row) return null;
+        return { label: `Layer ${layer}`, color: COLORS[(layer - 1) % COLORS.length], x: row.xMm, y: row.yMm };
+      }).filter(Boolean);
+      const callouts = [
+        { label: "Surface", color: "#dce6ef", x: anchor.surfaceXMm, y: anchor.surfaceYMm },
+        { label: "TreadDepth", color: "#f0b85a", x: anchor.treadXMm, y: anchor.treadYMm },
+        { label: "Node thickness", color: "#78d3ff", x: anchor.innerXMm, y: anchor.innerYMm },
+        ...layerCallouts
+      ].filter(item => Number.isFinite(item.x) && Number.isFinite(item.y));
+
+      const anchorX = frame.sx(anchor.surfaceXMm);
+      const labelX = Math.max(frame.margin.left + 88, Math.min(anchorX - 230, frame.w - frame.margin.right - 300));
+      const labelStartY = frame.margin.top + 54;
+      const labelStep = 17;
+      callouts.forEach((item, index) => drawCallout(svg, frame, item, labelX, labelStartY + index * labelStep));
+    }
+
+    function pickCalloutAnchor(rubber, layers) {
+      const layerNodes = new Set(layers.map(row => Number(row.nodeIndex)).filter(Number.isFinite));
+      const valid = rubber.filter(row => Number.isFinite(row.surfaceXMm) && Number.isFinite(row.surfaceYMm));
+      const candidates = valid.filter(row => row.surfaceXMm >= 0 && (!layerNodes.size || layerNodes.has(Number(row.nodeIndex))));
+      const pool = candidates.length ? candidates : valid;
+      if (!pool.length) return null;
+      return pool.reduce((best, row) => row.surfaceXMm > best.surfaceXMm ? row : best, pool[0]);
+    }
+
+    function nearestLayerRow(rows, layer, nodeIndex) {
+      const subset = rows.filter(row => Number(row.plyIndex) === layer && Number.isFinite(row.xMm) && Number.isFinite(row.yMm));
+      if (!subset.length) return null;
+      return subset.reduce((best, row) => {
+        const distance = Math.abs(Number(row.nodeIndex) - nodeIndex);
+        const bestDistance = Math.abs(Number(best.nodeIndex) - nodeIndex);
+        return distance < bestDistance ? row : best;
+      }, subset[0]);
+    }
+
+    function drawCallout(svg, frame, item, labelX, labelY) {
+      const anchorX = frame.sx(item.x);
+      const anchorY = frame.sy(item.y);
+      const labelWidth = Math.max(92, item.label.length * 7 + 18);
+      const labelHeight = 15;
+      const labelRight = labelX + labelWidth;
+      const lineEndX = anchorX >= labelRight ? labelRight + 4 : labelX - 4;
+      const elbowX = anchorX >= labelRight ? lineEndX + 18 : lineEndX - 18;
+      const points = `${anchorX.toFixed(1)},${anchorY.toFixed(1)} ${elbowX.toFixed(1)},${labelY.toFixed(1)} ${lineEndX.toFixed(1)},${labelY.toFixed(1)}`;
+      svg.insertAdjacentHTML("beforeend", `
+        <g class="callout" pointer-events="none">
+          <polyline points="${points}" fill="none" stroke="${item.color}" stroke-opacity="0.78" stroke-width="1"></polyline>
+          <circle cx="${anchorX.toFixed(1)}" cy="${anchorY.toFixed(1)}" r="2.2" fill="${item.color}" stroke="#0b0f12" stroke-width="0.8"></circle>
+          <rect x="${labelX.toFixed(1)}" y="${(labelY - 11).toFixed(1)}" width="${labelWidth.toFixed(1)}" height="${labelHeight}" rx="3" fill="#0b0f12" fill-opacity="0.88" stroke="${item.color}" stroke-opacity="0.5"></rect>
+          <text x="${(labelX + 7).toFixed(1)}" y="${(labelY + 0.5).toFixed(1)}">${escapeHtml(item.label)}</text>
+        </g>`);
     }
 
     function splitSegments(rows) {
