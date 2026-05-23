@@ -1,0 +1,490 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>rF2 TGM Geometry</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0f1317;
+      --panel: #171c22;
+      --panel-2: #202731;
+      --line: #303944;
+      --text: #e6edf3;
+      --muted: #9aa7b3;
+      --accent: #4fb3ff;
+      --warn: #e0a84f;
+      --rubber: #f0b85a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 13px/1.42 "Segoe UI", system-ui, sans-serif;
+      letter-spacing: 0;
+      overflow: hidden;
+    }
+    .app {
+      display: grid;
+      grid-template-rows: 58px 1fr 30px;
+      height: 100vh;
+      min-width: 920px;
+    }
+    header {
+      display: grid;
+      grid-template-columns: 126px minmax(170px, 330px) minmax(130px, 220px) 44px minmax(260px, 1fr) 86px 108px;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--line);
+      background: #12171d;
+    }
+    h1 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.15;
+      font-weight: 700;
+    }
+    .pill, .status {
+      min-width: 0;
+      height: 31px;
+      display: flex;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #0b0f13;
+      color: var(--muted);
+      padding: 0 9px;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .status {
+      color: var(--warn);
+      justify-content: center;
+      font-size: 12px;
+    }
+    label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      text-align: right;
+    }
+    select, button {
+      height: 31px;
+      background: #0b0f13;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      font: inherit;
+    }
+    select {
+      width: 100%;
+      padding: 4px 8px;
+    }
+    button {
+      background: var(--panel-2);
+      cursor: pointer;
+    }
+    button:hover, select:hover {
+      border-color: var(--accent);
+    }
+    main {
+      overflow: auto;
+      padding: 14px;
+    }
+    .geometry-page {
+      display: grid;
+      grid-template-rows: auto minmax(360px, 1fr);
+      gap: 12px;
+      min-height: 100%;
+    }
+    .page-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .page-head h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(112px, 1fr));
+      gap: 8px;
+      width: min(760px, 100%);
+    }
+    .metric {
+      min-height: 52px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 8px 10px;
+    }
+    .metric .value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    .metric .label {
+      margin-top: 1px;
+      color: var(--muted);
+      font-size: 11px;
+    }
+    .plot-panel {
+      min-height: 360px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 10px;
+    }
+    svg {
+      display: block;
+      width: 100%;
+      height: calc(100vh - 172px);
+      min-height: 360px;
+      background: #0b0f12;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+    }
+    .axis line, .axis path {
+      stroke: #617286;
+      stroke-width: 1;
+    }
+    .axis text, .axis-label, .plot-title, .legend text {
+      fill: #b9d8f2;
+      font-size: 12px;
+    }
+    .axis-label {
+      font-size: 13px;
+    }
+    .plot-title {
+      font-weight: 650;
+    }
+    footer {
+      display: flex;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      padding: 0 10px;
+      color: var(--muted);
+      background: #12171d;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>rF2 TGM<br>Geometry</h1>
+      <div id="file-pill" class="pill">No file</div>
+      <div id="db-pill" class="status">DB</div>
+      <label for="tyre-select">Tyre</label>
+      <select id="tyre-select"></select>
+      <button id="reload-button" type="button">Reload</button>
+      <button id="ping-button" type="button">Ping MATLAB</button>
+    </header>
+    <main>
+      <section class="geometry-page">
+        <div class="page-head">
+          <h2>Geometry</h2>
+          <div id="metrics" class="metrics"></div>
+        </div>
+        <div class="plot-panel">
+          <svg id="geometry-plot" viewBox="0 0 1100 520" preserveAspectRatio="none" aria-label="Tyre geometry plot"></svg>
+        </div>
+      </section>
+    </main>
+    <footer id="message">Ready.</footer>
+  </div>
+
+  <script>
+    let matlabComponent = null;
+    let state = null;
+    const COLORS = ["#e7eef5", "#72b7ff", "#6be675", "#f07d9d", "#b99cff", "#8ce3df", "#f0b85a", "#ff7a45"];
+
+    function setup(htmlComponent) {
+      matlabComponent = htmlComponent;
+      state = htmlComponent.Data;
+      bindControls();
+      render();
+      htmlComponent.addEventListener("DataChanged", () => {
+        const incoming = htmlComponent.Data;
+        if (incoming?.kind === "pong") {
+          setMessage(incoming.message || "MATLAB backend ready");
+          return;
+        }
+        state = incoming;
+        render();
+      });
+    }
+
+    function bindControls() {
+      document.getElementById("tyre-select").addEventListener("change", event => {
+        const path = event.target.value || "";
+        if (!path || !matlabComponent) return;
+        setMessage("loading " + (event.target.selectedOptions?.[0]?.textContent || path));
+        matlabComponent.Data = { command: "loadTgm", path };
+      });
+      document.getElementById("reload-button").addEventListener("click", () => {
+        if (matlabComponent && state?.inputPath) {
+          setMessage("reloading " + state.inputPath);
+          matlabComponent.Data = { command: "loadTgm", path: state.inputPath };
+        }
+      });
+      document.getElementById("ping-button").addEventListener("click", () => {
+        if (matlabComponent) matlabComponent.Data = { command: "ping" };
+      });
+    }
+
+    function render() {
+      if (!state) return;
+      if (state.kind === "error") {
+        setMessage(state.message || "Error.");
+        return;
+      }
+      document.getElementById("file-pill").textContent = state.inputPath || "No file";
+      document.getElementById("db-pill").textContent = `${state.database?.available ? "DB" : "Cache"} ${state.tyres?.length || 0}`;
+      setMessage(state.message || state.status || "Ready.");
+      renderTyres();
+      renderMetrics();
+      drawGeometry();
+    }
+
+    function renderTyres() {
+      const select = document.getElementById("tyre-select");
+      const tyres = state?.tyres || [];
+      const selected = tyres.find(item => item.selected === true);
+      const currentPath = selected?.path || state?.inputPath || "";
+      select.disabled = tyres.length === 0;
+      select.innerHTML = `<option value="">Select tyre...</option>${tyres.map(item => {
+        const selectedAttr = item.path === currentPath || item.selected ? "selected" : "";
+        return `<option value="${escapeAttr(item.path)}" ${selectedAttr}>${escapeHtml(item.displayName || item.fileName || item.path)}</option>`;
+      }).join("")}`;
+      if (currentPath) select.value = currentPath;
+    }
+
+    function renderMetrics() {
+      const summary = state?.summary || {};
+      const plotData = state?.plotData || {};
+      const tread = plotData.treadDepth || [];
+      const treadMm = tread.map(row => Number(row.treadDepthM) * 1000).filter(Number.isFinite);
+      const items = [
+        ["Nodes", summary.nodeCount],
+        ["Ply Rows", summary.plyParamRows],
+        ["Layers", summary.maxPlyLayers],
+        ["Tread mm", treadMm.length ? `${fmt(Math.min(...treadMm))}..${fmt(Math.max(...treadMm))}` : "-"],
+        ["Source", state?.database?.available ? "DB" : "Cache"]
+      ];
+      document.getElementById("metrics").innerHTML = items.map(([label, value]) =>
+        `<div class="metric"><div class="value">${escapeHtml(value ?? "-")}</div><div class="label">${escapeHtml(label)}</div></div>`
+      ).join("");
+    }
+
+    function drawGeometry() {
+      const svg = document.getElementById("geometry-plot");
+      svg.innerHTML = "";
+      const data = state?.plotData || {};
+      const geometry = data.geometry || [];
+      if (!geometry.length) {
+        svg.insertAdjacentHTML("beforeend", `<text x="50%" y="50%" fill="#9aa7b3" text-anchor="middle">No tyre loaded</text>`);
+        return;
+      }
+
+      const points = geometry.map(p => ({ ...p, xMm: Number(p.x) * 1000, yMm: Number(p.y) * 1000 }));
+      const rubber = (data.rubberCrossSection || []).map(p => ({
+        ...p,
+        surfaceXMm: Number(p.surfaceX) * 1000,
+        surfaceYMm: Number(p.surfaceY) * 1000,
+        innerXMm: Number(p.innerX) * 1000,
+        innerYMm: Number(p.innerY) * 1000
+      }));
+      const layers = (data.plyCrossSection || []).map(p => ({
+        ...p,
+        xMm: Number(p.x) * 1000,
+        yMm: Number(p.y) * 1000,
+        innerXMm: Number(p.innerX) * 1000,
+        innerYMm: Number(p.innerY) * 1000,
+        outerXMm: Number(p.outerX) * 1000,
+        outerYMm: Number(p.outerY) * 1000
+      }));
+      const xs = points.map(p => p.xMm)
+        .concat(rubber.map(p => p.innerXMm))
+        .concat(layers.map(p => p.outerXMm));
+      const ys = points.map(p => p.yMm)
+        .concat(rubber.map(p => p.innerYMm))
+        .concat(layers.map(p => p.outerYMm));
+      const frame = makeFrame(svg, xs, ys, true);
+
+      drawAxes(svg, frame, "Radial coordinate X [mm]", "Lateral coordinate Y [mm]", "Equal millimetre scale");
+      drawRubber(svg, frame, rubber);
+      drawLayers(svg, frame, layers);
+      const shellPath = pointPath(points, frame, "xMm", "yMm");
+      svg.insertAdjacentHTML("beforeend", `<path d="${shellPath}" fill="none" stroke="#dce6ef" stroke-width="1.2"/>`);
+      points.forEach(p => svg.insertAdjacentHTML("beforeend",
+        `<circle cx="${frame.sx(p.xMm).toFixed(1)}" cy="${frame.sy(p.yMm).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}</title></circle>`));
+      drawLegend(svg, [{ label: "Surface", color: "#dce6ef" }, { label: "Tread depth", color: "var(--rubber)" }]);
+    }
+
+    function makeFrame(svg, xs, ys, equalScale) {
+      const view = svg.viewBox.baseVal;
+      const w = view.width || 1100;
+      const h = view.height || 520;
+      const margin = { left: 58, right: 24, top: 38, bottom: 50 };
+      let minX = Math.min(...xs), maxX = Math.max(...xs);
+      let minY = Math.min(...ys), maxY = Math.max(...ys);
+      const padX = Math.max((maxX - minX) * 0.05, 1);
+      const padY = Math.max((maxY - minY) * 0.08, 1);
+      minX -= padX; maxX += padX; minY -= padY; maxY += padY;
+      if (equalScale) {
+        const plotW = w - margin.left - margin.right;
+        const plotH = h - margin.top - margin.bottom;
+        const scale = Math.min(plotW / safeRange(minX, maxX), plotH / safeRange(minY, maxY));
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+        minX = centerX - plotW / scale / 2;
+        maxX = centerX + plotW / scale / 2;
+        minY = centerY - plotH / scale / 2;
+        maxY = centerY + plotH / scale / 2;
+      }
+      return {
+        w, h, margin, minX, maxX, minY, maxY,
+        sx: x => margin.left + (x - minX) / safeRange(minX, maxX) * (w - margin.left - margin.right),
+        sy: y => h - margin.bottom - (y - minY) / safeRange(minY, maxY) * (h - margin.top - margin.bottom)
+      };
+    }
+
+    function drawAxes(svg, frame, xLabel, yLabel, title) {
+      const left = frame.margin.left;
+      const right = frame.w - frame.margin.right;
+      const top = frame.margin.top;
+      const bottom = frame.h - frame.margin.bottom;
+      svg.insertAdjacentHTML("beforeend", `<g class="axis"><line x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}"></line><line x1="${left}" y1="${top}" x2="${left}" y2="${bottom}"></line></g>`);
+      niceTicks(frame.minX, frame.maxX, 6).forEach(value => {
+        const x = frame.sx(value);
+        svg.insertAdjacentHTML("beforeend", `<g class="axis"><line x1="${x.toFixed(1)}" y1="${bottom}" x2="${x.toFixed(1)}" y2="${bottom + 5}"></line><text x="${x.toFixed(1)}" y="${bottom + 20}" text-anchor="middle">${tickFormat(value)}</text></g>`);
+      });
+      niceTicks(frame.minY, frame.maxY, 6).forEach(value => {
+        const y = frame.sy(value);
+        svg.insertAdjacentHTML("beforeend", `<g class="axis"><line x1="${left - 5}" y1="${y.toFixed(1)}" x2="${left}" y2="${y.toFixed(1)}"></line><text x="${left - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${tickFormat(value)}</text></g>`);
+      });
+      svg.insertAdjacentHTML("beforeend", `<text class="plot-title" x="${left}" y="22">${escapeHtml(title)}</text>`);
+      svg.insertAdjacentHTML("beforeend", `<text class="axis-label" x="${(left + right) / 2}" y="${frame.h - 14}" text-anchor="middle">${escapeHtml(xLabel)}</text>`);
+      svg.insertAdjacentHTML("beforeend", `<text class="axis-label" transform="translate(18 ${(top + bottom) / 2}) rotate(-90)" text-anchor="middle">${escapeHtml(yLabel)}</text>`);
+    }
+
+    function drawRubber(svg, frame, rows) {
+      if (rows.length < 2) return;
+      const ordered = rows.slice().sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex));
+      const band = bandPath(ordered, frame, "surfaceXMm", "surfaceYMm", "innerXMm", "innerYMm");
+      svg.insertAdjacentHTML("beforeend", `<path d="${band}" fill="#f0b85a" fill-opacity="0.12" stroke="#f0b85a" stroke-opacity="0.45" stroke-width="0.9"><title>Tread depth / rubber depth</title></path>`);
+      svg.insertAdjacentHTML("beforeend", `<path d="${pointPath(ordered, frame, "innerXMm", "innerYMm")}" fill="none" stroke="#f0b85a" stroke-width="1.2" stroke-dasharray="4 3"/>`);
+    }
+
+    function drawLayers(svg, frame, rows) {
+      const layers = [...new Set(rows.map(row => Number(row.plyIndex || 1)))].sort((a, b) => a - b);
+      layers.forEach((layer, index) => {
+        const color = COLORS[index % COLORS.length];
+        const subset = rows.filter(row => Number(row.plyIndex || 1) === layer)
+          .sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex));
+        splitSegments(subset).forEach(segment => {
+          if (segment.length < 2) return;
+          svg.insertAdjacentHTML("beforeend", `<path d="${bandPath(segment, frame, "innerXMm", "innerYMm", "outerXMm", "outerYMm")}" fill="${color}" fill-opacity="0.14" stroke="${color}" stroke-opacity="0.35" stroke-width="0.75"><title>Layer ${layer}</title></path>`);
+          svg.insertAdjacentHTML("beforeend", `<path d="${pointPath(segment, frame, "xMm", "yMm")}" fill="none" stroke="${color}" stroke-width="1.2"/>`);
+        });
+      });
+    }
+
+    function splitSegments(rows) {
+      const segments = [];
+      let current = [], prevNode = NaN, prevSegment = NaN;
+      rows.forEach(row => {
+        const node = Number(row.nodeIndex);
+        const segment = Number(row.segmentIndex);
+        const gap = Number.isFinite(prevNode) && node > prevNode + 1;
+        const changed = Number.isFinite(prevSegment) && Number.isFinite(segment) && segment !== prevSegment;
+        if (current.length && (gap || changed)) {
+          segments.push(current);
+          current = [];
+        }
+        current.push(row);
+        prevNode = node;
+        prevSegment = segment;
+      });
+      if (current.length) segments.push(current);
+      return segments;
+    }
+
+    function pointPath(rows, frame, xKey, yKey) {
+      return rows.filter(row => Number.isFinite(Number(row[xKey])) && Number.isFinite(Number(row[yKey])))
+        .map((row, index) => `${index ? "L" : "M"}${frame.sx(Number(row[xKey])).toFixed(1)},${frame.sy(Number(row[yKey])).toFixed(1)}`)
+        .join(" ");
+    }
+
+    function bandPath(rows, frame, innerXKey, innerYKey, outerXKey, outerYKey) {
+      const first = pointPath(rows, frame, innerXKey, innerYKey);
+      const second = rows.slice().reverse()
+        .filter(row => Number.isFinite(Number(row[outerXKey])) && Number.isFinite(Number(row[outerYKey])))
+        .map(row => `L${frame.sx(Number(row[outerXKey])).toFixed(1)},${frame.sy(Number(row[outerYKey])).toFixed(1)}`)
+        .join(" ");
+      return `${first} ${second} Z`;
+    }
+
+    function drawLegend(svg, items) {
+      items.forEach((item, index) => {
+        const x = 118 + index * 132;
+        svg.insertAdjacentHTML("beforeend", `<g class="legend"><line x1="${x}" y1="20" x2="${x + 18}" y2="20" stroke="${item.color}" stroke-width="2"></line><text x="${x + 24}" y="24">${escapeHtml(item.label)}</text></g>`);
+      });
+    }
+
+    function niceTicks(min, max, count) {
+      const span = safeRange(min, max);
+      const rawStep = span / Math.max(count - 1, 1);
+      const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+      const residual = rawStep / magnitude;
+      const niceResidual = residual >= 5 ? 5 : residual >= 2 ? 2 : 1;
+      const step = niceResidual * magnitude;
+      const start = Math.ceil(min / step) * step;
+      const ticks = [];
+      for (let value = start; value <= max + step * 0.5; value += step) ticks.push(Number(value.toPrecision(12)));
+      return ticks.length ? ticks : [min, max];
+    }
+
+    function tickFormat(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "";
+      if (Math.abs(n) >= 10000 || (Math.abs(n) > 0 && Math.abs(n) < 0.001)) return n.toExponential(1);
+      return n.toFixed(Math.abs(n) >= 10 ? 1 : 3).replace(/\.?0+$/, "");
+    }
+
+    function safeRange(min, max) {
+      const range = max - min;
+      return Number.isFinite(range) && Math.abs(range) > 1e-12 ? range : 1;
+    }
+
+    function fmt(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "-";
+      return n.toFixed(Math.abs(n) >= 10 ? 2 : 3).replace(/\.?0+$/, "");
+    }
+
+    function setMessage(message) {
+      document.getElementById("message").textContent = message || "";
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? "").replace(/[&<>"']/g, char => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[char]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value);
+    }
+  </script>
+</body>
+</html>
