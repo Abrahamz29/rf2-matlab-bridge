@@ -36,6 +36,9 @@ def run_check() -> dict:
         "drawLayers",
         "rubberCrossSection",
         "plyCrossSection",
+        "nodeThicknessM",
+        "treadXMm",
+        "Node thickness",
     ]:
         if marker not in html:
             errors.append(f"missing HTML marker: {marker}")

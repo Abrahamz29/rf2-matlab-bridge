@@ -93,8 +93,9 @@ end
 
 function rubberTable = localBuildRubberCrossSection(geometry, treadDepth)
 if isempty(geometry)
-    rubberTable = table([], [], [], [], [], [], ...
-        'VariableNames', {'nodeIndex', 'surfaceX', 'surfaceY', 'innerX', 'innerY', 'depthM'});
+    rubberTable = table([], [], [], [], [], [], [], [], [], ...
+        'VariableNames', {'nodeIndex', 'surfaceX', 'surfaceY', 'treadX', 'treadY', ...
+        'innerX', 'innerY', 'treadDepthM', 'nodeThicknessM'});
     return;
 end
 
@@ -102,14 +103,20 @@ geometry = sortrows(geometry, "nodeIndex");
 points = [geometry.x, geometry.y];
 center = mean(points, 1, "omitnan");
 normal = localInwardNormals(points, center);
-depth = localDepthByNode(geometry.nodeIndex, treadDepth);
-inner = points + normal .* [depth, depth];
+treadDepthByNode = localTreadDepthByNode(geometry.nodeIndex, treadDepth);
+nodeThickness = geometry.z;
+nodeThickness(isnan(nodeThickness) | nodeThickness < 0) = 0;
+nodeThickness = max(nodeThickness, treadDepthByNode);
+tread = points + normal .* [treadDepthByNode, treadDepthByNode];
+inner = points + normal .* [nodeThickness, nodeThickness];
 
-rubberTable = table(geometry.nodeIndex, points(:, 1), points(:, 2), inner(:, 1), inner(:, 2), depth, ...
-    'VariableNames', {'nodeIndex', 'surfaceX', 'surfaceY', 'innerX', 'innerY', 'depthM'});
+rubberTable = table(geometry.nodeIndex, points(:, 1), points(:, 2), tread(:, 1), tread(:, 2), ...
+    inner(:, 1), inner(:, 2), treadDepthByNode, nodeThickness, ...
+    'VariableNames', {'nodeIndex', 'surfaceX', 'surfaceY', 'treadX', 'treadY', ...
+    'innerX', 'innerY', 'treadDepthM', 'nodeThicknessM'});
 end
 
-function depth = localDepthByNode(nodeIndex, treadDepth)
+function depth = localTreadDepthByNode(nodeIndex, treadDepth)
 depth = zeros(numel(nodeIndex), 1);
 if isempty(treadDepth)
     return;
@@ -133,7 +140,7 @@ plyParams = sortrows(plyParams, ["nodeIndex", "plyIndex"]);
 points = [geometry.x, geometry.y];
 center = mean(points, 1, "omitnan");
 normal = localInwardNormals(points, center);
-baseOffset = localRubberDepthByNode(geometry.nodeIndex, rubberCrossSection);
+baseOffset = localPlyBaseOffsetByNode(geometry.nodeIndex, rubberCrossSection);
 
 rows = {};
 for nodeRow = 1:height(geometry)
@@ -170,14 +177,14 @@ else
 end
 end
 
-function depth = localRubberDepthByNode(nodeIndex, rubberCrossSection)
+function depth = localPlyBaseOffsetByNode(nodeIndex, rubberCrossSection)
 depth = zeros(numel(nodeIndex), 1);
 if isempty(rubberCrossSection)
     return;
 end
 
 [matched, location] = ismember(nodeIndex, rubberCrossSection.nodeIndex);
-depth(matched) = rubberCrossSection.depthM(location(matched));
+depth(matched) = rubberCrossSection.nodeThicknessM(location(matched));
 depth(isnan(depth) | depth < 0) = 0;
 end
 

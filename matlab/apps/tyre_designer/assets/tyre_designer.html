@@ -16,6 +16,7 @@
       --accent: #4fb3ff;
       --warn: #e0a84f;
       --rubber: #f0b85a;
+      --bulk: #78d3ff;
     }
     * { box-sizing: border-box; }
     body {
@@ -114,9 +115,9 @@
     }
     .metrics {
       display: grid;
-      grid-template-columns: repeat(5, minmax(112px, 1fr));
+      grid-template-columns: repeat(6, minmax(112px, 1fr));
       gap: 8px;
-      width: min(760px, 100%);
+      width: min(900px, 100%);
     }
     .metric {
       min-height: 52px;
@@ -272,12 +273,15 @@
       const summary = state?.summary || {};
       const plotData = state?.plotData || {};
       const tread = plotData.treadDepth || [];
+      const rubber = plotData.rubberCrossSection || [];
       const treadMm = tread.map(row => Number(row.treadDepthM) * 1000).filter(Number.isFinite);
+      const nodeMm = rubber.map(row => Number(row.nodeThicknessM) * 1000).filter(Number.isFinite);
       const items = [
         ["Nodes", summary.nodeCount],
         ["Ply Rows", summary.plyParamRows],
         ["Layers", summary.maxPlyLayers],
         ["Tread mm", treadMm.length ? `${fmt(Math.min(...treadMm))}..${fmt(Math.max(...treadMm))}` : "-"],
+        ["Node mm", nodeMm.length ? `${fmt(Math.min(...nodeMm))}..${fmt(Math.max(...nodeMm))}` : "-"],
         ["Source", state?.database?.available ? "DB" : "Cache"]
       ];
       document.getElementById("metrics").innerHTML = items.map(([label, value]) =>
@@ -300,6 +304,8 @@
         ...p,
         surfaceXMm: Number(p.surfaceX) * 1000,
         surfaceYMm: Number(p.surfaceY) * 1000,
+        treadXMm: Number(p.treadX) * 1000,
+        treadYMm: Number(p.treadY) * 1000,
         innerXMm: Number(p.innerX) * 1000,
         innerYMm: Number(p.innerY) * 1000
       }));
@@ -313,9 +319,11 @@
         outerYMm: Number(p.outerY) * 1000
       }));
       const xs = points.map(p => p.xMm)
+        .concat(rubber.map(p => p.treadXMm))
         .concat(rubber.map(p => p.innerXMm))
         .concat(layers.map(p => p.outerXMm));
       const ys = points.map(p => p.yMm)
+        .concat(rubber.map(p => p.treadYMm))
         .concat(rubber.map(p => p.innerYMm))
         .concat(layers.map(p => p.outerYMm));
       const frame = makeFrame(svg, xs, ys, true);
@@ -327,7 +335,11 @@
       svg.insertAdjacentHTML("beforeend", `<path d="${shellPath}" fill="none" stroke="#dce6ef" stroke-width="1.2"/>`);
       points.forEach(p => svg.insertAdjacentHTML("beforeend",
         `<circle cx="${frame.sx(p.xMm).toFixed(1)}" cy="${frame.sy(p.yMm).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}</title></circle>`));
-      drawLegend(svg, [{ label: "Surface", color: "#dce6ef" }, { label: "Tread depth", color: "var(--rubber)" }]);
+      drawLegend(svg, [
+        { label: "Surface", color: "#dce6ef" },
+        { label: "Tread depth", color: "#f0b85a" },
+        { label: "Node thickness", color: "#78d3ff" }
+      ]);
     }
 
     function makeFrame(svg, xs, ys, equalScale) {
@@ -380,9 +392,12 @@
     function drawRubber(svg, frame, rows) {
       if (rows.length < 2) return;
       const ordered = rows.slice().sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex));
-      const band = bandPath(ordered, frame, "surfaceXMm", "surfaceYMm", "innerXMm", "innerYMm");
-      svg.insertAdjacentHTML("beforeend", `<path d="${band}" fill="#f0b85a" fill-opacity="0.12" stroke="#f0b85a" stroke-opacity="0.45" stroke-width="0.9"><title>Tread depth / rubber depth</title></path>`);
-      svg.insertAdjacentHTML("beforeend", `<path d="${pointPath(ordered, frame, "innerXMm", "innerYMm")}" fill="none" stroke="#f0b85a" stroke-width="1.2" stroke-dasharray="4 3"/>`);
+      const treadBand = bandPath(ordered, frame, "surfaceXMm", "surfaceYMm", "treadXMm", "treadYMm");
+      const bulkBand = bandPath(ordered, frame, "treadXMm", "treadYMm", "innerXMm", "innerYMm");
+      svg.insertAdjacentHTML("beforeend", `<path d="${bulkBand}" fill="#78d3ff" fill-opacity="0.11" stroke="#78d3ff" stroke-opacity="0.35" stroke-width="0.9"><title>Node thickness</title></path>`);
+      svg.insertAdjacentHTML("beforeend", `<path d="${treadBand}" fill="#f0b85a" fill-opacity="0.18" stroke="#f0b85a" stroke-opacity="0.5" stroke-width="0.9"><title>Tread depth</title></path>`);
+      svg.insertAdjacentHTML("beforeend", `<path d="${pointPath(ordered, frame, "treadXMm", "treadYMm")}" fill="none" stroke="#f0b85a" stroke-width="1.4" stroke-dasharray="4 3"/>`);
+      svg.insertAdjacentHTML("beforeend", `<path d="${pointPath(ordered, frame, "innerXMm", "innerYMm")}" fill="none" stroke="#78d3ff" stroke-width="1.4"/>`);
     }
 
     function drawLayers(svg, frame, rows) {
