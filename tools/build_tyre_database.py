@@ -346,10 +346,19 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     return conn
 
 
-def insert_tyre_inventory(conn: sqlite3.Connection, project_root: Path, rf2_root: Path, cache_dir: Path) -> tuple[int, int]:
+def insert_tyre_inventory(
+    conn: sqlite3.Connection,
+    project_root: Path,
+    rf2_root: Path,
+    cache_dir: Path,
+    extra_tgm_paths: list[Path],
+) -> tuple[int, int]:
     cache_dir.mkdir(parents=True, exist_ok=True)
     sources_by_hash: dict[str, list[Path]] = defaultdict(list)
-    for path in discover_loose_tgms(rf2_root):
+    loose_tgms = discover_loose_tgms(rf2_root)
+    loose_tgms.extend(path for path in extra_tgm_paths if path.is_file())
+
+    for path in loose_tgms:
         sources_by_hash[sha256_file(path)].append(path)
 
     for digest, sources in sorted(sources_by_hash.items(), key=lambda item: item[1][0].name.lower()):
@@ -542,6 +551,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tgm-cache", type=Path, default=DEFAULT_TGM_CACHE)
     parser.add_argument("--results-root", type=Path, default=DEFAULT_RESULTS_ROOT)
     parser.add_argument(
+        "--extra-tgm",
+        type=Path,
+        action="append",
+        default=[],
+        help="Additional loose .tgm file to copy into the cache and index. Can be passed multiple times.",
+    )
+    parser.add_argument(
         "--include-workshop-packages",
         action="store_true",
         help="Also scan workshop .rfcmp packages for TGM name hints. This can be slow.",
@@ -554,7 +570,13 @@ def main() -> int:
     project_root = Path.cwd()
     conn = init_db(args.db)
     try:
-        unique_tyres, loose_sources = insert_tyre_inventory(conn, project_root, args.rf2_root, args.tgm_cache)
+        unique_tyres, loose_sources = insert_tyre_inventory(
+            conn,
+            project_root,
+            args.rf2_root,
+            args.tgm_cache,
+            args.extra_tgm,
+        )
         archive_candidates = insert_archive_candidates(conn, args.rf2_root, args.include_workshop_packages)
         runs, samples = insert_ttool_results(conn, project_root, args.results_root)
         conn.commit()

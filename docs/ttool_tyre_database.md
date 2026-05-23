@@ -45,6 +45,14 @@ Installation deutlich laenger:
 & "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\build_tyre_database.py --include-workshop-packages
 ```
 
+Selbst erzeugte `.tgm`-Dateien ausserhalb der rFactor-2-Installation koennen
+explizit mit aufgenommen werden:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tools\build_tyre_database.py `
+  --extra-tgm .\input\G_9.2-20.0-13x10_Soft_Slick_1975.tgm
+```
+
 ## MATLAB-Smoke fuer alle bekannten Reifen
 
 Alle lokal bekannten Arbeitskopien unter `tools\cache\tyres\tgm` koennen gegen
