@@ -62,7 +62,7 @@ for lineIndex = 1:numel(lines)
     keys(end + 1, 1) = key; %#ok<AGROW>
     nodeIndex(end + 1, 1) = currentNode; %#ok<AGROW>
     valueText(end + 1, 1) = rawValue; %#ok<AGROW>
-    values{end + 1, 1} = localParseValue(rawValue); %#ok<AGROW>
+    values{end + 1, 1} = localParseValue(rawValue, key); %#ok<AGROW>
 end
 
 parameters = table(sections, keys, nodeIndex, valueText, values, ...
@@ -83,7 +83,7 @@ model.patchV1LineCount = patchV1Lines;
 model.summary = localSummary(parameters, nodeCount, lookupV2Lines, patchV1Lines);
 end
 
-function value = localParseValue(text)
+function value = localParseValue(text, key)
 text = strip(string(text));
 if startsWith(text, "(") && endsWith(text, ")")
     inner = extractBetween(text, 2, strlength(text) - 1);
@@ -92,28 +92,159 @@ if startsWith(text, "(") && endsWith(text, ")")
         return;
     end
     parts = split(inner, ",");
-    numeric = nan(1, numel(parts));
-    allNumeric = true;
-    for index = 1:numel(parts)
-        candidate = str2double(strip(parts(index)));
-        if isnan(candidate) && strip(parts(index)) ~= "NaN"
-            allNumeric = false;
-            break;
+
+    width = localExpectedTupleWidth(key);
+    if width > 0
+        numeric = localParseTuple(parts, width, localExpectedRanges(key));
+    else
+        numeric = nan(1, numel(parts));
+        for index = 1:numel(parts)
+            numeric(index) = localParseNumber(parts(index));
         end
-        numeric(index) = candidate;
     end
-    if allNumeric
+
+    if ~any(isnan(numeric)) || all(strip(parts) == "NaN")
         value = numeric;
     else
         value = cellstr(strip(parts));
     end
 else
-    numeric = str2double(text);
+    numeric = localParseNumber(text);
     if ~isnan(numeric) || text == "NaN"
         value = numeric;
     else
         value = text;
     end
+end
+end
+
+function numeric = localParseTuple(parts, width, ranges)
+parts = strip(parts(:));
+partCount = numel(parts);
+bestScore = inf;
+bestValues = nan(1, width);
+
+    function search(partIndex, fieldIndex, values, score)
+        remainingParts = partCount - partIndex + 1;
+        remainingFields = width - fieldIndex + 1;
+        if remainingParts < remainingFields || remainingParts > remainingFields * 2
+            return;
+        end
+        if fieldIndex > width
+            if partIndex > partCount && score < bestScore
+                bestScore = score;
+                bestValues = values;
+            end
+            return;
+        end
+
+        for groupLength = 1:2
+            if partIndex + groupLength - 1 > partCount
+                continue;
+            end
+            [candidate, ok, candidateScore] = localParseTupleCandidate(parts(partIndex:partIndex + groupLength - 1));
+            if ~ok
+                continue;
+            end
+            rangeScore = localRangeScore(candidate, ranges(fieldIndex, :));
+            nextValues = values;
+            nextValues(fieldIndex) = candidate;
+            search(partIndex + groupLength, fieldIndex + 1, nextValues, score + candidateScore + rangeScore);
+        end
+    end
+
+search(1, 1, nan(1, width), 0);
+numeric = bestValues;
+end
+
+function [value, ok, score] = localParseTupleCandidate(parts)
+parts = strip(parts(:));
+ok = false;
+value = NaN;
+score = inf;
+
+if numel(parts) == 1
+    value = localParseNumber(parts(1));
+    ok = ~isnan(value) || parts(1) == "NaN";
+    score = 0;
+    return;
+end
+
+if numel(parts) ~= 2 || ~localCanBeDecimalComma(parts(1), parts(2))
+    return;
+end
+
+value = str2double(parts(1) + "." + parts(2));
+ok = ~isnan(value);
+score = -0.1;
+if contains(parts(2), ["e", "E"])
+    score = 0.2;
+end
+end
+
+function tf = localCanBeDecimalComma(left, right)
+left = strip(left);
+right = strip(right);
+tf = ~isempty(regexp(char(left), "^[+-]?\d+$", "once")) ...
+    && ~isempty(regexp(char(right), "^\d+(?:[eE][+-]?\d+)?$", "once"));
+end
+
+function value = localParseNumber(text)
+text = strip(string(text));
+if contains(text, ",") && ~contains(text, ".")
+    value = str2double(replace(text, ",", "."));
+    if ~isnan(value)
+        return;
+    end
+end
+value = str2double(text);
+end
+
+function width = localExpectedTupleWidth(key)
+switch string(key)
+    case {"Geometry", "PlyParams"}
+        width = 3;
+    case {"InnerGeometryOverride", "RingAndRim"}
+        width = 2;
+    case {"BulkMaterial", "TreadMaterial", "PlyMaterial"}
+        width = 7;
+    otherwise
+        width = 0;
+end
+end
+
+function ranges = localExpectedRanges(key)
+switch string(key)
+    case "Geometry"
+        ranges = [-1 1; -1 1; -1 1];
+    case "InnerGeometryOverride"
+        ranges = [-1 1; -1 1];
+    case "PlyParams"
+        ranges = [-360 360; 0 1; -10 10];
+    case "RingAndRim"
+        ranges = [-inf inf; -inf inf];
+    case {"BulkMaterial", "TreadMaterial", "PlyMaterial"}
+        ranges = [
+            100 1000
+            100 20000
+            1000 1e13
+            -1 1
+            0 10
+            50 10000
+            0 100
+        ];
+    otherwise
+        ranges = nan(0, 2);
+end
+end
+
+function score = localRangeScore(value, range)
+if any(isnan(range)) || isinf(range(1)) || isinf(range(2))
+    score = 0;
+elseif value >= range(1) && value <= range(2)
+    score = 0;
+else
+    score = 1000 + min(abs(value - range(1)), abs(value - range(2)));
 end
 end
 
