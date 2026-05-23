@@ -709,13 +709,13 @@
           </div>
           ${renderInputBlock("overview")}
           ${renderValidationBlock()}`;
-        drawGeometry(state.plotData?.geometry || [], "geometry", state.plotData?.plyCrossSection || []);
+        drawGeometry(state.plotData?.geometry || [], "geometry", state.plotData?.plyCrossSection || [], state.plotData?.rubberCrossSection || []);
         drawMaterials(state.plotData?.materials || [], "materials");
       } else if (activeView === "geometry" || activeView === "crosssection") {
         content.innerHTML = `${plotShell("geometry", "Tyre Cross-section Nodes")}
           ${tableShell("geometry-table", ["Node", "X", "Y", "Z"])}
           ${renderInputBlock("geometry")}`;
-        drawGeometry(state.plotData?.geometry || [], "geometry", state.plotData?.plyCrossSection || []);
+        drawGeometry(state.plotData?.geometry || [], "geometry", state.plotData?.plyCrossSection || [], state.plotData?.rubberCrossSection || []);
         drawGeometryTable(state.plotData?.geometry || []);
       } else if (activeView === "materials" || activeView === "materialcurves") {
         content.innerHTML = `<div class="legend"><span style="color:#6be675">Bulk</span><span style="color:#f0b85a">Tread</span><span style="color:#72b7ff">Ply</span></div>
@@ -1282,13 +1282,25 @@
       return n.toFixed(Math.abs(n) >= 10 ? 1 : 3).replace(/\.?0+$/, "");
     }
 
-    function drawGeometry(points, targetId, layerRows = []) {
+    function drawGeometry(points, targetId, layerRows = [], rubberRows = []) {
       const svg = document.getElementById(targetId);
       if (!svg) return;
       svg.innerHTML = "";
       if (!points.length) return;
       const layerPoints = (layerRows || []).filter(row => Number.isFinite(Number(row.x)) && Number.isFinite(Number(row.y)));
+      const rubberPoints = (rubberRows || []).filter(row =>
+        Number.isFinite(Number(row.surfaceX)) &&
+        Number.isFinite(Number(row.surfaceY)) &&
+        Number.isFinite(Number(row.innerX)) &&
+        Number.isFinite(Number(row.innerY)));
       const pointsMm = points.map(p => ({ ...p, xMm: Number(p.x) * 1000, yMm: Number(p.y) * 1000 }));
+      const rubberPointsMm = rubberPoints.map(p => ({
+        ...p,
+        surfaceXMm: Number(p.surfaceX) * 1000,
+        surfaceYMm: Number(p.surfaceY) * 1000,
+        innerXMm: Number(p.innerX) * 1000,
+        innerYMm: Number(p.innerY) * 1000
+      }));
       const layerPointsMm = layerPoints.map(p => ({
         ...p,
         xMm: Number(p.x) * 1000,
@@ -1298,14 +1310,30 @@
         outerXMm: Number(p.outerX) * 1000,
         outerYMm: Number(p.outerY) * 1000
       }));
-      const xs = pointsMm.map(p => p.xMm).concat(layerPointsMm.map(p => p.xMm));
-      const ys = pointsMm.map(p => p.yMm).concat(layerPointsMm.map(p => p.yMm));
+      const xs = pointsMm.map(p => p.xMm)
+        .concat(rubberPointsMm.map(p => p.innerXMm))
+        .concat(layerPointsMm.map(p => p.xMm));
+      const ys = pointsMm.map(p => p.yMm)
+        .concat(rubberPointsMm.map(p => p.innerYMm))
+        .concat(layerPointsMm.map(p => p.yMm));
       const frame = makePlotFrame(svg, xs, ys, "Radial coordinate X [mm]", "Lateral coordinate Y [mm]", { equalScale: true, title: "Equal millimetre scale" });
       const path = pointsMm.map((p, i) => `${i ? "L" : "M"}${frame.sx(p.xMm).toFixed(1)},${frame.sy(p.yMm).toFixed(1)}`).join(" ");
       svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="#70808d" stroke-width="1.1"/>`);
+      drawRubberCrossSection(svg, frame, rubberPointsMm);
       drawPlyCrossSection(svg, frame, layerPointsMm);
       pointsMm.forEach(p => svg.insertAdjacentHTML("beforeend",
         `<circle cx="${frame.sx(p.xMm).toFixed(1)}" cy="${frame.sy(p.yMm).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}: X ${fmt(p.xMm)} mm, Y ${fmt(p.yMm)} mm</title></circle>`));
+    }
+
+    function drawRubberCrossSection(svg, frame, rows) {
+      if (rows.length < 2) return;
+      const ordered = rows.slice().sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex));
+      const bandPath = layerBandPathFromEdges(ordered, frame, "surfaceXMm", "surfaceYMm", "innerXMm", "innerYMm");
+      if (bandPath) {
+        svg.insertAdjacentHTML("beforeend", `<path d="${bandPath}" fill="#f0b85a" fill-opacity="0.11" stroke="#f0b85a" stroke-opacity="0.35" stroke-width="0.8"><title>Tread depth / rubber depth</title></path>`);
+      }
+      const innerPath = pointPath(ordered, frame, "innerXMm", "innerYMm");
+      svg.insertAdjacentHTML("beforeend", `<path d="${innerPath}" fill="none" stroke="#f0b85a" stroke-width="1.1" stroke-dasharray="4 3"><title>Tread depth inner boundary</title></path>`);
     }
 
     function drawPlyCrossSection(svg, frame, rows) {
@@ -1365,9 +1393,14 @@
         Number.isFinite(Number(row.outerXMm)) &&
         Number.isFinite(Number(row.outerYMm)));
       if (!hasEdges) return "";
-      const innerPath = pointPath(rows, frame, "innerXMm", "innerYMm");
+      return layerBandPathFromEdges(rows, frame, "innerXMm", "innerYMm", "outerXMm", "outerYMm");
+    }
+
+    function layerBandPathFromEdges(rows, frame, innerXKey, innerYKey, outerXKey, outerYKey) {
+      const innerPath = pointPath(rows, frame, innerXKey, innerYKey);
       const outerPath = rows.slice().reverse()
-        .map(row => `L${frame.sx(Number(row.outerXMm)).toFixed(1)},${frame.sy(Number(row.outerYMm)).toFixed(1)}`)
+        .filter(row => Number.isFinite(Number(row[outerXKey])) && Number.isFinite(Number(row[outerYKey])))
+        .map(row => `L${frame.sx(Number(row[outerXKey])).toFixed(1)},${frame.sy(Number(row[outerYKey])).toFixed(1)}`)
         .join(" ");
       return `${innerPath} ${outerPath} Z`;
     }

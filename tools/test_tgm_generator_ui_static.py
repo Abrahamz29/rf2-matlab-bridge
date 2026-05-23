@@ -136,12 +136,23 @@ def run_check() -> dict:
         if label not in html:
             errors.append(f"missing plot axis label: {label}")
 
-    for function_name in ["makePlotFrame", "drawAxes", "drawLegend", "drawPlyThickness", "drawPlyCrossSection"]:
+    for function_name in [
+        "makePlotFrame",
+        "drawAxes",
+        "drawLegend",
+        "drawPlyThickness",
+        "drawPlyCrossSection",
+        "drawRubberCrossSection",
+    ]:
         if function_name not in function_names:
             errors.append(f"plot helper function missing: {function_name}")
 
     if "state.plotData?.plyCrossSection || []" not in html:
         errors.append("cross-section plot does not receive plyCrossSection data")
+    if "state.plotData?.rubberCrossSection || []" not in html:
+        errors.append("cross-section plot does not receive rubberCrossSection data")
+    if "encoded.rubberCrossSection = localTableToRecords(plotData.rubberCrossSection)" not in app:
+        errors.append("MATLAB state does not expose rubberCrossSection data")
 
     for function_name in [
         "buildInputPresentation",
