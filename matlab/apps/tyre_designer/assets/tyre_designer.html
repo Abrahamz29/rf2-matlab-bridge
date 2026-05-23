@@ -155,7 +155,7 @@
       stroke: #617286;
       stroke-width: 1;
     }
-    .axis text, .axis-label, .plot-title, .legend text {
+    .axis text, .axis-label, .legend text {
       fill: #b9d8f2;
       font-size: 12px;
     }
@@ -166,9 +166,6 @@
     }
     .axis-label {
       font-size: 13px;
-    }
-    .plot-title {
-      font-weight: 650;
     }
     footer {
       display: flex;
@@ -333,7 +330,7 @@
         .concat(layers.map(p => p.outerYMm));
       const frame = makeFrame(svg, xs, ys, true);
 
-      drawAxes(svg, frame, "Radial coordinate X [mm]", "Lateral coordinate Y [mm]", "Equal millimetre scale");
+      drawAxes(svg, frame, "Radial coordinate X [mm]", "Lateral coordinate Y [mm]");
       drawRubber(svg, frame, rubber);
       drawLayers(svg, frame, layers);
       const shellPath = pointPath(points, frame, "xMm", "yMm");
@@ -376,7 +373,7 @@
       };
     }
 
-    function drawAxes(svg, frame, xLabel, yLabel, title) {
+    function drawAxes(svg, frame, xLabel, yLabel) {
       const left = frame.margin.left;
       const right = frame.w - frame.margin.right;
       const top = frame.margin.top;
@@ -390,7 +387,6 @@
         const y = frame.sy(value);
         svg.insertAdjacentHTML("beforeend", `<g class="axis"><line x1="${left - 5}" y1="${y.toFixed(1)}" x2="${left}" y2="${y.toFixed(1)}"></line><text x="${left - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${tickFormat(value)}</text></g>`);
       });
-      svg.insertAdjacentHTML("beforeend", `<text class="plot-title" x="${left}" y="22">${escapeHtml(title)}</text>`);
       svg.insertAdjacentHTML("beforeend", `<text class="axis-label" x="${(left + right) / 2}" y="${frame.h - 14}" text-anchor="middle">${escapeHtml(xLabel)}</text>`);
       svg.insertAdjacentHTML("beforeend", `<text class="axis-label" transform="translate(18 ${(top + bottom) / 2}) rotate(-90)" text-anchor="middle">${escapeHtml(yLabel)}</text>`);
     }
