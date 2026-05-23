@@ -440,9 +440,36 @@
 
       const anchorX = frame.sx(anchor.surfaceXMm);
       const labelX = Math.max(frame.margin.left + 88, Math.min(anchorX - 230, frame.w - frame.margin.right - 300));
-      const labelStartY = frame.margin.top + 54;
+      layoutCallouts(frame, callouts).forEach(item => drawCallout(svg, frame, item, labelX, item.labelY));
+    }
+
+    function layoutCallouts(frame, callouts) {
       const labelStep = 17;
-      callouts.forEach((item, index) => drawCallout(svg, frame, item, labelX, labelStartY + index * labelStep));
+      const top = frame.margin.top + 42;
+      const bottom = frame.h - frame.margin.bottom - 12;
+      const ordered = callouts.map(item => ({
+        ...item,
+        anchorY: frame.sy(item.y)
+      })).sort((a, b) => a.anchorY - b.anchorY);
+
+      ordered.forEach((item, index) => {
+        item.labelY = Math.max(item.anchorY, top + index * labelStep);
+        if (index > 0) item.labelY = Math.max(item.labelY, ordered[index - 1].labelY + labelStep);
+      });
+
+      const overflow = ordered.length ? ordered[ordered.length - 1].labelY - bottom : 0;
+      if (overflow > 0) {
+        for (let index = ordered.length - 1; index >= 0; index--) {
+          const maxY = index === ordered.length - 1 ? bottom : ordered[index + 1].labelY - labelStep;
+          ordered[index].labelY = Math.min(ordered[index].labelY - overflow, maxY);
+        }
+      }
+
+      ordered.forEach((item, index) => {
+        const minY = index === 0 ? top : ordered[index - 1].labelY + labelStep;
+        item.labelY = Math.max(item.labelY, minY);
+      });
+      return ordered;
     }
 
     function pickCalloutAnchor(rubber, layers) {

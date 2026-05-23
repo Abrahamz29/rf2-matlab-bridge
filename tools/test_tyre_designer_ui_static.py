@@ -40,6 +40,7 @@ def run_check() -> dict:
         "treadXMm",
         "Node thickness",
         "drawLineCallouts",
+        "layoutCallouts",
         "nearestLayerRow",
     ]:
         if marker not in html:
@@ -50,6 +51,7 @@ def run_check() -> dict:
         "drawRubber",
         "drawLayers",
         "drawLineCallouts",
+        "layoutCallouts",
         "makeFrame",
         "drawAxes",
     ]:
