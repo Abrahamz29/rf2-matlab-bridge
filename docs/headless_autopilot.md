@@ -1,4 +1,4 @@
-# Headless, Autopilot und Plot-Entwicklung
+﻿# Headless, Autopilot und Plot-Entwicklung
 
 ## Kurzfassung
 
@@ -18,7 +18,7 @@ Rolling-Live-Plot mit synthetischen Daten:
 
 ```matlab
 cd("C:\Users\Victor\Documents\PYTHON\RFactor2")
-addpath("matlab")
+setup_rf2_matlab()
 rf2RollingLivePlot(15, 20, "mock")
 ```
 
@@ -60,3 +60,4 @@ ist serverseitig und nicht gleichbedeutend mit einer lokalen Spieler-Session,
 die Reifen-, Aero-, Input- und Fahrdynamikdaten fuer ein Player-Fahrzeug liefert.
 Fuer unsere MATLAB-Plots sind die Shared-Memory-Telemetry-Buffer aus einer
 laufenden Single-Player/Multiplayer-Client-Session der relevante Pfad.
+

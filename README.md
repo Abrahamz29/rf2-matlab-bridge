@@ -1,4 +1,4 @@
-# rFactor 2 MATLAB Telemetry Bridge
+﻿# rFactor 2 MATLAB Telemetry Bridge
 
 Dieses Projekt verbindet MATLAB mit rFactor 2 ueber den offiziellen Community-Weg:
 `rFactor2SharedMemoryMapPlugin64.dll` schreibt rFactor-2-Internals in Windows
@@ -12,16 +12,30 @@ Das Projekt ist fuer Git/GitHub-Nutzung vorbereitet.
 - Arbeitsregeln fuer Codex und Mitwirkende stehen in `AGENTS.md`.
 - GitHub-Initialisierung und Remote-Setup stehen in `docs/github_bootstrap.md`.
 - Vendor-Abhaengigkeiten sind als Git-Submodules eingebunden.
-- Nach sinnvollen, verifizierten Aenderungen sollte ein lokaler Commit erzeugt
-  werden.
-- Nach stabilen Zwischenstaenden und vor groesseren Pausen sollte nach `origin`
-  gepusht werden.
+- Commits werden erst nach wichtigen, verifizierten Checkpoints erzeugt.
+- Push nach `origin` erfolgt nach stabilen Zwischenstaenden, vor groesseren
+  Pausen oder auf explizite Anforderung.
 
 Frischer Clone mit Submodules:
 
 ```powershell
 git clone --recurse-submodules <repo-url>
 ```
+
+## Ordnerstruktur
+
+- `tyres/`: Reifenmodell-Arbeit: TGM/ODS-Eingaben, Referenzen, SQLite-DB,
+  MATLAB-Apps, Tools, tTool-Szenarien, lokaler TGM-Cache und Lookup-Exports.
+- `tyres/matlab/apps/tyre_designer/`: neue, von der alten UI getrennte
+  Reifen-UI.
+- `tyres/tools/`: Reifen-Parser, DB-Builder, TGM-Generator- und tTool-Helfer.
+- `tracks/blacklake/`: BlackLake-/Streckenquellen, MATLAB-Controller, Python-
+  Generatoren, Downloads, Cache und Track-Tools.
+- `bridge/`: Shared-Memory-Bridge, MATLAB-Telemetrie, Python-Automation und
+  rFactor-2-Helfer.
+- `scenarios/`: Fahrzeug-/Strecken-Manoever. Reifenplaene liegen unter
+  `tyres/scenarios/`.
+- `input/`: nur noch Legacy-Zwischenablage fuer offene/alte Dateien.
 
 ## Eingebundene Projekte
 
@@ -57,7 +71,7 @@ C:\Program Files (x86)\Steam\steamapps\common\rFactor 2\UserData\player\CustomPl
 Zum erneuten Installieren:
 
 ```powershell
-.\tools\Install-RF2SharedMemoryPlugin.ps1 -Download
+.\bridge\tools\Install-RF2SharedMemoryPlugin.ps1 -Download
 ```
 
 Manuelle Schritte:
@@ -127,7 +141,7 @@ client.logJsonl(120, 50)
 CLI-Test ohne MATLAB, mit der Python-Umgebung, die MATLAB hier ebenfalls nutzt:
 
 ```powershell
-& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\python\rf2_matlab_bridge.py status --pretty
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\bridge\python\rf2_matlab_bridge.py status --pretty
 ```
 
 Erwarteter Status bei laufendem rFactor 2:
@@ -179,7 +193,7 @@ extrahiert werden, soweit sie unverschluesselt vorliegen.
 
 MoTeC i2 Pro ist weiterhin sinnvoll fuer Offline-Lap-Analyse mit DAMPlugin-Logs.
 Diese MATLAB-Bridge ist dagegen fuer Live-Daten, eigene Auswertungen und
-automatisierte Versuche gedacht. Details stehen in `docs/plots_and_motec.md`.
+automatisierte Versuche gedacht. Details stehen in `docs/tyre/plots_and_motec.md`.
 
 ## Headless und Autopilot
 
@@ -200,7 +214,7 @@ Session Taste `I` druecken, damit die AI das eigene Auto faehrt. Details:
 Es gibt jetzt einen Open-Loop-Manoever-Runner fuer rF2:
 
 ```powershell
-& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\python\rf2_automation.py .\scenarios\blacklake_step_steer_batch.json
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\bridge\python\rf2_automation.py .\scenarios\blacklake_step_steer_batch.json
 ```
 
 Oder aus MATLAB:
@@ -224,7 +238,7 @@ rf2RunAIDriverMonitor(60)
 ```
 
 Die Skalierungslogik und der Weg zum spaeteren eigenen Flat-Proving-Ground
-stehen in `docs/proving_ground_scale.md`.
+stehen in `docs/track/proving_ground_scale.md`.
 
 ## MATLAB-Regler
 
@@ -247,8 +261,8 @@ Da auf diesem System kein installierter rF2-BlackLake-Content vorhanden ist,
 liegt jetzt ein eigener BlackLake-Authoring-Workspace im Repo:
 
 - `tracks/blacklake/`
-- `python/blacklake_builder.py`
-- `docs/blacklake_authoring.md`
+- `tracks/blacklake/tools/blacklake_builder.py`
+- `docs/track/blacklake_authoring.md`
 
 Die Quelle fuer BlackLake wird damit selbst generiert: Flaechen-OBJ, Markings,
 Layout-CSV und ModDev-Scaffolding fuer die Stufen `250m` bis `12000m`.
@@ -257,13 +271,13 @@ damit rFactor 2 Startpositionen, Teleport, Pit- und Wegpunktdaten bekommt.
 
 Der erste echte GMT-Exportpfad ist eingerichtet. Er nutzt eine lokale portable
 Blender-2.83-Installation und Traveller's rFactor-2-Blender-Exporter aus
-`tools/downloads/`:
+`tracks/blacklake/downloads/export/`:
 
 ```powershell
-.\tools\Install-BlackLakeExportToolchain.ps1
-.\tools\Export-BlackLakeGmt.ps1 -Stage 250m -InstallModDev
-.\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode Scaffold -RegisterSceneViewer
-.\tools\Test-BlackLakeModDevInstall.ps1 -Stage 250m
+.\tracks\blacklake\tools\Install-BlackLakeExportToolchain.ps1
+.\tracks\blacklake\tools\Export-BlackLakeGmt.ps1 -Stage 250m -InstallModDev
+.\tracks\blacklake\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode Scaffold -RegisterSceneViewer
+.\tracks\blacklake\tools\Test-BlackLakeModDevInstall.ps1 -Stage 250m
 ```
 
 Damit liegen fuer `250m` echte BlackLake-GMTs vor:
@@ -291,28 +305,28 @@ Singleplayer-Track-Menue des Hauptspiels. Fuer den direkten Fahrtest ist der
 aktuelle Weg:
 
 ```powershell
-.\tools\Start-BlackLakeModDev.ps1 -Mode Viewer -Stage 250m
+.\tracks\blacklake\tools\Start-BlackLakeModDev.ps1 -Mode Viewer -Stage 250m
 ```
 
 Fuer das normale Track-Menue muss BlackLake als installierbare `Location`
 paketiert werden. Die Staging-Struktur erzeugt:
 
 ```powershell
-.\tools\Prepare-BlackLakePackage.ps1 -Stage 250m
+.\tracks\blacklake\tools\Prepare-BlackLakePackage.ps1 -Stage 250m
 ```
 
 Ein echtes `.rfcmp`-Paket inklusive MAS-Erzeugung und Installation in den
 rFactor-2-Root wird automatisiert mit:
 
 ```powershell
-.\tools\Build-BlackLakeRfcmp.ps1 -Stage 250m -Install
+.\tracks\blacklake\tools\Build-BlackLakeRfcmp.ps1 -Stage 250m -Install
 ```
 
 Fuer einen weitgehend automatischen Fahrtest-Vorbereitungslauf gibt es den
 gebuendelten Befehl:
 
 ```powershell
-.\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m
+.\tracks\blacklake\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m
 ```
 
 Der Befehl baut die Quelle neu, exportiert die GMTs, installiert und prueft den
@@ -323,7 +337,7 @@ Solange die generierte BlackLake-AIW noch keine von rFactor 2 akzeptierten
 Pitbox-Wegpunkte erzeugt, ist fuer echte Fahrtests dieser Fallback sinnvoll:
 
 ```powershell
-.\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m -UseJoesvilleAiwFallback
+.\tracks\blacklake\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m -UseJoesvilleAiwFallback
 ```
 
 Damit bleibt die BlackLake-Geometrie aktiv, aber die Start-/Pitbox-Daten kommen
@@ -339,7 +353,7 @@ aktuell beim Laden crashen laesst. Danach im normalen rFactor-2-Menue nach
 Mit `-OpenGame` startet der Befehl nach der Vorbereitung direkt rFactor 2:
 
 ```powershell
-.\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m -UseJoesvilleAiwFallback -OpenGame
+.\tracks\blacklake\tools\Prepare-BlackLakeDriveTest.ps1 -Stage 250m -UseJoesvilleAiwFallback -OpenGame
 ```
 
 Fuer den sofort nutzbaren Vergleichspfad gibt es weiterhin den
@@ -347,5 +361,8 @@ Fuer den sofort nutzbaren Vergleichspfad gibt es weiterhin den
 nur fuer Telemetrie, MATLAB-Regler und Session-Plumbing gedacht:
 
 ```powershell
-.\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode JoesvilleBaseline -RegisterSceneViewer
+.\tracks\blacklake\tools\Install-BlackLakeModDev.ps1 -Stage 250m -Mode JoesvilleBaseline -RegisterSceneViewer
 ```
+
+
+

@@ -1,4 +1,4 @@
-# BlackLake
+﻿# BlackLake
 
 Custom proving-ground authoring workspace for rFactor 2.
 
@@ -13,12 +13,15 @@ Generated stages:
 Build source scaffolding:
 
 ```powershell
-& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\python\blacklake_builder.py --all
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tracks\blacklake\tools\blacklake_builder.py --all
 ```
 
 The generator creates geometry source and ModDev text scaffolding.
 Export GMT for a stage with:
 
 ```powershell
-.\tools\Export-BlackLakeGmt.ps1 -Stage 250m -InstallModDev
+.\tracks\blacklake\tools\Export-BlackLakeGmt.ps1 -Stage 250m -InstallModDev
 ```
+
+
+

@@ -1,0 +1,1624 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>rF2 TGM Generator</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #101316;
+      --panel: #171b20;
+      --panel-2: #20262d;
+      --line: #303842;
+      --text: #e6edf3;
+      --muted: #9aa7b3;
+      --accent: #4fb3ff;
+      --ok: #51c785;
+      --warn: #e0a84f;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 13px/1.45 "Segoe UI", system-ui, sans-serif;
+      letter-spacing: 0;
+      overflow: hidden;
+    }
+    .app {
+      display: grid;
+      grid-template-columns: 260px 1fr 300px;
+      grid-template-rows: 48px 1fr 34px;
+      height: 100vh;
+    }
+    header {
+      grid-column: 1 / 4;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--line);
+      background: #12161a;
+    }
+    header h1 {
+      font-size: 15px;
+      font-weight: 650;
+      margin: 0;
+    }
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-left: auto;
+      align-items: center;
+      min-width: 0;
+      overflow-x: auto;
+    }
+    button {
+      background: var(--panel-2);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 6px 10px;
+      font: inherit;
+      cursor: pointer;
+    }
+    button:hover, .tab:hover {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    input, select {
+      width: 100%;
+      min-width: 90px;
+      background: #0c0f12;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 5px 7px;
+      font: inherit;
+    }
+    input:disabled {
+      color: var(--muted);
+      opacity: 0.78;
+      cursor: default;
+    }
+    .pill {
+      color: var(--muted);
+      border: 1px solid var(--line);
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+    #file-pill {
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .tyre-picker {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      white-space: nowrap;
+    }
+    .tyre-picker span {
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .tyre-picker select {
+      width: 270px;
+      min-width: 210px;
+      height: 31px;
+      padding: 5px 8px;
+    }
+    nav, aside {
+      background: var(--panel);
+      border-right: 1px solid var(--line);
+      overflow: auto;
+    }
+    aside {
+      border-right: 0;
+      border-left: 1px solid var(--line);
+    }
+    main {
+      overflow: auto;
+      padding: 16px;
+    }
+    .tabs {
+      display: flex;
+      flex-direction: column;
+      padding: 10px;
+      gap: 4px;
+    }
+    .tab {
+      padding: 8px 10px;
+      border-radius: 4px;
+      color: var(--muted);
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+    .tab.active {
+      background: var(--panel-2);
+      color: var(--text);
+      border-left: 3px solid var(--accent);
+    }
+    .section-title {
+      color: var(--muted);
+      text-transform: uppercase;
+      font-size: 11px;
+      font-weight: 700;
+      margin: 18px 10px 6px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(140px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .metric, .plot, .table-panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+    }
+    .metric {
+      padding: 12px;
+    }
+    .metric .value {
+      font-size: 24px;
+      font-weight: 650;
+    }
+    .metric .label {
+      color: var(--muted);
+      margin-top: 2px;
+    }
+    .plot {
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+    .plot h2, aside h2 {
+      margin: 0 0 10px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .plot p {
+      color: var(--muted);
+      margin: 8px 0 0;
+    }
+    svg {
+      width: 100%;
+      height: 280px;
+      display: block;
+      background: #0c0f12;
+      border: 1px solid #222a32;
+      border-radius: 4px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 6px 8px;
+      text-align: right;
+      white-space: nowrap;
+    }
+    th:first-child, td:first-child { text-align: left; }
+    th {
+      color: var(--muted);
+      font-weight: 600;
+      background: var(--panel-2);
+      position: sticky;
+      top: 0;
+    }
+    .side {
+      padding: 14px;
+    }
+    .status {
+      grid-column: 1 / 4;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 14px;
+      color: var(--muted);
+      border-top: 1px solid var(--line);
+      background: #12161a;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--ok);
+    }
+    .warn { color: var(--warn); }
+    .empty {
+      color: var(--muted);
+      padding: 24px;
+      border: 1px dashed var(--line);
+      border-radius: 6px;
+      background: #111519;
+    }
+    .legend {
+      display: flex;
+      gap: 12px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .legend span::before {
+      content: "";
+      display: inline-block;
+      width: 9px;
+      height: 9px;
+      margin-right: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+    .input-controls {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin: 0 0 10px;
+    }
+    .input-controls input {
+      max-width: 280px;
+    }
+    .input-controls .spacer {
+      flex: 1;
+    }
+    .sheet-layout {
+      overflow: auto;
+      max-height: 66vh;
+      background: #0c0f12;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      margin-bottom: 14px;
+    }
+    .sheet-grid {
+      border-collapse: separate;
+      border-spacing: 0;
+      table-layout: fixed;
+      min-width: max-content;
+    }
+    .sheet-grid th,
+    .sheet-grid td {
+      border-right: 1px solid #27313a;
+      border-bottom: 1px solid #27313a;
+      padding: 0;
+      text-align: left;
+      vertical-align: top;
+      white-space: normal;
+    }
+    .sheet-grid thead th {
+      position: sticky;
+      top: 0;
+      z-index: 4;
+      height: 26px;
+      padding: 4px 6px;
+      text-align: center;
+      background: #20262d;
+      color: var(--muted);
+      font-weight: 650;
+    }
+    .sheet-corner,
+    .sheet-row-header {
+      position: sticky;
+      left: 0;
+      z-index: 3;
+      width: 58px;
+      min-width: 58px;
+      max-width: 58px;
+      text-align: right !important;
+      background: #20262d;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+    }
+    .sheet-corner {
+      z-index: 5 !important;
+      text-align: center !important;
+    }
+    .sheet-col-header {
+      width: 128px;
+      min-width: 128px;
+      max-width: 128px;
+    }
+    .sheet-cell {
+      width: 128px;
+      min-width: 128px;
+      max-width: 128px;
+      height: 34px;
+      min-height: 34px;
+      background: #11161a;
+    }
+    .sheet-cell.empty {
+      background: #0b0e11;
+    }
+    .sheet-cell.input {
+      background: #101c24;
+      box-shadow: inset 0 0 0 1px rgba(79, 179, 255, 0.32);
+    }
+    .sheet-cell.label {
+      color: #d6dde5;
+    }
+    .sheet-cell.helper {
+      color: var(--muted);
+    }
+    .sheet-cell-inner {
+      display: grid;
+      gap: 3px;
+      min-height: 34px;
+      padding: 4px 5px;
+    }
+    .sheet-cell-context {
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 10px;
+      line-height: 1.15;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sheet-cell-text {
+      overflow: hidden;
+      color: inherit;
+      font-size: 12px;
+      line-height: 1.25;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sheet-cell input {
+      min-width: 0;
+      width: 100%;
+      height: 24px;
+      padding: 3px 5px;
+      border-radius: 3px;
+      font-size: 12px;
+    }
+    .sheet-hint {
+      color: var(--muted);
+      margin: -2px 0 10px;
+    }
+    .sheet-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 0 0 10px;
+    }
+    .sheet-tab {
+      background: var(--panel);
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 5px 8px;
+      cursor: pointer;
+    }
+    .sheet-tab.active {
+      color: var(--text);
+      border-color: var(--accent);
+      background: var(--panel-2);
+    }
+    .swatch {
+      display: inline-block;
+      width: 42px;
+      height: 16px;
+      border: 1px solid var(--line);
+      border-radius: 3px;
+      vertical-align: middle;
+    }
+    .axis line, .axis path {
+      stroke: #64717d;
+      stroke-width: 1;
+      shape-rendering: crispEdges;
+    }
+    .axis text, .axis-label, .plot-title, .plot-legend {
+      fill: var(--muted);
+      font-size: 11px;
+    }
+    .axis-label {
+      font-size: 12px;
+    }
+    .plot-title {
+      font-weight: 650;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>rF2 TGM Generator</h1>
+      <span class="pill" id="file-pill">No file</span>
+      <span class="pill warn">LookupV2/PatchV1: tTool required</span>
+      <div class="toolbar">
+        <label class="tyre-picker"><span>Tyre</span><select id="tyre-select"><option value="">No tyres loaded</option></select></label>
+        <button id="inputs-button" type="button">Load ODS Inputs</button>
+        <button id="save-project-button" type="button">Save Project</button>
+        <button id="load-project-button" type="button">Load Project</button>
+        <button id="chart-data-button" type="button">Load ODS Chart Data</button>
+        <button id="generate-inputs-button" type="button">Generate From Inputs</button>
+        <button id="acceptance-button" type="button">Run Acceptance</button>
+        <button id="formula-button" type="button">Run Formula Report</button>
+        <button id="prepare-ttool-button" type="button">Prepare tTool</button>
+        <button id="reload-button" type="button">Reload</button>
+        <button id="ping-button" type="button">Ping MATLAB</button>
+      </div>
+    </header>
+    <nav>
+      <div class="section-title">Generator</div>
+      <div class="tabs">
+        <div class="tab active" data-view="overview">Overview</div>
+        <div class="tab" data-view="geometry">Geometry</div>
+        <div class="tab" data-view="construction">Construction</div>
+        <div class="tab" data-view="materials">Materials</div>
+        <div class="tab" data-view="materiallibrary">Material Library</div>
+        <div class="tab" data-view="realtime">Realtime</div>
+        <div class="tab" data-view="wlf">WLF</div>
+        <div class="tab" data-view="contactprops">ContactProps</div>
+        <div class="tab" data-view="loadsens">LoadSens</div>
+        <div class="tab" data-view="tgmexport">TGM Export</div>
+        <div class="tab" data-view="tbcexport">TBC Export</div>
+        <div class="tab" data-view="validation">Validation</div>
+      </div>
+      <div class="section-title">Excel Inputs</div>
+      <div class="tabs">
+        <div class="tab" data-view="input-general">General</div>
+        <div class="tab" data-view="input-geometry">Geometry</div>
+        <div class="tab" data-view="input-construction">Construction</div>
+        <div class="tab" data-view="input-compound">Compound</div>
+        <div class="tab" data-view="input-realtime">Realtime</div>
+        <div class="tab" data-view="input-wlf">WLF</div>
+        <div class="tab" data-view="input-contactprops">ContactProps</div>
+        <div class="tab" data-view="input-loadsens">LoadSens</div>
+        <div class="tab" data-view="input-materials">Materials</div>
+        <div class="tab" data-view="input-tbc">TBC</div>
+      </div>
+      <div class="section-title">Plots</div>
+      <div class="tabs">
+        <div class="tab" data-view="crosssection">Cross-section</div>
+        <div class="tab" data-view="materialcurves">Material Curves</div>
+        <div class="tab" data-view="plystack">Ply Stack</div>
+        <div class="tab" data-view="behaviour">Behaviour</div>
+        <div class="tab" data-view="odscharts">ODS Charts</div>
+      </div>
+    </nav>
+    <main>
+      <div id="content"></div>
+    </main>
+    <aside class="side">
+      <h2>Validation</h2>
+      <p id="message">Waiting for MATLAB data.</p>
+      <div id="details"></div>
+      <p class="warn">Final acceptance compares generated .tgm/.tbc text against the ODS reference. LookupV2/PatchV1 are excluded.</p>
+    </aside>
+    <footer class="status"><span class="dot"></span><span id="status">initializing</span></footer>
+  </div>
+  <script>
+    let state = null;
+    let matlabComponent = null;
+    let activeView = "overview";
+    let inputFilter = "";
+    let editableOnlyFilter = false;
+    const inputPages = {};
+    const ODS_INPUT_SHEETS = ["General", "Geometry", "Construction", "Compound", "Realtime", "WLF", "ContactProps", "LoadSens", "Materials", "TBC"];
+    const INPUT_VIEW_TO_SHEET = {
+      "input-general": "General",
+      "input-geometry": "Geometry",
+      "input-construction": "Construction",
+      "input-compound": "Compound",
+      "input-realtime": "Realtime",
+      "input-wlf": "WLF",
+      "input-contactprops": "ContactProps",
+      "input-loadsens": "LoadSens",
+      "input-materials": "Materials",
+      "input-tbc": "TBC"
+    };
+    const PLOT_COLORS = ["#72b7ff", "#f0b85a", "#6be675", "#ff7a90", "#b594ff", "#65d6d0", "#e0a84f", "#c7d0d9"];
+
+    function setup(htmlComponent) {
+      matlabComponent = htmlComponent;
+      htmlComponent.addEventListener("DataChanged", () => {
+        const incoming = htmlComponent.Data;
+        if (incoming?.kind === "pong") {
+          setStatus(incoming.message || "MATLAB backend ready");
+          return;
+        }
+        state = incoming;
+        render();
+      });
+      state = htmlComponent.Data;
+      bindControls();
+      render();
+    }
+
+    function bindControls() {
+      document.querySelectorAll(".tab").forEach(tab => {
+        tab.addEventListener("click", () => {
+          activeView = tab.dataset.view || "overview";
+          document.querySelectorAll(".tab").forEach(item => item.classList.toggle("active", item === tab));
+          render();
+        });
+      });
+      document.getElementById("reload-button").addEventListener("click", () => {
+        if (matlabComponent && state?.inputPath) {
+          setStatus("reloading " + state.inputPath);
+          matlabComponent.Data = { command: "loadTgm", path: state.inputPath };
+        } else {
+          setStatus("no TGM path loaded");
+        }
+      });
+      document.getElementById("tyre-select").addEventListener("change", event => {
+        const path = event.target.value || "";
+        if (matlabComponent && path) {
+          const label = event.target.selectedOptions?.[0]?.textContent || path;
+          setStatus("loading " + label);
+          matlabComponent.Data = { command: "loadTgm", path };
+        }
+      });
+      document.getElementById("ping-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("pinging MATLAB");
+          matlabComponent.Data = { command: "ping" };
+        }
+      });
+      document.getElementById("acceptance-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("running ODS acceptance");
+          matlabComponent.Data = {
+            command: "runAcceptance",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tyres/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods"
+          };
+        }
+      });
+      document.getElementById("formula-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("running formula report");
+          matlabComponent.Data = {
+            command: "runFormulaReport",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tyres/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods",
+            inputModel: state?.inputModel || {}
+          };
+        }
+      });
+      document.getElementById("prepare-ttool-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("preparing tTool files");
+          matlabComponent.Data = {
+            command: "prepareTTool",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tyres/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods"
+          };
+        }
+      });
+      document.getElementById("inputs-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("loading ODS input model");
+          matlabComponent.Data = {
+            command: "loadOdsInputs",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tyres/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods"
+          };
+        }
+      });
+      document.getElementById("chart-data-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("loading evaluated ODS chart data");
+          matlabComponent.Data = {
+            command: "loadOdsChartData",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tyres/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods"
+          };
+        }
+      });
+      document.getElementById("save-project-button").addEventListener("click", () => {
+        if (matlabComponent && state?.inputModel?.inputs?.length) {
+          setStatus("saving project inputs");
+          matlabComponent.Data = {
+            command: "saveProjectInputs",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tyres/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods",
+            inputModel: state.inputModel
+          };
+        } else {
+          setStatus("load ODS inputs before saving a project");
+        }
+      });
+      document.getElementById("load-project-button").addEventListener("click", () => {
+        if (matlabComponent) {
+          setStatus("loading saved project inputs");
+          matlabComponent.Data = {
+            command: "loadProjectInputs",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tyres/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods"
+          };
+        }
+      });
+      document.getElementById("generate-inputs-button").addEventListener("click", () => {
+        if (matlabComponent && state?.inputModel?.inputs?.length) {
+          setStatus("generating from ODS inputs");
+          matlabComponent.Data = {
+            command: "generateFromInputs",
+            inputPath: state?.inputPath || "",
+            odsPath: state?.odsPath || "tyres/downloads/studio397/TGM Gen V0.33 - GY F1 1975 Front.ods",
+            inputModel: state.inputModel
+          };
+        } else {
+          setStatus("load ODS inputs before generating from project values");
+        }
+      });
+    }
+
+    function render() {
+      if (!state) return;
+      if (state.kind === "pong") {
+        setStatus(state.message || "MATLAB backend ready");
+        return;
+      }
+      setStatus(state.status || state.kind || "ready");
+      document.getElementById("message").textContent = state.message || "";
+      document.getElementById("file-pill").textContent = state.inputPath || "No file";
+      renderTyreSelect();
+      renderDetails();
+      renderActiveView();
+    }
+
+    function setStatus(message) {
+      document.getElementById("status").textContent = message;
+    }
+
+    function renderTyreSelect() {
+      const select = document.getElementById("tyre-select");
+      if (!select) return;
+      const tyres = state?.tyres || [];
+      const selected = tyres.find(item => item.selected === true);
+      const currentPath = selected?.path || state?.inputPath || "";
+      select.disabled = tyres.length === 0;
+      select.innerHTML = `<option value="">Select tyre...</option>${tyres.map(item => {
+        const isSelected = item.path === currentPath || item.selected === true;
+        return `<option value="${escapeAttr(item.path)}" ${isSelected ? "selected" : ""}>${escapeHtml(item.displayName || item.fileName || item.path)}</option>`;
+      }).join("")}`;
+      if (currentPath) select.value = currentPath;
+    }
+
+    function renderActiveView() {
+      const content = document.getElementById("content");
+      const summary = state.summary || {};
+      const metrics = [
+        ["Nodes", summary.nodeCount],
+        ["Material Rows", summary.materialRows],
+        ["Ply Rows", summary.plyParamRows],
+        ["Ply Layers", summary.maxPlyLayers],
+        ["ODS Charts", state.chartReport?.chart_count],
+        ["Library", state.materialLibrary?.material_count],
+        ["Lookup Lines", `${summary.lookupV2LineCount || 0} / ${summary.patchV1LineCount || 0}`]
+      ];
+      const metricHtml = `<div class="grid">${metrics.map(([label, value]) =>
+        `<div class="metric"><div class="value">${value ?? "-"}</div><div class="label">${label}</div></div>`
+      ).join("")}</div>`;
+
+      if (activeView.startsWith("input-")) {
+        content.innerHTML = `${renderInputBlock(activeView)}${renderValidationBlock()}`;
+      } else if (activeView === "overview") {
+        content.innerHTML = `${metricHtml}
+          <div class="two-col">
+            ${plotShell("geometry", "Tyre Cross-section Nodes")}
+            ${plotShell("materials", "Material Stiffness By Temperature")}
+          </div>
+          ${renderInputBlock("overview")}
+          ${renderValidationBlock()}`;
+        drawGeometry(state.plotData?.geometry || [], "geometry", state.plotData?.plyCrossSection || [], state.plotData?.rubberCrossSection || []);
+        drawMaterials(state.plotData?.materials || [], "materials");
+      } else if (activeView === "geometry" || activeView === "crosssection") {
+        content.innerHTML = `${plotShell("geometry", "Tyre Cross-section Nodes")}
+          ${tableShell("geometry-table", ["Node", "X", "Y", "Z"])}
+          ${renderInputBlock("geometry")}`;
+        drawGeometry(state.plotData?.geometry || [], "geometry", state.plotData?.plyCrossSection || [], state.plotData?.rubberCrossSection || []);
+        drawGeometryTable(state.plotData?.geometry || []);
+      } else if (activeView === "materials" || activeView === "materialcurves") {
+        content.innerHTML = `<div class="legend"><span style="color:#6be675">Bulk</span><span style="color:#f0b85a">Tread</span><span style="color:#72b7ff">Ply</span></div>
+          ${plotShell("materials", "Material Stiffness By Temperature")}
+          ${tableShell("material-table", ["Node", "Kind", "Temp K", "E-Modulus Pa", "Density", "k"])}
+          ${renderInputBlock("materials")}`;
+        drawMaterials(state.plotData?.materials || [], "materials");
+        drawMaterialTable(state.plotData?.materials || []);
+      } else if (activeView === "materiallibrary") {
+        content.innerHTML = `${renderMaterialLibrarySummary()}
+          ${plotShell("library-modulus", "Library Young's Modulus By Temperature")}
+          ${tableShell("material-library-table", ["Category", "Material", "Points", "Temp K", "E-Modulus Pa"])}
+          ${tableShell("material-point-table", ["Category", "Material", "Temp K", "Density", "E-Modulus", "k", "Shore A"])}`;
+        drawMaterialLibraryPlot(state.materialLibrary?.points || [], "library-modulus");
+        drawMaterialLibraryTables(state.materialLibrary || {});
+      } else if (activeView === "construction" || activeView === "plystack") {
+        content.innerHTML = `${plotShell("ply", "Ply Angle By Gurtellage")}
+          ${plotShell("ply-thickness", "Ply Thickness By Gurtellage")}
+          ${tableShell("ply-table", ["Node", "Layer", "Angle deg", "Thickness m", "Connect"])}
+          ${renderInputBlock("construction")}`;
+        drawPly(state.plotData?.plyParams || [], "ply");
+        drawPlyThickness(state.plotData?.plyParams || [], "ply-thickness");
+        drawPlyTable(state.plotData?.plyParams || []);
+      } else if (activeView === "behaviour") {
+        content.innerHTML = `${renderBehaviourSummary()}
+          <div class="two-col">
+            ${plotShell("latforce", "Lat Force vs Slip Angle")}
+            ${plotShell("longforce", "Long Force vs Slip Ratio")}
+          </div>
+          ${plotShell("forcehistory", "Force History")}
+          ${tableShell("behaviour-table", ["Index", "Slip deg", "Slip %", "Fz N", "Fx N", "Fy N", "Mz Nm"])}`;
+        drawScatter(state.behaviour?.records || [], "latforce", "slipAngleDeg", "latForceN", "#72b7ff", "Slip angle [deg]", "Lateral force Fy [N]");
+        drawScatter(state.behaviour?.records || [], "longforce", "slipRatioPct", "longForceN", "#f0b85a", "Slip ratio [%]", "Longitudinal force Fx [N]");
+        drawForceHistory(state.behaviour?.records || [], "forcehistory");
+        drawBehaviourTable(state.behaviour?.records || []);
+      } else if (activeView === "odscharts") {
+        const chartSource = state.chartData?.loaded ? state.chartData : (state.chartReport || {});
+        content.innerHTML = `${renderChartSummary()}
+          ${renderOdsChartPlots(chartSource)}
+          ${tableShell("chart-table", ["Object", "Title", "Class", "Series", "Sheets"])}
+          ${tableShell("chart-series-table", ["Chart", "Series", "Values", "Label", "Domain"])}`;
+        drawChartTables(chartSource);
+        drawOdsChartPlots(chartSource.charts || []);
+      } else if (["realtime", "wlf", "contactprops", "loadsens", "tbcexport", "tgmexport"].includes(activeView)) {
+        content.innerHTML = `${renderInputBlock(activeView)}${renderValidationBlock()}${renderExportBlock()}`;
+      } else if (activeView === "validation") {
+        content.innerHTML = `${renderValidationBlock()}${renderFormulaReportBlock()}${renderExportBlock()}${metricHtml}`;
+      } else {
+        content.innerHTML = `${metricHtml}${renderInputBlock(activeView)}${renderValidationBlock()}<div class="empty">${viewTitle(activeView)} has no additional data loaded yet.</div>`;
+      }
+    }
+
+    function renderDetails() {
+      const summary = state.summary || {};
+      document.getElementById("details").innerHTML = `
+        <table>
+          <tbody>
+            <tr><td>Loaded</td><td>${state.loaded ? "yes" : "no"}</td></tr>
+            <tr><td>QSA rows</td><td>${summary.qsaParameterCount ?? "-"}</td></tr>
+            <tr><td>Realtime rows</td><td>${summary.realtimeParameterCount ?? "-"}</td></tr>
+            <tr><td>LookupV2</td><td>${summary.lookupV2LineCount ?? 0} lines</td></tr>
+            <tr><td>PatchV1</td><td>${summary.patchV1LineCount ?? 0} lines</td></tr>
+            <tr><td>Inputs</td><td>${state.inputModel?.input_count ?? 0}</td></tr>
+            <tr><td>Editable hints</td><td>${formatConfidenceCounts(state.inputModel?.editable_confidence_counts)}</td></tr>
+            <tr><td>Material library</td><td>${state.materialLibrary?.material_count ?? 0} / ${state.materialLibrary?.point_count ?? 0} points</td></tr>
+            <tr><td>Project</td><td>${escapeHtml(state.projectPath || "")}</td></tr>
+            <tr><td>ODS charts</td><td>${state.chartReport?.chart_count ?? 0} / ${state.chartReport?.series_count ?? 0} series</td></tr>
+            <tr><td>ODS test</td><td>${state.validation?.equal === true ? "pass" : (state.validation?.message || "not run")}</td></tr>
+            <tr><td>Formulas</td><td>${formatFormulaSummary(state.formulaReport)}</td></tr>
+          </tbody>
+        </table>`;
+    }
+
+    function renderInputBlock(view) {
+      const model = state.inputModel || {};
+      const counts = model.sheet_counts || {};
+      if (!Object.keys(counts).length) return `<div class="empty" style="margin-bottom:14px">ODS input model is not loaded.</div>`;
+      const sheet = sheetForView(view);
+      const sheetTabs = renderInputSheetTabs(sheet);
+      const allInputs = buildInputPresentation((model.inputs || []).map((item, index) => ({...item, index})).filter(item => item.sheet === sheet));
+      const filter = inputFilter.trim().toLowerCase();
+      const editableFiltered = editableOnlyFilter ? allInputs.filter(item => item.isLikelyEditable === true || item.isPossibleInput === true) : allInputs;
+      const matchedCells = filter ? editableFiltered.filter(item =>
+        [item.address, item.contextLabel, item.parameterLabel, item.display, item.value, item.parsed, item.inputRole].some(value => String(value || "").toLowerCase().includes(filter))
+      ) : editableFiltered;
+      const matchedRows = [...new Set(matchedCells.map(item => Number(item.row)).filter(row => Number.isFinite(row)))].sort((a, b) => a - b);
+      const pageSize = 28;
+      const pageCount = Math.max(1, Math.ceil(matchedRows.length / pageSize));
+      const page = Math.min(inputPages[sheet] || 0, pageCount - 1);
+      inputPages[sheet] = page;
+      const visibleRows = matchedRows.slice(page * pageSize, (page + 1) * pageSize);
+      const visibleRowSet = new Set(visibleRows);
+      const visibleInputs = allInputs.filter(item => visibleRowSet.has(Number(item.row)));
+      const visibleCols = [...new Set(visibleInputs.map(item => Number(item.col)).filter(col => Number.isFinite(col)))].sort((a, b) => a - b);
+      const columns = [];
+      let compactColumns = false;
+      if (visibleCols.length) {
+        const minCol = Math.min(...visibleCols);
+        const maxCol = Math.max(...visibleCols);
+        const columnSpan = maxCol - minCol + 1;
+        compactColumns = columnSpan > 96;
+        if (compactColumns) {
+          columns.push(...visibleCols);
+        } else {
+          for (let col = minCol; col <= maxCol; col += 1) columns.push(col);
+        }
+      }
+      const rowStart = visibleRows.length ? visibleRows[0] : "-";
+      const rowEnd = visibleRows.length ? visibleRows[visibleRows.length - 1] : "-";
+      const sheetCellCount = counts[sheet] ?? allInputs.length;
+      const controls = `<div class="input-controls">
+        <input value="${escapeAttr(inputFilter)}" placeholder="Filter cells" oninput="setInputFilter(this.value)" />
+        <label class="pill"><input type="checkbox" ${editableOnlyFilter ? "checked" : ""} onchange="setEditableOnlyFilter(this.checked)" style="width:auto;min-width:0;margin-right:6px" />Likely editable</label>
+        <button type="button" onclick="changeInputPage('${sheet}', -1)">Prev</button>
+        <button type="button" onclick="changeInputPage('${sheet}', 1)">Next</button>
+        <span class="pill">Rows page ${page + 1} / ${pageCount}</span>
+        <span class="pill">Rows ${rowStart}-${rowEnd}</span>
+        <span class="pill">${matchedCells.length} / ${sheetCellCount} cells</span>
+        <span class="spacer"></span>
+      </div>`;
+      return `${sheetTabs}
+        ${controls}
+        <p class="sheet-hint">${escapeHtml(sheet)} keeps the ODS row/column layout. Edit project values directly in highlighted cells; labels and helper values stay in their original neighborhood.${compactColumns ? " Empty column gaps are collapsed on this very wide row page." : ""}</p>
+        ${renderInputSheetGrid(sheet, visibleRows, columns, visibleInputs)}`;
+    }
+
+    function renderInputSheetGrid(sheet, rows, columns, inputs) {
+      if (!rows.length || !columns.length) return `<div class="empty" style="margin-bottom:14px">No extracted inputs for ${sheet}</div>`;
+      const byKey = new Map(inputs.map(item => [`${Number(item.row)}:${Number(item.col)}`, item]));
+      const header = `<tr><th class="sheet-corner">${escapeHtml(sheet)}</th>${columns.map(col => `<th class="sheet-col-header">${columnName(col)}</th>`).join("")}</tr>`;
+      const body = rows.map(row => `<tr><th class="sheet-row-header">${row}</th>${columns.map(col => renderSheetCell(byKey.get(`${row}:${col}`))).join("")}</tr>`).join("");
+      return `<section class="sheet-layout"><table class="sheet-grid"><thead>${header}</thead><tbody>${body}</tbody></table></section>`;
+    }
+
+    function renderSheetCell(item) {
+      if (!item) return `<td class="sheet-cell empty"></td>`;
+      const canEdit = item.isPossibleInput === true;
+      const roleClass = canEdit ? "input" : (item.inputRole === "label-or-helper" ? "label" : "helper");
+      const displayValue = item.display !== undefined && item.display !== "" ? item.display : (item.parsed !== undefined && item.parsed !== "" ? item.parsed : item.value || "");
+      const projectValue = item.value !== undefined && item.value !== "" ? item.value : (item.parsed || "");
+      const title = [
+        `${item.sheet}!${item.address}`,
+        item.contextLabel,
+        item.parameterLabel,
+        item.inputRole,
+        item.editableConfidence
+      ].filter(Boolean).join(" | ");
+      const style = sheetCellStyle(item.backgroundColor);
+      if (canEdit) {
+        const label = item.parameterLabel && item.parameterLabel !== displayValue ? item.parameterLabel : item.contextLabel;
+        return `<td class="sheet-cell ${roleClass}" title="${escapeAttr(title)}"${style}>
+          <div class="sheet-cell-inner">
+            <div class="sheet-cell-context">${escapeHtml(label || "")}</div>
+            <input value="${escapeAttr(projectValue)}" onchange="updateInputValue(${item.index}, this.value)" />
+          </div>
+        </td>`;
+      }
+      return `<td class="sheet-cell ${roleClass}" title="${escapeAttr(title)}"${style}>
+        <div class="sheet-cell-inner"><div class="sheet-cell-text">${escapeHtml(displayValue || "")}</div></div>
+      </td>`;
+    }
+
+    function sheetCellStyle(backgroundColor) {
+      const color = backgroundColor && backgroundColor !== "(none)" && backgroundColor !== "transparent" ? String(backgroundColor) : "";
+      return color ? ` style="border-left:3px solid ${escapeAttr(color)}"` : "";
+    }
+
+    function columnName(col) {
+      let n = Math.max(1, Number(col) || 1);
+      let name = "";
+      while (n > 0) {
+        n -= 1;
+        name = String.fromCharCode(65 + (n % 26)) + name;
+        n = Math.floor(n / 26);
+      }
+      return name;
+    }
+
+    function buildInputPresentation(items) {
+      const sorted = [...items].sort((a, b) => (Number(a.row) - Number(b.row)) || (Number(a.col) - Number(b.col)));
+      const rows = new Map();
+      sorted.forEach(item => {
+        const key = Number(item.row);
+        if (!rows.has(key)) rows.set(key, []);
+        rows.get(key).push(item);
+      });
+      rows.forEach(rowItems => rowItems.sort((a, b) => Number(a.col) - Number(b.col)));
+      const rowKeys = [...rows.keys()].sort((a, b) => a - b);
+      return sorted.map(item => {
+        const rowItems = rows.get(Number(item.row)) || [];
+        const leftLabel = nearestLeftLabel(rowItems, item);
+        const aboveLabel = nearestAboveLabel(rows, rowKeys, item);
+        const sectionLabel = nearestSectionLabel(rows, rowKeys, item);
+        const ownText = cleanInputText(item.display || item.parsed || item.value || "");
+        const parameterLabel = leftLabel || aboveLabel || ownText || `${item.sheet} value`;
+        const contextLabel = sectionLabel && sectionLabel !== parameterLabel ? sectionLabel : sheetContextLabel(item.sheet);
+        return { ...item, parameterLabel, contextLabel };
+      });
+    }
+
+    function nearestLeftLabel(rowItems, item) {
+      const col = Number(item.col);
+      for (let index = rowItems.length - 1; index >= 0; index -= 1) {
+        const candidate = rowItems[index];
+        if (Number(candidate.col) >= col) continue;
+        const text = cleanInputText(candidate.display || candidate.parsed || "");
+        if (isUsefulLabel(candidate, text) && col - Number(candidate.col) <= 6) return text;
+      }
+      return "";
+    }
+
+    function nearestAboveLabel(rows, rowKeys, item) {
+      const row = Number(item.row);
+      const col = Number(item.col);
+      for (let index = rowKeys.indexOf(row) - 1; index >= 0; index -= 1) {
+        const candidateRow = rowKeys[index];
+        if (row - candidateRow > 8) break;
+        const candidates = (rows.get(candidateRow) || []).filter(candidate => Math.abs(Number(candidate.col) - col) <= 1);
+        for (const candidate of candidates.reverse()) {
+          const text = cleanInputText(candidate.display || candidate.parsed || "");
+          if (isUsefulLabel(candidate, text)) return text;
+        }
+      }
+      return "";
+    }
+
+    function nearestSectionLabel(rows, rowKeys, item) {
+      const row = Number(item.row);
+      for (let index = rowKeys.indexOf(row); index >= 0; index -= 1) {
+        const candidateRow = rowKeys[index];
+        if (row - candidateRow > 20) break;
+        const candidates = rows.get(candidateRow) || [];
+        for (const candidate of candidates) {
+          const text = cleanInputText(candidate.display || candidate.parsed || "");
+          if (isSectionLabel(candidate, text)) return text;
+        }
+      }
+      return sheetContextLabel(item.sheet);
+    }
+
+    function cleanInputText(value) {
+      return String(value || "").replace(/\s+/g, " ").trim();
+    }
+
+    function isUsefulLabel(item, text) {
+      if (!text || text.length > 90) return false;
+      if (item.isPossibleInput === true && item.valueType !== "string") return false;
+      return /[A-Za-z\]\[]/.test(text);
+    }
+
+    function isSectionLabel(item, text) {
+      if (!isUsefulLabel(item, text)) return false;
+      const background = String(item.backgroundColor || "");
+      return item.inputRole === "label-or-helper" || background !== "" && background !== "transparent";
+    }
+
+    function sheetContextLabel(sheet) {
+      const labels = {
+        General: "General tyre metadata",
+        Geometry: "Geometry and node layout",
+        Construction: "Construction and ply stack",
+        Compound: "Compound and realtime tyre data",
+        Realtime: "Realtime parameters",
+        WLF: "WLF temperature model",
+        ContactProps: "Contact patch properties",
+        LoadSens: "Load sensitivity",
+        Materials: "Material definitions",
+        TBC: "TBC export parameters"
+      };
+      return labels[sheet] || sheet;
+    }
+
+    function renderInputSheetTabs(activeSheet) {
+      return `<div class="sheet-tabs">${ODS_INPUT_SHEETS.map(sheet => {
+        const view = inputViewForSheet(sheet);
+        const activeClass = sheet === activeSheet ? " active" : "";
+        return `<button class="sheet-tab${activeClass}" type="button" onclick="activateInputSheet('${view}')">${sheet}</button>`;
+      }).join("")}</div>`;
+    }
+
+    function activateInputSheet(view) {
+      activeView = view;
+      document.querySelectorAll(".tab").forEach(item => item.classList.toggle("active", item.dataset.view === view));
+      renderActiveView();
+    }
+
+    function inputViewForSheet(sheet) {
+      const entry = Object.entries(INPUT_VIEW_TO_SHEET).find(([, value]) => value === sheet);
+      return entry ? entry[0] : "input-general";
+    }
+
+    function renderSwatch(backgroundColor) {
+      const color = backgroundColor && backgroundColor !== "(none)" ? backgroundColor : "transparent";
+      return `<span class="swatch" title="${escapeAttr(color)}" style="background:${escapeAttr(color)}"></span>`;
+    }
+
+    function sheetForView(view) {
+      if (INPUT_VIEW_TO_SHEET[view]) return INPUT_VIEW_TO_SHEET[view];
+      const map = {
+        overview: "General",
+        geometry: "Geometry",
+        crosssection: "Geometry",
+        construction: "Construction",
+        plystack: "Construction",
+        materials: "Materials",
+        materialcurves: "Materials",
+        materiallibrary: "Materials",
+        realtime: "Realtime",
+        wlf: "WLF",
+        contactprops: "ContactProps",
+        loadsens: "LoadSens",
+        tbcexport: "TBC",
+        tgmexport: "General",
+        validation: "General"
+      };
+      return map[view] || "General";
+    }
+
+    function updateInputValue(index, value) {
+      if (!state?.inputModel?.inputs?.[index]) return;
+      state.inputModel.inputs[index].value = value;
+      state.inputModel.inputs[index].parsed = value;
+    }
+
+    function setInputFilter(value) {
+      inputFilter = value || "";
+      Object.keys(inputPages).forEach(sheet => inputPages[sheet] = 0);
+      renderActiveView();
+    }
+
+    function setEditableOnlyFilter(value) {
+      editableOnlyFilter = value === true;
+      Object.keys(inputPages).forEach(sheet => inputPages[sheet] = 0);
+      renderActiveView();
+    }
+
+    function changeInputPage(sheet, delta) {
+      inputPages[sheet] = Math.max(0, (inputPages[sheet] || 0) + delta);
+      renderActiveView();
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+    }
+
+    function escapeAttr(value) {
+      return escapeHtml(value).replace(/\n/g, " ");
+    }
+
+    function renderValidationBlock() {
+      const validation = state.validation || {};
+      const tgm = validation.tgm || {};
+      const tbc = validation.tbc || {};
+      return `<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Check</th><th>Equal</th><th>Lines</th><th>First diff</th></tr></thead><tbody>
+        <tr><td>TGM without Lookup/Patch</td><td>${tgm.equal === true ? "yes" : "-"}</td><td>${tgm.candidate_lines ?? "-"}</td><td>${formatDiff(tgm.first_diff)}</td></tr>
+        <tr><td>TBC</td><td>${tbc.equal === true ? "yes" : "-"}</td><td>${tbc.candidate_lines ?? "-"}</td><td>${formatDiff(tbc.first_diff)}</td></tr>
+      </tbody></table></section>`;
+    }
+
+    function renderFormulaReportBlock() {
+      const report = state.formulaReport || {};
+      const sheetReports = report.sheet_reports || {};
+      const rows = Object.keys(sheetReports).map(sheet => {
+        const item = sheetReports[sheet] || {};
+        return `<tr><td>${escapeHtml(sheet)}</td><td>${item.formula_count ?? "-"}</td><td>${item.evaluated_count ?? "-"}</td><td>${item.error_count ?? "-"}</td><td>${item.mismatch_count ?? "-"}</td></tr>`;
+      }).join("");
+      const summary = `<div class="grid">
+        <div class="metric"><div class="value">${report.formula_count ?? "-"}</div><div class="label">Formula Cells</div></div>
+        <div class="metric"><div class="value">${report.evaluated_count ?? "-"}</div><div class="label">Evaluated</div></div>
+        <div class="metric"><div class="value">${report.error_count ?? "-"}</div><div class="label">Errors</div></div>
+        <div class="metric"><div class="value">${report.fallback_count ?? "-"}</div><div class="label">Fallbacks</div></div>
+      </div>`;
+      return `${summary}<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Sheet</th><th>Formulas</th><th>Evaluated</th><th>Errors</th><th>Mismatches</th></tr></thead><tbody>${rows || `<tr><td colspan="5">Formula report not run.</td></tr>`}</tbody></table></section>`;
+    }
+
+    function renderBehaviourSummary() {
+      const behaviour = state.behaviour || {};
+      const summary = behaviour.summary || {};
+      return `<div class="grid">
+        <div class="metric"><div class="value">${behaviour.loaded ? "yes" : "no"}</div><div class="label">Realtime CSV</div></div>
+        <div class="metric"><div class="value">${behaviour.sampleCount ?? 0}</div><div class="label">Samples</div></div>
+        <div class="metric"><div class="value">${fmt(summary.maxLatForceN)}</div><div class="label">Max |Fy| N</div></div>
+        <div class="metric"><div class="value">${fmt(summary.maxVerticalForceN)}</div><div class="label">Max |Fz| N</div></div>
+      </div>
+      <section class="table-panel" style="margin-bottom:14px"><table><tbody><tr><td>Source</td><td>${escapeHtml(behaviour.path || "")}</td></tr></tbody></table></section>`;
+    }
+
+    function renderMaterialLibrarySummary() {
+      const library = state.materialLibrary || {};
+      const categoryCounts = library.category_counts || {};
+      const rows = Object.keys(categoryCounts).map(category => `<tr><td>${escapeHtml(category)}</td><td>${categoryCounts[category]}</td></tr>`).join("");
+      return `<div class="grid">
+        <div class="metric"><div class="value">${library.loaded ? "yes" : "no"}</div><div class="label">Loaded</div></div>
+        <div class="metric"><div class="value">${library.material_count ?? 0}</div><div class="label">Materials</div></div>
+        <div class="metric"><div class="value">${library.point_count ?? 0}</div><div class="label">Property Points</div></div>
+        <div class="metric"><div class="value">${Object.keys(categoryCounts).length}</div><div class="label">Categories</div></div>
+      </div>
+      <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Category</th><th>Materials</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+    }
+
+    function renderChartSummary() {
+      const report = state.chartReport || {};
+      const data = state.chartData || {};
+      const sheetCounts = report.sheet_series_counts || {};
+      const sheetRows = Object.keys(sheetCounts).map(sheet => `<tr><td>${sheet}</td><td>${sheetCounts[sheet]}</td></tr>`).join("");
+      return `<div class="grid">
+        <div class="metric"><div class="value">${report.loaded ? "yes" : "no"}</div><div class="label">ODS Chart Report</div></div>
+        <div class="metric"><div class="value">${report.chart_count ?? 0}</div><div class="label">Charts</div></div>
+        <div class="metric"><div class="value">${report.series_count ?? 0}</div><div class="label">Series</div></div>
+        <div class="metric"><div class="value">${data.loaded ? "yes" : "no"}</div><div class="label">Evaluated Plot Data</div></div>
+      </div>
+      <section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Sheet</th><th>Series</th></tr></thead><tbody>${sheetRows}</tbody></table></section>`;
+    }
+
+    function renderOdsChartPlots(report) {
+      if (!report?.loaded || !report?.charts?.length || !report.charts.some(chart => (chart.series || []).some(series => series.valuesData))) {
+        return `<div class="empty" style="margin-bottom:14px">Load ODS Chart Data to evaluate the original chart source ranges with the recursive formula engine.</div>`;
+      }
+      return report.charts.map((chart, index) =>
+        plotShell(`odschart-${index}`, chart.title || chart.object || `ODS Chart ${index + 1}`)
+      ).join("");
+    }
+
+    function renderExportBlock() {
+      const generated = state.validation?.generated || {};
+      const tgmPath = generated.tgm?.path || "";
+      const tbcPath = generated.tbc?.path || "";
+      const rows = [
+        ["Mode", state.validation?.mode || "-"],
+        ["Fallback", state.validation?.fallbackOnError === true ? "enabled" : "disabled"],
+        ["Project", state.validation?.projectPath || state.projectPath || "-"],
+        ["TGM", tgmPath],
+        ["TBC", tbcPath],
+        ["pTool TGM", state.ttool?.targetTgm || "-"],
+        ["pTool TBC", state.ttool?.targetTbc || "-"],
+        ["tTool launched", state.ttool?.launched === true ? "yes" : "no"]
+      ].map(([label, value]) => `<tr><td>${label}</td><td>${escapeHtml(value)}</td></tr>`).join("");
+      return `<section class="table-panel" style="margin-bottom:14px"><table><thead><tr><th>Export</th><th>Path / Value</th></tr></thead><tbody>${rows}</tbody></table></section>`;
+    }
+
+    function formatDiff(diff) {
+      if (!diff) return "";
+      return `L${diff.line}: ${diff.reference || ""} != ${diff.candidate || ""}`;
+    }
+
+    function formatConfidenceCounts(counts) {
+      if (!counts) return "";
+      return ["high", "medium", "low", "possible", "none"]
+        .filter(key => counts[key] !== undefined)
+        .map(key => `${key}:${counts[key]}`)
+        .join(" ");
+    }
+
+    function formatFormulaSummary(report) {
+      if (!report || report.formula_count === undefined) return "not run";
+      return `${report.evaluated_count}/${report.formula_count}, errors:${report.error_count}, fallback:${report.fallback_count}`;
+    }
+
+    function plotShell(id, title) {
+      return `<section class="plot"><h2>${title}</h2><svg id="${id}"></svg></section>`;
+    }
+
+    function tableShell(id, headers) {
+      return `<section class="table-panel"><table><thead><tr>${headers.map(h => `<th>${h}</th>`).join("")}</tr></thead><tbody id="${id}"></tbody></table></section>`;
+    }
+
+    function viewTitle(view) {
+      return view.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/^./, c => c.toUpperCase());
+    }
+
+    function makePlotFrame(svg, xs, ys, xLabel, yLabel, options = {}) {
+      const w = svg.clientWidth || 800;
+      const h = svg.clientHeight || 280;
+      const margin = { left: 68, right: 22, top: 28, bottom: 54 };
+      let [minX, maxX] = extent(xs);
+      let [minY, maxY] = extent(ys);
+      const rangeX = safeRange(minX, maxX);
+      const rangeY = safeRange(minY, maxY);
+      const padX = rangeX * (options.padFraction ?? 0.05);
+      const padY = rangeY * (options.padFraction ?? 0.08);
+      minX -= padX;
+      maxX += padX;
+      minY -= padY;
+      maxY += padY;
+
+      if (options.equalScale) {
+        const plotW = w - margin.left - margin.right;
+        const plotH = h - margin.top - margin.bottom;
+        const scale = Math.min(plotW / safeRange(minX, maxX), plotH / safeRange(minY, maxY));
+        const centerX = (minX + maxX) / 2;
+        const centerY = (minY + maxY) / 2;
+        const visibleX = plotW / scale;
+        const visibleY = plotH / scale;
+        minX = centerX - visibleX / 2;
+        maxX = centerX + visibleX / 2;
+        minY = centerY - visibleY / 2;
+        maxY = centerY + visibleY / 2;
+      }
+
+      const frame = {
+        w, h, margin, minX, maxX, minY, maxY,
+        sx: x => margin.left + (x - minX) / safeRange(minX, maxX) * (w - margin.left - margin.right),
+        sy: y => h - margin.bottom - (y - minY) / safeRange(minY, maxY) * (h - margin.top - margin.bottom),
+        scaleX: (w - margin.left - margin.right) / safeRange(minX, maxX),
+        scaleY: (h - margin.top - margin.bottom) / safeRange(minY, maxY)
+      };
+      drawAxes(svg, frame, xLabel, yLabel, options);
+      return frame;
+    }
+
+    function drawAxes(svg, frame, xLabel, yLabel, options = {}) {
+      const xTicks = niceTicks(frame.minX, frame.maxX, 5);
+      const yTicks = niceTicks(frame.minY, frame.maxY, 5);
+      const left = frame.margin.left;
+      const right = frame.w - frame.margin.right;
+      const top = frame.margin.top;
+      const bottom = frame.h - frame.margin.bottom;
+      svg.insertAdjacentHTML("beforeend", `<g class="axis">
+        <line x1="${left}" y1="${bottom}" x2="${right}" y2="${bottom}"></line>
+        <line x1="${left}" y1="${top}" x2="${left}" y2="${bottom}"></line>
+      </g>`);
+      xTicks.forEach(value => {
+        const x = frame.sx(value);
+        svg.insertAdjacentHTML("beforeend", `<g class="axis"><line x1="${x.toFixed(1)}" y1="${bottom}" x2="${x.toFixed(1)}" y2="${bottom + 5}"></line><text x="${x.toFixed(1)}" y="${bottom + 18}" text-anchor="middle">${tickFormat(value)}</text></g>`);
+      });
+      yTicks.forEach(value => {
+        const y = frame.sy(value);
+        svg.insertAdjacentHTML("beforeend", `<g class="axis"><line x1="${left - 5}" y1="${y.toFixed(1)}" x2="${left}" y2="${y.toFixed(1)}"></line><text x="${left - 8}" y="${(y + 4).toFixed(1)}" text-anchor="end">${tickFormat(value)}</text></g>`);
+      });
+      svg.insertAdjacentHTML("beforeend", `<text class="axis-label" x="${(left + right) / 2}" y="${frame.h - 12}" text-anchor="middle">${escapeHtml(xLabel)}</text>`);
+      svg.insertAdjacentHTML("beforeend", `<text class="axis-label" transform="translate(16 ${(top + bottom) / 2}) rotate(-90)" text-anchor="middle">${escapeHtml(yLabel)}</text>`);
+      if (options.title) {
+        svg.insertAdjacentHTML("beforeend", `<text class="plot-title" x="${left}" y="18">${escapeHtml(options.title)}</text>`);
+      }
+    }
+
+    function drawLegend(svg, items, y = 18) {
+      const left = 76;
+      items.slice(0, 8).forEach((item, index) => {
+        const x = left + index * 92;
+        svg.insertAdjacentHTML("beforeend", `<g class="plot-legend"><line x1="${x}" y1="${y}" x2="${x + 16}" y2="${y}" stroke="${item.color}" stroke-width="2"></line><text x="${x + 20}" y="${y + 4}">${escapeHtml(item.label)}</text></g>`);
+      });
+    }
+
+    function niceTicks(min, max, count) {
+      const span = safeRange(min, max);
+      const rawStep = span / Math.max(count - 1, 1);
+      const magnitude = Math.pow(10, Math.floor(Math.log10(rawStep)));
+      const residual = rawStep / magnitude;
+      const niceResidual = residual >= 5 ? 5 : residual >= 2 ? 2 : 1;
+      const step = niceResidual * magnitude;
+      const start = Math.ceil(min / step) * step;
+      const ticks = [];
+      for (let value = start; value <= max + step * 0.5; value += step) {
+        ticks.push(Number(value.toPrecision(12)));
+      }
+      return ticks.length ? ticks : [min, max];
+    }
+
+    function tickFormat(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "";
+      if (Math.abs(n) >= 10000 || (Math.abs(n) > 0 && Math.abs(n) < 0.001)) return n.toExponential(1);
+      return n.toFixed(Math.abs(n) >= 10 ? 1 : 3).replace(/\.?0+$/, "");
+    }
+
+    function drawGeometry(points, targetId, layerRows = [], rubberRows = []) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
+      svg.innerHTML = "";
+      if (!points.length) return;
+      const layerPoints = (layerRows || []).filter(row => Number.isFinite(Number(row.x)) && Number.isFinite(Number(row.y)));
+      const rubberPoints = (rubberRows || []).filter(row =>
+        Number.isFinite(Number(row.surfaceX)) &&
+        Number.isFinite(Number(row.surfaceY)) &&
+        Number.isFinite(Number(row.innerX)) &&
+        Number.isFinite(Number(row.innerY)));
+      const pointsMm = points.map(p => ({ ...p, xMm: Number(p.x) * 1000, yMm: Number(p.y) * 1000 }));
+      const rubberPointsMm = rubberPoints.map(p => ({
+        ...p,
+        surfaceXMm: Number(p.surfaceX) * 1000,
+        surfaceYMm: Number(p.surfaceY) * 1000,
+        innerXMm: Number(p.innerX) * 1000,
+        innerYMm: Number(p.innerY) * 1000
+      }));
+      const layerPointsMm = layerPoints.map(p => ({
+        ...p,
+        xMm: Number(p.x) * 1000,
+        yMm: Number(p.y) * 1000,
+        innerXMm: Number(p.innerX) * 1000,
+        innerYMm: Number(p.innerY) * 1000,
+        outerXMm: Number(p.outerX) * 1000,
+        outerYMm: Number(p.outerY) * 1000
+      }));
+      const xs = pointsMm.map(p => p.xMm)
+        .concat(rubberPointsMm.map(p => p.innerXMm))
+        .concat(layerPointsMm.map(p => p.xMm));
+      const ys = pointsMm.map(p => p.yMm)
+        .concat(rubberPointsMm.map(p => p.innerYMm))
+        .concat(layerPointsMm.map(p => p.yMm));
+      const frame = makePlotFrame(svg, xs, ys, "Radial coordinate X [mm]", "Lateral coordinate Y [mm]", { equalScale: true, title: "Equal millimetre scale" });
+      const path = pointsMm.map((p, i) => `${i ? "L" : "M"}${frame.sx(p.xMm).toFixed(1)},${frame.sy(p.yMm).toFixed(1)}`).join(" ");
+      svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="#70808d" stroke-width="1.1"/>`);
+      drawRubberCrossSection(svg, frame, rubberPointsMm);
+      drawPlyCrossSection(svg, frame, layerPointsMm);
+      pointsMm.forEach(p => svg.insertAdjacentHTML("beforeend",
+        `<circle cx="${frame.sx(p.xMm).toFixed(1)}" cy="${frame.sy(p.yMm).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}: X ${fmt(p.xMm)} mm, Y ${fmt(p.yMm)} mm</title></circle>`));
+    }
+
+    function drawRubberCrossSection(svg, frame, rows) {
+      if (rows.length < 2) return;
+      const ordered = rows.slice().sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex));
+      const bandPath = layerBandPathFromEdges(ordered, frame, "surfaceXMm", "surfaceYMm", "innerXMm", "innerYMm");
+      if (bandPath) {
+        svg.insertAdjacentHTML("beforeend", `<path d="${bandPath}" fill="#f0b85a" fill-opacity="0.11" stroke="#f0b85a" stroke-opacity="0.35" stroke-width="0.8"><title>Tread depth / rubber depth</title></path>`);
+      }
+      const innerPath = pointPath(ordered, frame, "innerXMm", "innerYMm");
+      svg.insertAdjacentHTML("beforeend", `<path d="${innerPath}" fill="none" stroke="#f0b85a" stroke-width="1.1" stroke-dasharray="4 3"><title>Tread depth inner boundary</title></path>`);
+    }
+
+    function drawPlyCrossSection(svg, frame, rows) {
+      if (!rows.length) return;
+      const layers = [...new Set(rows.map(row => Number(row.plyIndex || 1)))].sort((a, b) => a - b);
+      layers.forEach((layer, index) => {
+        const subset = rows
+          .filter(row => Number(row.plyIndex || 1) === layer)
+          .sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex));
+        const color = PLOT_COLORS[index % PLOT_COLORS.length];
+        splitContinuousLayerSegments(subset).forEach(segment => {
+          if (segment.length < 2) return;
+          const bandPath = layerBandPath(segment, frame);
+          if (bandPath) {
+            svg.insertAdjacentHTML("beforeend", `<path d="${bandPath}" fill="${color}" fill-opacity="0.16" stroke="${color}" stroke-opacity="0.35" stroke-width="0.8"><title>Layer ${layer} thickness</title></path>`);
+          }
+          const path = pointPath(segment, frame, "xMm", "yMm");
+          svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${color}" stroke-width="1.3"><title>Layer ${layer} centreline</title></path>`);
+        });
+      });
+      drawLegend(svg, layers.map((layer, index) => ({ label: `Layer ${layer}`, color: PLOT_COLORS[index % PLOT_COLORS.length] })));
+    }
+
+    function splitContinuousLayerSegments(rows) {
+      const segments = [];
+      let current = [];
+      let previousNode = NaN;
+      let previousSegment = NaN;
+      rows.forEach(row => {
+        const node = Number(row.nodeIndex);
+        const segment = Number(row.segmentIndex);
+        const hasGap = Number.isFinite(previousNode) && Number.isFinite(node) && node > previousNode + 1;
+        const segmentChanged = Number.isFinite(previousSegment) && Number.isFinite(segment) && segment !== previousSegment;
+        if (current.length && (hasGap || segmentChanged)) {
+          segments.push(current);
+          current = [];
+        }
+        current.push(row);
+        previousNode = node;
+        previousSegment = segment;
+      });
+      if (current.length) segments.push(current);
+      return segments;
+    }
+
+    function pointPath(rows, frame, xKey, yKey) {
+      return rows
+        .filter(row => Number.isFinite(Number(row[xKey])) && Number.isFinite(Number(row[yKey])))
+        .map((row, pointIndex) => `${pointIndex ? "L" : "M"}${frame.sx(Number(row[xKey])).toFixed(1)},${frame.sy(Number(row[yKey])).toFixed(1)}`)
+        .join(" ");
+    }
+
+    function layerBandPath(rows, frame) {
+      const hasEdges = rows.every(row =>
+        Number.isFinite(Number(row.innerXMm)) &&
+        Number.isFinite(Number(row.innerYMm)) &&
+        Number.isFinite(Number(row.outerXMm)) &&
+        Number.isFinite(Number(row.outerYMm)));
+      if (!hasEdges) return "";
+      return layerBandPathFromEdges(rows, frame, "innerXMm", "innerYMm", "outerXMm", "outerYMm");
+    }
+
+    function layerBandPathFromEdges(rows, frame, innerXKey, innerYKey, outerXKey, outerYKey) {
+      const innerPath = pointPath(rows, frame, innerXKey, innerYKey);
+      const outerPath = rows.slice().reverse()
+        .filter(row => Number.isFinite(Number(row[outerXKey])) && Number.isFinite(Number(row[outerYKey])))
+        .map(row => `L${frame.sx(Number(row[outerXKey])).toFixed(1)},${frame.sy(Number(row[outerYKey])).toFixed(1)}`)
+        .join(" ");
+      return `${innerPath} ${outerPath} Z`;
+    }
+
+    function drawMaterials(rows, targetId) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
+      svg.innerHTML = "";
+      const data = rows.filter(r => Number.isFinite(Number(r.temperatureK)) && Number.isFinite(Number(r.youngsModulusPa)));
+      if (!data.length) return;
+      const xs = data.map(r => Number(r.temperatureK));
+      const ys = data.map(r => Number(r.youngsModulusPa) / 1e6);
+      const frame = makePlotFrame(svg, xs, ys, "Temperature [K]", "Young's modulus [MPa]");
+      const colors = { BulkMaterial: "#6be675", TreadMaterial: "#f0b85a", PlyMaterial: "#72b7ff" };
+      for (const kind of [...new Set(data.map(r => String(r.kind)))]) {
+        const subset = data.filter(r => String(r.kind) === kind).slice(0, 240);
+        subset.forEach(r => {
+          const x = frame.sx(Number(r.temperatureK));
+          const y = frame.sy(Number(r.youngsModulusPa) / 1e6);
+          svg.insertAdjacentHTML("beforeend", `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2" fill="${colors[kind] || "#ddd"}"><title>${kind} node ${r.nodeIndex}</title></circle>`);
+        });
+      }
+      drawLegend(svg, Object.entries(colors).map(([label, color]) => ({ label: label.replace("Material", ""), color })));
+    }
+
+    function drawPly(rows, targetId) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
+      svg.innerHTML = "";
+      const data = rows.filter(r => Number.isFinite(Number(r.angleDeg)));
+      if (!data.length) return;
+      const xs = data.map(r => Number(r.nodeIndex));
+      const ys = data.map(r => Number(r.angleDeg));
+      const frame = makePlotFrame(svg, xs, ys, "Node index [-]", "Ply angle [deg]");
+      const layers = [...new Set(data.map(r => Number(r.plyIndex || 1)))].sort((a, b) => a - b);
+      layers.forEach((layer, index) => {
+        const subset = data.filter(r => Number(r.plyIndex || 1) === layer);
+        const path = subset.map((r, i) => `${i ? "L" : "M"}${frame.sx(Number(r.nodeIndex)).toFixed(1)},${frame.sy(Number(r.angleDeg)).toFixed(1)}`).join(" ");
+        svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${PLOT_COLORS[index % PLOT_COLORS.length]}" stroke-width="1.4"><title>Layer ${layer}</title></path>`);
+      });
+      drawLegend(svg, layers.map((layer, index) => ({ label: `Layer ${layer}`, color: PLOT_COLORS[index % PLOT_COLORS.length] })));
+    }
+
+    function drawPlyThickness(rows, targetId) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
+      svg.innerHTML = "";
+      const data = rows.filter(r => Number.isFinite(Number(r.thicknessM)));
+      if (!data.length) return;
+      const xs = data.map(r => Number(r.nodeIndex));
+      const ys = data.map(r => Number(r.thicknessM));
+      const frame = makePlotFrame(svg, xs, ys, "Node index [-]", "Ply thickness [m]");
+      const layers = [...new Set(data.map(r => Number(r.plyIndex || 1)))].sort((a, b) => a - b);
+      layers.forEach((layer, index) => {
+        const subset = data.filter(r => Number(r.plyIndex || 1) === layer);
+        const path = subset.map((r, i) => `${i ? "L" : "M"}${frame.sx(Number(r.nodeIndex)).toFixed(1)},${frame.sy(Number(r.thicknessM)).toFixed(1)}`).join(" ");
+        svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${PLOT_COLORS[index % PLOT_COLORS.length]}" stroke-width="1.4"><title>Layer ${layer}</title></path>`);
+      });
+      drawLegend(svg, layers.map((layer, index) => ({ label: `Layer ${layer}`, color: PLOT_COLORS[index % PLOT_COLORS.length] })));
+    }
+
+    function drawScatter(rows, targetId, xKey, yKey, color, xLabel, yLabel) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
+      svg.innerHTML = "";
+      const data = rows.filter(r => Number.isFinite(Number(r[xKey])) && Number.isFinite(Number(r[yKey])));
+      if (!data.length) return;
+      const xs = data.map(r => Number(r[xKey]));
+      const ys = data.map(r => Number(r[yKey]));
+      const frame = makePlotFrame(svg, xs, ys, xLabel, yLabel);
+      data.forEach(r => svg.insertAdjacentHTML("beforeend",
+        `<circle cx="${frame.sx(Number(r[xKey])).toFixed(1)}" cy="${frame.sy(Number(r[yKey])).toFixed(1)}" r="2" fill="${color}"><title>${xKey}: ${fmt(r[xKey])}, ${yKey}: ${fmt(r[yKey])}</title></circle>`));
+    }
+
+    function drawForceHistory(rows, targetId) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
+      svg.innerHTML = "";
+      const data = rows.filter(r => Number.isFinite(Number(r.testIndex)));
+      if (!data.length) return;
+      const xs = data.map(r => Number(r.testIndex));
+      const ys = data.flatMap(r => [Number(r.verticalForceN), Number(r.longForceN), Number(r.latForceN)]).filter(Number.isFinite);
+      const frame = makePlotFrame(svg, xs, ys, "Realtime test index [-]", "Force [N]");
+      const series = [
+        ["verticalForceN", "#6be675"],
+        ["longForceN", "#f0b85a"],
+        ["latForceN", "#72b7ff"]
+      ];
+      series.forEach(([key, color]) => {
+        const subset = data.filter(r => Number.isFinite(Number(r[key])));
+        const path = subset.map((r, i) => `${i ? "L" : "M"}${frame.sx(Number(r.testIndex)).toFixed(1)},${frame.sy(Number(r[key])).toFixed(1)}`).join(" ");
+        svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${color}" stroke-width="1.3"><title>${key}</title></path>`);
+      });
+      drawLegend(svg, series.map(([label, color]) => ({ label, color })));
+    }
+
+    function drawMaterialTable(rows) {
+      if (!document.getElementById("material-table")) return;
+      document.getElementById("material-table").innerHTML = rows.slice(0, 120).map(r =>
+        `<tr><td>${r.nodeIndex}</td><td>${r.kind}</td><td>${fmt(r.temperatureK)}</td><td>${fmt(r.youngsModulusPa)}</td><td>${fmt(r.densityKgM3)}</td><td>${fmt(r.conductivityWMK)}</td></tr>`
+      ).join("");
+    }
+
+    function drawGeometryTable(rows) {
+      if (!document.getElementById("geometry-table")) return;
+      document.getElementById("geometry-table").innerHTML = rows.map(r =>
+        `<tr><td>${r.nodeIndex}</td><td>${fmt(r.x)}</td><td>${fmt(r.y)}</td><td>${fmt(r.z)}</td></tr>`
+      ).join("");
+    }
+
+    function drawPlyTable(rows) {
+      if (!document.getElementById("ply-table")) return;
+      document.getElementById("ply-table").innerHTML = rows.map(r =>
+        `<tr><td>${r.nodeIndex}</td><td>${r.plyIndex ?? ""}</td><td>${fmt(r.angleDeg)}</td><td>${fmt(r.thicknessM)}</td><td>${fmt(r.connectFlag)}</td></tr>`
+      ).join("");
+    }
+
+    function drawBehaviourTable(rows) {
+      if (!document.getElementById("behaviour-table")) return;
+      document.getElementById("behaviour-table").innerHTML = rows.slice(0, 300).map(r =>
+        `<tr><td>${fmt(r.testIndex)}</td><td>${fmt(r.slipAngleDeg)}</td><td>${fmt(r.slipRatioPct)}</td><td>${fmt(r.verticalForceN)}</td><td>${fmt(r.longForceN)}</td><td>${fmt(r.latForceN)}</td><td>${fmt(r.aligningTorqueNm)}</td></tr>`
+      ).join("");
+    }
+
+    function drawMaterialLibraryPlot(points, targetId) {
+      const svg = document.getElementById(targetId);
+      if (!svg) return;
+      svg.innerHTML = "";
+      const data = points.filter(point => Number.isFinite(Number(point.temperatureK)) && Number.isFinite(Number(point.youngsModulusPa)));
+      if (!data.length) return;
+      const xs = data.map(point => Number(point.temperatureK));
+      const ys = data.map(point => Math.log10(Math.max(Number(point.youngsModulusPa), 1)));
+      const frame = makePlotFrame(svg, xs, ys, "Temperature [K]", "Young's modulus [Pa, log]");
+      const categories = [...new Set(data.map(point => point.category))];
+      data.forEach(point => {
+        const color = PLOT_COLORS[Math.max(0, categories.indexOf(point.category)) % PLOT_COLORS.length];
+        svg.insertAdjacentHTML("beforeend", `<circle cx="${frame.sx(Number(point.temperatureK)).toFixed(1)}" cy="${frame.sy(Math.log10(Math.max(Number(point.youngsModulusPa), 1))).toFixed(1)}" r="2.2" fill="${color}"><title>${escapeHtml(point.material)} ${fmt(point.temperatureK)} K ${fmt(point.youngsModulusPa)} Pa</title></circle>`);
+      });
+      drawLegend(svg, categories.map((category, index) => ({ label: String(category), color: PLOT_COLORS[index % PLOT_COLORS.length] })));
+    }
+
+    function drawMaterialLibraryTables(library) {
+      const materialTable = document.getElementById("material-library-table");
+      if (materialTable) {
+        materialTable.innerHTML = (library.materials || []).map(material =>
+          `<tr><td>${escapeHtml(material.category)}</td><td>${escapeHtml(material.name)}</td><td>${material.pointCount ?? 0}</td><td>${fmt(material.temperatureMinK)} - ${fmt(material.temperatureMaxK)}</td><td>${fmt(material.youngsModulusMinPa)} - ${fmt(material.youngsModulusMaxPa)}</td></tr>`
+        ).join("");
+      }
+      const pointTable = document.getElementById("material-point-table");
+      if (pointTable) {
+        pointTable.innerHTML = (library.points || []).slice(0, 500).map(point =>
+          `<tr><td>${escapeHtml(point.category)}</td><td>${escapeHtml(point.material)}</td><td>${fmt(point.temperatureK)}</td><td>${fmt(point.densityKgM3)}</td><td>${fmt(point.youngsModulusPa)}</td><td>${fmt(point.thermalConductivity)}</td><td>${fmt(point.shoreA)}</td></tr>`
+        ).join("");
+      }
+    }
+
+    function drawChartTables(report) {
+      const charts = report.charts || [];
+      const chartTable = document.getElementById("chart-table");
+      if (chartTable) {
+        chartTable.innerHTML = charts.map(chart =>
+          `<tr><td>${escapeHtml(chart.object || "")}</td><td>${escapeHtml(chart.title || "(untitled)")}</td><td>${escapeHtml(chart.class || "")}</td><td>${chart.seriesCount ?? 0}</td><td>${escapeHtml(Object.keys(chart.sheets || {}).join(", "))}</td></tr>`
+        ).join("");
+      }
+      const seriesTable = document.getElementById("chart-series-table");
+      if (seriesTable) {
+        const rows = charts.flatMap(chart => (chart.series || []).map(series => ({ chart, series }))).slice(0, 220);
+        seriesTable.innerHTML = rows.map(({ chart, series }) =>
+          `<tr><td>${escapeHtml(chart.title || chart.object || "")}</td><td>${series.index}</td><td>${escapeHtml(series.values?.raw || "")}</td><td>${escapeHtml(series.label?.raw || "")}</td><td>${escapeHtml((series.domains || []).map(item => item.raw).join(", "))}</td></tr>`
+        ).join("");
+      }
+    }
+
+    function drawOdsChartPlots(charts) {
+      const palette = ["#72b7ff", "#f0b85a", "#6be675", "#ff7a90", "#b594ff", "#65d6d0", "#e0a84f", "#c7d0d9"];
+      charts.forEach((chart, chartIndex) => {
+        const svg = document.getElementById(`odschart-${chartIndex}`);
+        if (!svg) return;
+        svg.innerHTML = "";
+        const seriesWithData = (chart.series || []).filter(series => series.valuesData?.values?.length);
+        const pointsBySeries = seriesWithData.map(series => {
+          const yValues = series.valuesData.values.map(value => value.numeric);
+          const domain = series.domainData?.[0]?.values || [];
+          const xValues = domain.length === yValues.length ? domain.map(value => value.numeric) : yValues.map((_, index) => index + 1);
+          return {
+            label: series.labelText || series.label?.raw || `Series ${series.index}`,
+            points: yValues.map((y, index) => ({ x: xValues[index], y })).filter(point => Number.isFinite(point.x) && Number.isFinite(point.y))
+          };
+        }).filter(item => item.points.length);
+        if (!seriesWithData.length || !pointsBySeries.length) return;
+        const xs = pointsBySeries.flatMap(item => item.points.map(point => point.x));
+        const ys = pointsBySeries.flatMap(item => item.points.map(point => point.y));
+        const frame = makePlotFrame(svg, xs, ys, "Domain", "Value", { title: `${chart.object || ""} ${chart.class || ""}`.trim() });
+        pointsBySeries.forEach((item, seriesIndex) => {
+          const color = palette[seriesIndex % palette.length];
+          const path = item.points.map((point, index) => `${index ? "L" : "M"}${frame.sx(point.x).toFixed(1)},${frame.sy(point.y).toFixed(1)}`).join(" ");
+          if ((chart.class || "").includes("scatter")) {
+            item.points.forEach(point => svg.insertAdjacentHTML("beforeend",
+              `<circle cx="${frame.sx(point.x).toFixed(1)}" cy="${frame.sy(point.y).toFixed(1)}" r="1.9" fill="${color}"><title>${escapeHtml(item.label)}: ${fmt(point.x)}, ${fmt(point.y)}</title></circle>`));
+          }
+          svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${color}" stroke-width="1.2"><title>${escapeHtml(item.label)}</title></path>`);
+        });
+        drawLegend(svg, pointsBySeries.map((item, index) => ({ label: item.label, color: palette[index % palette.length] })), 32);
+      });
+    }
+
+    function extent(values) {
+      return [Math.min(...values), Math.max(...values)];
+    }
+    function safeRange(min, max) {
+      return Math.max(Math.abs(max - min), 1e-9);
+    }
+    function fmt(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "";
+      return Math.abs(n) >= 100000 ? n.toExponential(3) : n.toFixed(4).replace(/\.?0+$/, "");
+    }
+  </script>
+</body>
+</html>
+

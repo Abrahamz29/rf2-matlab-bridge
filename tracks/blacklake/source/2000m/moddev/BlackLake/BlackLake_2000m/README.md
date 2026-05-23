@@ -1,4 +1,4 @@
-# BlackLake ModDev Scaffold (2000m)
+﻿# BlackLake ModDev Scaffold (2000m)
 
 This folder is a text scaffold for the custom BlackLake proving ground.
 
@@ -16,4 +16,7 @@ What is still required before rFactor 2 can load and drive it:
 - package as `.rfcmp`
 
 This repository can export GMT for the generated BlackLake geometry with
-`tools\Export-BlackLakeGmt.ps1`.
+`tracks\blacklake\tools\Export-BlackLakeGmt.ps1`.
+
+
+

@@ -1,4 +1,4 @@
-# Automation Harness
+﻿# Automation Harness
 
 ## Ziel
 
@@ -34,7 +34,7 @@ PowerShell:
 
 ```powershell
 cd C:\Users\Victor\Documents\PYTHON\RFactor2
-& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\python\rf2_automation.py .\scenarios\blacklake_step_steer_batch.json
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\bridge\python\rf2_automation.py .\scenarios\blacklake_step_steer_batch.json
 ```
 
 Oder aus MATLAB:
@@ -67,7 +67,7 @@ validieren, ob ein Szenario zum aktuell geladenen Track passt.
 Installierte Tracks als JSON ausgeben:
 
 ```powershell
-& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\python\rf2_automation.py --list-tracks
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\bridge\python\rf2_automation.py --list-tracks
 ```
 
 Oder in MATLAB:
@@ -129,7 +129,7 @@ der richtige naechste Schritt ein zweiter Aktuator-Backend:
 - `keyboard` fuer sofortige Open-Loop-Tests
 - `vJoy` oder `ViGEm` fuer echte analoge Lenk-, Gas- und Bremsprofile
 
-Siehe auch: `docs/proving_ground_scale.md`
+Siehe auch: `docs/track/proving_ground_scale.md`
 
 ## Custom BlackLake authoring
 
@@ -137,9 +137,12 @@ Wenn BlackLake als eigener rF2-Testtrack gebaut wird, erzeugt das Repo bereits
 die Quellgeometrie und das ModDev-Scaffold:
 
 ```powershell
-& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\python\blacklake_builder.py --all
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tracks\blacklake\tools\blacklake_builder.py --all
 ```
 
 Die Details und Grenzen des lokalen Toolchains stehen in:
 
-- `docs/blacklake_authoring.md`
+- `docs/track/blacklake_authoring.md`
+
+
+

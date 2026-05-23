@@ -22,8 +22,14 @@ Installed/
 Thumbs.db
 
 # Local downloads and extracted archives
-tools/downloads/
-tools/cache/
+bridge/downloads/
+tracks/blacklake/downloads/
+tracks/blacklake/cache/
+tyres/downloads/
+tyres/cache/
+tyres/output/
+input/.~lock*
+tyres/input/ods/.~lock*
 *.sqlite-journal
 *.sqlite-shm
 *.sqlite-wal

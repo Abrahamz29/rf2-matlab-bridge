@@ -1,0 +1,433 @@
+﻿# TGM Generator Port
+
+Ziel ist ein MATLAB-basierter Nachbau des offiziellen Studio-397
+`TGM Gen V0.33` mit moderner `uihtml`-Oberflaeche. `LookupV2` und `PatchV1`
+werden bewusst nicht berechnet; diese Abschnitte bleiben Aufgabe von tTool.
+
+## Referenz erzeugen
+
+Die ODS liegt lokal unter:
+
+```text
+tyres\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods
+```
+
+Referenzdateien aus den gespeicherten ODS-Exportzellen rekonstruieren:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\tgm_gen_ods.py `
+  --ods ".\tyres\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  export-reference --out-dir .\tmp\tgm_gen_port --json
+```
+
+Erzeugt:
+
+- `tmp\tgm_gen_port\reference_from_ods.tgm`
+- `tmp\tgm_gen_port\reference_from_ods.tbc`
+- `tmp\tgm_gen_port\tgm_gen_ods_report.json`
+
+Generierte Dateien aus dem aktuellen Formel-Harness schreiben:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\tgm_gen_ods.py `
+  --ods ".\tyres\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  generate --out-dir .\tmp\tgm_gen_port --mode recursive --json
+```
+
+Erzeugt:
+
+- `tmp\tgm_gen_port\generated.tgm`
+- `tmp\tgm_gen_port\generated.tbc`
+
+## MATLAB UI starten
+
+```matlab
+setup_rf2_matlab()
+rf2TgmGeneratorApp("tyres/cache/tgm/BFGoodrich_g-ForceR1_225-50-R16x7__c2bfff1f1528.tgm")
+```
+
+Die UI zeigt TGM-Zusammenfassung, Querschnitt, Materialpunkte, Materialtabelle,
+ODS-Inputmodell und Plotdaten. Bekannte Reifen aus `tyres\cache\tgm`
+koennen direkt oben in der Toolbar per Dropdown geladen werden. Das
+vollstaendige ODS-Input-Modell wird beim
+Start geladen: 28.254 Nichtformel-Zellen aus `General`, `Geometry`,
+`Construction`, `Compound`, `Realtime`, `WLF`, `ContactProps`, `LoadSens`,
+`Materials` und `TBC`. Die Input-Ansicht nutzt echte Sheet-Tabs und eine
+ODS-artige Zeilen-/Spaltenmatrix, damit Eingaben, Labels und Hilfswerte in
+der gleichen Nachbarschaft wie in der Referenzdatei sichtbar bleiben. Suche,
+zeilenbasierte Pagination und der optionale `Likely editable`-Filter halten
+auch grosse Sheets wie `Compound` erreichbar; auf extrem breiten Seiten werden
+komplett leere Spaltengaps pro Zeilenseite komprimiert. Bearbeitete Inputs koennen als
+`tmp\tgm_gen_port_ui\inputs_from_ui.json` gespeichert, wieder geladen und mit
+`Generate From Inputs` rekursiv exportiert werden.
+Der dateigleiche Acceptance-Test und der Full-Sheet-Formelreport bleiben als
+eigene Buttons vorhanden.
+
+## Akzeptanztest
+
+Der finale Port ist erst fertig, wenn MATLAB aus denselben ODS-Eingaben dieselbe
+`.tgm`- und `.tbc`-Ausgabe erzeugt:
+
+- `.tbc`: textgleich nach normalisierten Zeilenenden und trailing whitespace.
+- `.tgm`: textgleich nach normalisierten Zeilenenden und ohne `LookupV2` /
+  `PatchV1`.
+
+Der aktuelle Harness kann diesen Vergleich bereits ausfuehren:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\tgm_gen_ods.py `
+  compare .\tmp\tgm_gen_port\reference_from_ods.tgm .\tmp\tgm_gen_port\generated.tgm `
+  --strip-lookup --json
+```
+
+Aktueller harter Dateistand fuer die offizielle Beispiel-ODS:
+
+- `generated.tbc` ist textgleich zur ODS-Referenz.
+- `generated.tgm` ist textgleich zur ODS-Referenz, wenn nur `LookupV2` und
+  `PatchV1` ausgeschlossen werden.
+
+Aus MATLAB:
+
+```matlab
+setup_rf2_matlab()
+report = rf2TgmGenGenerate;
+assert(report.equal)
+```
+
+Als reproduzierbarer Regressionstest:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\test_tgm_gen_ods_acceptance.py --json
+```
+
+Oder als Windows-Runner mit kompaktem Konsolenstatus:
+
+```powershell
+.\tyres\tools\Invoke-TgmGenAcceptance.ps1
+```
+
+Der Test erzeugt Referenz und Kandidat neu, prueft `.tgm`/`.tbc` und laesst
+den rekursiven Full-Sheet-Formelreport ohne Fallback laufen. Zusaetzlich
+extrahiert er die editierbaren Projektinputs in `inputs.json`, speist diese
+unveraendert wieder in den Generator ein und vergleicht auch diesen
+Projekt-Roundtrip gegen die ODS-Referenz. Der Test prueft ausserdem die
+Style-/Editierklassifizierung, die ODS-Chartdatenextraktion und die strukturierte
+Materialbibliothek. Danach laeuft ein statischer UI-Smoke-Test, der die
+Toolbar-Buttons, JavaScript-Kommandos, MATLAB-Handler-Cases, Tabs und Inline-
+Handler auf Konsistenz prueft.
+
+tTool direkt nach einem erfolgreichen Acceptance-Lauf vorbereiten:
+
+```powershell
+.\tyres\tools\Invoke-TgmGenAcceptance.ps1 -PrepareTTool
+```
+
+Das kopiert die streng geprueften `generated.tgm` und `generated.tbc` als
+`generated_from_matlab.tgm` und `generated_from_matlab.tbc` nach `pTool` und
+verifiziert Quelle und Ziel per SHA256. Fuer isolierte Kopiertests oder
+abweichende Installationspfade:
+
+```powershell
+.\tyres\tools\Copy-TgmGenToPTool.ps1 `
+  -GeneratedDir .\tmp\tgm_gen_acceptance_test `
+  -PToolDir "C:\Program Files (x86)\Steam\steamapps\common\rFactor 2\pTool" `
+  -OutputBaseName generated_from_matlab
+```
+
+MATLAB-App-State zusaetzlich als echten Headless-Smoke pruefen:
+
+```powershell
+.\tyres\tools\Invoke-TgmGenAcceptance.ps1 -RunMatlabSmoke
+```
+
+Der Smoke ruft `rf2TgmGeneratorSmoke` auf, baut den App-State ohne Fenster auf
+und prueft Pflichtfelder, ODS-Chart-Inventar, Materialbibliothek und Status.
+
+tTool-Vorbereitung aus MATLAB:
+
+```matlab
+setup_rf2_matlab()
+prep = rf2TgmPrepareTTool;
+disp(prep.targetTgm)
+```
+
+Das erzeugt die geprueften Dateien neu und kopiert `generated_from_matlab.tgm`
+und `generated_from_matlab.tbc` in den rFactor-2-`pTool`-Ordner. `LookupV2` und
+`PatchV1` werden danach weiterhin in tTool erzeugt.
+
+ODS-Eingabezellen als Projektmodell extrahieren:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\tgm_gen_ods.py `
+  --ods ".\tyres\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  extract-inputs --out .\tmp\tgm_gen_port\inputs.json --json
+```
+
+Der Extractor schreibt Style-Metadaten, Hintergrundfarbe, Eingaberolle und
+Editier-Vertrauen pro Zelle. Fuer eine konservative Eingabeliste:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\tgm_gen_ods.py `
+  --ods ".\tyres\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  extract-inputs --editable-only --out .\tmp\tgm_gen_port\inputs_editable.json --json
+```
+
+Aus MATLAB:
+
+```matlab
+inputs = rf2TgmGenExtractInputs;
+editableInputs = rf2TgmGenExtractInputs("EditableOnly", true);
+```
+
+Eine bearbeitete Projektdatei kann im rekursiven Modus wieder eingespeist
+werden:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\tgm_gen_ods.py `
+  --ods ".\tyres\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  generate --out-dir .\tmp\tgm_gen_port_edit `
+  --mode recursive `
+  --project .\tmp\tgm_gen_port\inputs.json --json
+```
+
+## Formel-Harness
+
+Der aktuelle Port kann die ODS-Formeln inventarisieren, Zellabhaengigkeiten
+extrahieren und die relevanten Formeln rekursiv gegen gespeicherte ODS-Werte
+auswerten. `cached` bleibt als Diagnosemodus vorhanden, der Standardpfad ist
+aber der freie rekursive Zellgraph ohne Fallback.
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\tgm_gen_ods.py `
+  --ods ".\tyres\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  formula-report --sheets General Realtime Materials --mode recursive --json
+```
+
+Aus MATLAB:
+
+```matlab
+setup_rf2_matlab()
+report = rf2TgmGenFormulaReport("Sheets", ["General", "Realtime", "Materials"]);
+```
+
+Der Report enthaelt pro Sheet:
+
+- Anzahl der Formeln.
+- erkannte Abhaengigkeitskanten.
+- implementierte und noch fehlende Funktionsnamen.
+- ausgewertete Formeln, Matches, Abweichungen und Fehlerbeispiele.
+
+Aktueller Full-Sheet-Stand fuer die relevanten Sheets `About`, `General`,
+`Geometry`, `Construction`, `TGM`, `Compound`, `Realtime`, `WLF`,
+`ContactProps`, `LoadSens`, `Export`, `TBC`, `Materials`:
+
+- 80.882 Formeln erkannt.
+- 80.882 Formeln mit implementierten Funktionsnamen.
+- 80.882 Formeln ausfuehrbar.
+- 0 harte Evaluator-Fehler.
+- 4.091 Zellwert-Abweichungen bleiben im cached Zellwerttest, vor allem Anzeigeformatierung,
+  gerundete Displaywerte, LookupData-Ausschluss und ODS-iterative
+  Selbstreferenzen.
+
+Der alte cached Diagnosemodus kann bei Bedarf explizit genutzt werden:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\tgm_gen_ods.py `
+  --ods ".\tyres\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  formula-report --sheets General Realtime Materials --mode cached --json
+```
+
+Der rekursive Modus berechnet referenzierte Formelzellen neu und kann
+uebergangsweise einzelne unresolved dependency edges auf gespeicherte ODS-Werte
+zurueckfallen lassen. Fuer die offizielle Beispiel-ODS ist dieser Fallback nicht
+mehr noetig: der rekursive Modus laeuft ohne Fallback und ohne harte
+Formel-Fehler.
+
+Rekursiver Full-Sheet-Stand:
+
+- 80.882 Formeln erkannt.
+- 80.882 Formeln rekursiv ausfuehrbar.
+- 0 harte Evaluator-Fehler.
+- 0 Fallback-Kanten.
+- 4.842 Zellwert-Abweichungen bleiben gegen gespeicherte ODS-Displays.
+
+Aktueller rekursiver Exportstand:
+
+- `.tbc` ist rekursiv ohne Fallback textgleich zur ODS-Referenz.
+- `.tgm` ist rekursiv ohne Fallback textgleich zur ODS-Referenz, wenn nur
+  `LookupV2` und `PatchV1` ausgeschlossen werden.
+- Der unveraenderte Projekt-Roundtrip aus 28.254 extrahierten ODS-Eingabezellen
+  erzeugt dieselben `.tgm`-/`.tbc`-Dateien wie der direkte ODS-Lauf.
+
+Projektdateien aus `extract-inputs` wirken im rekursiven Modus als
+Zell-Overrides. Damit ist der Pfad fuer editierbare Eingaben vorhanden; der
+freie rekursive Export bleibt der Standardpfad.
+
+## ODS-Chart-Abdeckung
+
+Die eingebetteten Diagramme der offiziellen ODS werden aus den `Object */content.xml`
+Chart-Dateien inventarisiert. Der Report liefert Titel, Diagrammklasse,
+Serienanzahl und die exakten ODS-Quellbereiche pro Serie.
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\tgm_gen_ods.py `
+  --ods ".\tyres\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  chart-report --json
+```
+
+Aus MATLAB:
+
+```matlab
+charts = rf2TgmGenChartReport;
+disp(charts.chart_count)
+```
+
+Die Chart-Quellbereiche koennen auch rekursiv ausgewertet werden. Fehlerwerte
+aus der ODS wie `#DIV/0!` bleiben dabei als nichtnumerische Plotpunkte im
+Datensatz erhalten, damit die Extraktion nicht an bewusst leeren/ungueltigen
+Serienbereichen abbricht.
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\tgm_gen_ods.py `
+  --ods ".\tyres\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  chart-data --mode recursive --json
+```
+
+Aus MATLAB:
+
+```matlab
+chartData = rf2TgmGenChartData;
+disp(chartData.series_count)
+```
+
+Aktueller Stand fuer die offizielle Beispiel-ODS:
+
+- 12 eingebettete ODS-Charts.
+- 79 Datenserien.
+- 79 Datenserien werden rekursiv als Chartdaten ausgewertet.
+- Quellbereiche aus `Geometry`, `Construction`, `Compound`, `WLF`,
+  `ContactProps`, `LoadSens` und `TBC`.
+- Die UI zeigt diese Chart-Coverage im Tab `ODS Charts`; der Button
+  `Load ODS Chart Data` zeichnet die ausgewerteten ODS-Serien nach.
+
+## Materialbibliothek
+
+Das ODS-`Materials`-Sheet wird in eine strukturierte Bibliothek aus Kategorien,
+Materialnamen und temperaturabhaengigen Eigenschaftspunkten zerlegt:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\tgm_gen_ods.py `
+  --ods ".\tyres\downloads\studio397\TGM Gen V0.33 - GY F1 1975 Front.ods" `
+  material-library --json
+```
+
+Aus MATLAB:
+
+```matlab
+library = rf2TgmGenMaterialLibrary;
+disp(library.material_count)
+```
+
+Aktueller Stand fuer die offizielle Beispiel-ODS:
+
+- 130 Materialien.
+- 358 temperaturabhaengige Eigenschaftspunkte.
+- Kategorien fuer Ply, Tread, Tread-Sidewall, Bulk, Filler, Inner Liner und
+  Internal Gas.
+- Die UI zeigt die Bibliothek im Tab `Material Library` inklusive
+  E-Modul-ueber-Temperatur-Plot.
+
+## Dynamische LibreOffice-Diagnose
+
+LibreOffice ist lokal vorhanden, aber der Headless-Recalc dieser alten ODS ist
+aktuell keine verlaessliche Golden Reference: schon ein unveraenderter Recalc
+erzeugt im Export `#WERT!` und lokal formatierte Dezimalkommas. Damit bleibt
+der gespeicherte ODS-Export die harte Referenz. Fuer die Diagnose gibt es ein
+separates Tool:
+
+```powershell
+& "C:\Users\Victor\.platformio\penv\Scripts\python.exe" .\tyres\tools\diagnose_tgm_gen_lo_dynamic.py `
+  --set General!B3=278 --json
+```
+
+Mit `--strict` liefert das Tool einen Fehlercode, falls der dynamische
+LibreOffice-Vergleich nicht textgleich ist. Ohne `--strict` erzeugt es einen
+Diagnose-Report, damit der Zustand reproduzierbar bleibt.
+
+## Status
+
+Implementiert:
+
+- ODS-Inventar und Formula-Coverage-Report.
+- Formel-Harness fuer Zellreferenzen, benannte Bereiche, Array-Arithmetik,
+  Lazy-`IF`/`IFERROR`, `INDIRECT`/`ADDRESS`, Lookup-Funktionen, Kriterienfunktionen
+  und rekursive dependency evaluation.
+- Evaluierter Generatorpfad fuer `generated.tgm` und `generated.tbc`.
+- MATLAB-Wrapper `rf2TgmGenGenerate` fuer den finalen Datei-Akzeptanztest.
+- Rekursiver Formelmodus ohne Fallback fuer die offizielle Beispiel-ODS.
+- Port der originalen `Basic/Standard/CubSpline.xml`-Makrologik fuer
+  `CUBSPLINE` inklusive Numerical-Recipes-Spline und monotonem `SplineX3`.
+- ODS-Merge-/Span-Parser fuer korrekte Koordinaten von zusammengefuehrten
+  Eingabezellen.
+- Rekursive `.tgm`-/`.tbc`-Dateigleichheit ohne Fallback; `.tgm` ignoriert
+  nur die bewusst ausgeschlossenen `LookupV2`-/`PatchV1`-Bloecke.
+- ODS-Input-Projektmodell via `extract-inputs` und MATLAB-Wrapper
+  `rf2TgmGenExtractInputs`.
+- Style-/Farbklassifizierung fuer ODS-Eingabezellen inklusive
+  `--editable-only` und UI-Filter `Likely editable`.
+- Projekt-Override-Pfad fuer rekursive Generatorlaeufe (`--project`).
+- Regressionstest fuer unveraenderte Projektinputs: ODS -> `inputs.json` ->
+  rekursiver Export bleibt dateigleich zur ODS-Referenz.
+- Regressionstest fuer ODS-Chart-Inventar und ausgewertete Chartdaten.
+- Regressionstest fuer strukturierte ODS-Materialbibliothek.
+- PowerShell-Runner `tyres\tools\Invoke-TgmGenAcceptance.ps1` fuer den kompletten
+  Acceptance-Gate.
+- PowerShell-Runneroption `-PrepareTTool` und separates
+  `tyres\tools\Copy-TgmGenToPTool.ps1` mit SHA256-Verifikation fuer die
+  tTool-Uebergabe.
+- Statischer UI-Smoke-Test `tyres\tools\test_tgm_generator_ui_static.py`, eingebunden
+  in `tyres\tools\Invoke-TgmGenAcceptance.ps1`.
+- MATLAB-Headless-Smoke `rf2TgmGeneratorSmoke`, optional ueber
+  `tyres\tools\Invoke-TgmGenAcceptance.ps1 -RunMatlabSmoke`.
+- LibreOffice/UNO-Diagnose fuer dynamische ODS-Recalc-Vergleiche
+  (`diagnose_tgm_gen_lo_dynamic.py`); lokal nicht als Acceptance-Golden nutzbar,
+  weil Calc nach Recalc `#WERT!` in Exportzellen schreibt.
+- Rekonstruktion der gespeicherten ODS-`.tgm`- und `.tbc`-Exporttexte.
+- TGM-Parser, Roundtrip-Writer ohne generated Lookup/Patch.
+- Plotdaten fuer Nodes, Materialien, TreadDepth und PlyParams.
+- Behaviour-Plotdaten aus dem neuesten tTool `CustomRealtimeTable.csv`.
+- ODS-Chart-Inventory mit Serien-/Quellbereichsauswertung und MATLAB-Wrapper
+  `rf2TgmGenChartReport`.
+- Rekursive ODS-Chartdatenextraktion mit MATLAB-Wrapper `rf2TgmGenChartData`.
+- Strukturierte ODS-Materialbibliothek mit MATLAB-Wrapper
+  `rf2TgmGenMaterialLibrary`.
+- Moderne MATLAB-`uihtml`-App-Shell mit ersten Plots und Acceptance-Test-Button.
+- UI-Tabelle fuer alle extrahierten ODS-Eingabezellen mit echten Excel-Sheet-
+  Tabs, `Generate From Inputs`, Suche und Pagination.
+- UI-Projektpersistenz fuer bearbeitete Inputs (`Save Project` / `Load Project`).
+- UI-Button `Run Formula Report` fuer den rekursiven Full-Sheet-Formelreport.
+- UI-Behaviour-Plots fuer `Fy` ueber Schraeglaufwinkel, `Fx` ueber Slip Ratio
+  und Kraftverlauf ueber Realtime-Testindex.
+- Achsenbeschriftungen, Ticks, Einheiten und Legenden fuer alle SVG-Plots.
+- Reifenquerschnitt mit gleichem Meter-Massstab auf horizontaler und vertikaler
+  Achse, damit Hoehe/Breite physikalisch plausibel bleiben.
+- Gurtellagen-Plot mit getrenntem `plyIndex` je Node; die BFGoodrich-Referenz
+  enthaelt 277 Ply-Zeilen und maximal 6 Lagen.
+- Gurtellagen-Overlay im Reifenquerschnitt: `plyCrossSection` kombiniert
+  Node-Geometrie und kumulierte Ply-Dicken, damit die Layer direkt wie in der
+  ODS ueber dem Querschnitt sichtbar sind.
+- tTool-Vorbereitung aus MATLAB und UI: gepruefte `.tgm`/`.tbc` nach `pTool`
+  kopieren.
+
+Noch offen:
+
+- Eine externe dynamische Golden Reference nach Eingabeaenderungen. Der lokale
+  LibreOffice-Recalc ist diagnostiziert, aber wegen `#WERT!`-Exportwerten nicht
+  als harte Referenz geeignet.
+- UI-Feinschliff fuer eine vollstaendige Facharbeitsoberflaeche: Validierungs-
+  und Komfortfunktionen sind erweiterbar, der dateigleiche Rechen-/Exportkern
+  bleibt dabei das harte Gate.
+
+
+
+

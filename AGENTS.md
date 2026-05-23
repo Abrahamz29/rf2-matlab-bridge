@@ -9,20 +9,28 @@ live plotting, and automated driving experiments.
 
 - Keep changes scoped to telemetry, plotting, automation, documentation, and
   supporting tooling for this project.
-- Prefer the existing MATLAB/Python split:
-  - `python/` for bridge, shared-memory access, and automation runners
-  - `matlab/` for analysis, plotting, and experiment orchestration
+- Prefer domain-first folders over language-first folders:
+  - `bridge/` for shared-memory access, telemetry, automation runners, and
+    MATLAB/Python bridge code
+  - `tracks/blacklake/` for BlackLake assets, MATLAB controllers, Python
+    generators, package/export tooling, and track-local downloads/cache
   - `docs/` for operational notes and workflow documentation
-  - `scenarios/` for maneuver batches and experiment inputs
+  - `scenarios/` for vehicle/track maneuver batches and experiment inputs
+  - `tyres/` for TGM/TBC inputs, tyre databases, tyre references, tTool
+    scenarios, MATLAB apps, tools, generated lookup extracts, and local tyre
+    caches
 - Preserve user changes. Do not revert unrelated edits.
 - Verify changes with the narrowest relevant check before committing.
 
 ## Git Workflow
 
 - Initialize and maintain this directory as a Git repository.
-- Create a local commit after each meaningful, verified change set.
-- Push to the configured `origin` regularly after verified checkpoints and
-  before ending a larger work session.
+- Do not commit or push every small edit. Create a local commit only after an
+  important, verified checkpoint, such as a completed UI menu/page, a finished
+  parser feature, a database/schema update, a validated workflow milestone, or
+  a coherent documentation update.
+- Push to the configured `origin` after those verified checkpoints, before
+  ending a larger work session, or when the user explicitly asks for a push.
 - If no remote exists yet, prepare the repo locally and document the exact
   commands needed to add `origin` and push `main`.
 - Keep commit messages short and descriptive.
@@ -197,3 +205,4 @@ Source reference: https://motorlaps.com/tire-development-rfactor2.php
   justification.
 - Document every parameter choice and every test result. Because tTool runs are
   slow, changes must be traceable and reversible.
+

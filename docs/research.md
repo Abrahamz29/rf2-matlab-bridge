@@ -1,4 +1,4 @@
-# Recherche: rFactor 2 Telemetrie nach MATLAB
+﻿# Recherche: rFactor 2 Telemetrie nach MATLAB
 
 ## Direkt relevant und eingebunden
 
@@ -10,7 +10,7 @@
 
 - TonyWhitley/pyRfactor2SharedMemory
   - Python-ctypes-Mapping der rF2-Shared-Memory-Structs.
-  - Dient als Struct-Quelle fuer `python/rf2_matlab_bridge.py`.
+  - Dient als Struct-Quelle fuer `bridge/python/rf2_matlab_bridge.py`.
   - Lokal eingebunden unter `vendor/pyRfactor2SharedMemory`.
 
 - Domaslau/rF2SharedMemoryNet
@@ -41,3 +41,4 @@ Die MATLAB-Verbindung nutzt Python statt .NET oder direkter MATLAB-`memmapfile`,
 weil die rF2-Structs sehr gross und verschachtelt sind. Python/ctypes kann die
 vendorten Structs direkt lesen; MATLAB bekommt sauberes JSON und kann daraus
 normale Structs und Tabellen erstellen.
+
