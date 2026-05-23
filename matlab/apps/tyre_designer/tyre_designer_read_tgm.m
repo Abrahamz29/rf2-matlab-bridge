@@ -1,11 +1,11 @@
-function model = rf2TgmGeometryReadTgmImpl(path)
-%RF2TGMGEOMETRYREADTGMIMPL Read a rFactor 2 TGM file into a MATLAB struct.
+function model = tyre_designer_read_tgm(path)
+%TYRE_DESIGNER_READ_TGM Read a rFactor 2 TGM file into a MATLAB struct.
 arguments
     path (1,1) string
 end
 
 if ~isfile(path)
-    error("rf2TgmGeometryReadTgmImpl:FileNotFound", "TGM file not found: %s", path);
+    error("tyre_designer_read_tgm:FileNotFound", "TGM file not found: %s", path);
 end
 
 rawText = fileread(path);

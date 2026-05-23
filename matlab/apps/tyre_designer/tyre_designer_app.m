@@ -1,5 +1,5 @@
-function app = rf2TgmGeometryAppImpl(inputPath, options)
-%RF2TGMGEOMETRYAPPIMPL Open the lightweight Geometry-only TGM UI.
+function app = tyre_designer_app(inputPath, options)
+%TYRE_DESIGNER_APP Open the lightweight tyre designer UI.
 arguments
     inputPath (1,1) string = ""
     options.Headless (1,1) logical = false
@@ -11,9 +11,9 @@ if options.Headless
     return;
 end
 
-fig = uifigure("Name", "rF2 TGM Geometry", "Position", [120 90 1280 760]);
+fig = uifigure("Name", "tyre_designer", "Position", [120 90 1280 760]);
 html = uihtml(fig, ...
-    "HTMLSource", fullfile(fileparts(mfilename("fullpath")), "assets", "rf2_tgm_geometry.html"), ...
+    "HTMLSource", fullfile(fileparts(mfilename("fullpath")), "assets", "tyre_designer.html"), ...
     "Position", [1 1 1280 760]);
 html.Data = state;
 html.DataChangedFcn = @(src, event) localHandleCommand(src, event); %#ok<INUSD>
@@ -34,8 +34,8 @@ state.database = localDatabaseInfo();
 state.tyres = localListKnownTyres(inputPath);
 
 if inputPath ~= "" && isfile(inputPath)
-    model = rf2TgmGeometryReadTgmImpl(inputPath);
-    plotData = rf2TgmGeometryPlotDataImpl(model);
+    model = tyre_designer_read_tgm(inputPath);
+    plotData = tyre_designer_plot_data(model);
     state.loaded = true;
     state.status = "loaded";
     state.message = "Loaded " + string(model.fileName);
@@ -69,7 +69,7 @@ end
 end
 
 function info = localDatabaseInfo()
-dbPath = fullfile(rf2TgmGeometryProjectRoot(), "scenarios", "tyre", "database", "rf2_tyre_database.sqlite");
+dbPath = fullfile(tyre_designer_project_root(), "scenarios", "tyre", "database", "rf2_tyre_database.sqlite");
 info = struct();
 info.path = string(dbPath);
 info.available = isfile(dbPath) && exist("sqlite", "file") == 6;
@@ -80,7 +80,7 @@ end
 end
 
 function tyres = localListKnownTyres(inputPath)
-dbPath = fullfile(rf2TgmGeometryProjectRoot(), "scenarios", "tyre", "database", "rf2_tyre_database.sqlite");
+dbPath = fullfile(tyre_designer_project_root(), "scenarios", "tyre", "database", "rf2_tyre_database.sqlite");
 selectedPath = localNormalizePath(inputPath);
 try
     tyres = localListDatabaseTyres(dbPath, selectedPath);
@@ -119,7 +119,7 @@ end
 end
 
 function tyres = localListCachedTyres(selectedPath)
-tgmRoot = fullfile(rf2TgmGeometryProjectRoot(), "tools", "cache", "tyres", "tgm");
+tgmRoot = fullfile(tyre_designer_project_root(), "tools", "cache", "tyres", "tgm");
 files = dir(fullfile(tgmRoot, "*.tgm"));
 tyres = localEmptyTyres();
 
@@ -164,7 +164,7 @@ end
 
 pathText = char(path);
 if isempty(regexp(pathText, "^[A-Za-z]:[\\/]|^\\\\", "once"))
-    pathText = fullfile(rf2TgmGeometryProjectRoot(), pathText);
+    pathText = fullfile(tyre_designer_project_root(), pathText);
 end
 path = string(pathText);
 end
@@ -178,7 +178,7 @@ end
 
 pathText = char(path);
 if isempty(regexp(pathText, "^[A-Za-z]:[\\/]|^\\\\", "once"))
-    pathText = fullfile(rf2TgmGeometryProjectRoot(), pathText);
+    pathText = fullfile(tyre_designer_project_root(), pathText);
 end
 
 info = dir(pathText);

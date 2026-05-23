@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Static smoke checks for the lightweight MATLAB TGM Geometry UI."""
+"""Static smoke checks for the lightweight MATLAB tyre_designer UI."""
 
 from __future__ import annotations
 
@@ -10,22 +10,20 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-APP_DIR = REPO_ROOT / "matlab" / "apps" / "tgm_geometry"
-HTML_PATH = APP_DIR / "assets" / "rf2_tgm_geometry.html"
-IMPL_PATH = APP_DIR / "rf2TgmGeometryAppImpl.m"
-WRAPPER_PATH = REPO_ROOT / "matlab" / "rf2TgmGeometryApp.m"
-PATH_WRAPPER_PATH = REPO_ROOT / "matlab" / "rf2TgmGeometryAppPath.m"
+APP_DIR = REPO_ROOT / "matlab" / "apps" / "tyre_designer"
+HTML_PATH = APP_DIR / "assets" / "tyre_designer.html"
+IMPL_PATH = APP_DIR / "tyre_designer_app.m"
+ENTRY_PATH = REPO_ROOT / "matlab" / "tyre_designer.m"
 
 
 def run_check() -> dict:
     html = HTML_PATH.read_text(encoding="utf-8")
     impl = IMPL_PATH.read_text(encoding="utf-8")
-    wrapper = WRAPPER_PATH.read_text(encoding="utf-8")
-    path_wrapper = PATH_WRAPPER_PATH.read_text(encoding="utf-8")
+    entry = ENTRY_PATH.read_text(encoding="utf-8")
     function_names = set(re.findall(r"\bfunction\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", html))
     errors: list[str] = []
 
-    for path in [HTML_PATH, IMPL_PATH, WRAPPER_PATH, PATH_WRAPPER_PATH]:
+    for path in [HTML_PATH, IMPL_PATH, ENTRY_PATH]:
         if not path.is_file():
             errors.append(f"missing file: {path.relative_to(REPO_ROOT)}")
 
@@ -49,9 +47,9 @@ def run_check() -> dict:
     for marker in [
         "sqlite(dbPath, \"readonly\")",
         "from tyres order by display_name",
-        "rf2TgmGeometryReadTgmImpl(inputPath)",
-        "rf2TgmGeometryPlotDataImpl(model)",
-        "rf2TgmGeometryProjectRoot()",
+        "tyre_designer_read_tgm(inputPath)",
+        "tyre_designer_plot_data(model)",
+        "tyre_designer_project_root()",
         "encoded.rubberCrossSection",
     ]:
         if marker not in impl:
@@ -65,21 +63,28 @@ def run_check() -> dict:
         "localLoadChartReport",
     ]:
         if forbidden in impl:
-            errors.append(f"Geometry UI still depends on slow ODS path: {forbidden}")
+            errors.append(f"tyre_designer still depends on slow ODS path: {forbidden}")
 
-    if "rf2TgmGeometryAppImpl" not in wrapper:
-        errors.append("wrapper does not call rf2TgmGeometryAppImpl")
-    if "rf2TgmGeometryAppPath()" not in wrapper:
-        errors.append("wrapper does not call rf2TgmGeometryAppPath")
-    if '"apps", "tgm_geometry"' not in path_wrapper:
-        errors.append("path wrapper does not target apps/tgm_geometry")
-    if "rf2TgmAppPath" in wrapper or "tgm_generator" in impl:
-        errors.append("Geometry UI still references the old tgm_generator app path")
+    if "function varargout = tyre_designer(varargin)" not in entry:
+        errors.append("missing clean tyre_designer entrypoint")
+    if '"apps", "tyre_designer"' not in entry:
+        errors.append("entrypoint does not target apps/tyre_designer")
+    forbidden_names = [
+        "rf2TgmGeometry",
+        "rf2TyreDesigner",
+        "tgm_geometry",
+        "tgm_generator",
+        "rf2TgmAppPath",
+    ]
+    for forbidden_name in forbidden_names:
+        if forbidden_name in impl or forbidden_name in entry:
+            errors.append(f"legacy app reference remains: {forbidden_name}")
 
     return {
         "passed": not errors,
         "html": str(HTML_PATH.relative_to(REPO_ROOT)),
         "matlab_impl": str(IMPL_PATH.relative_to(REPO_ROOT)),
+        "entrypoint": str(ENTRY_PATH.relative_to(REPO_ROOT)),
         "errors": errors,
     }
 

@@ -1,5 +1,5 @@
-function plotData = rf2TgmGeometryPlotDataImpl(model)
-%RF2TGMGEOMETRYPLOTDATAIMPL Build plot-friendly arrays from a TGM model.
+function plotData = tyre_designer_plot_data(model)
+%TYRE_DESIGNER_PLOT_DATA Build plot-friendly arrays from a TGM model.
 arguments
     model (1,1) struct
 end

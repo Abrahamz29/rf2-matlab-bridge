@@ -1,13 +1,13 @@
-# TGM Geometry App
+# tyre_designer
 
 Standalone lightweight MATLAB `uihtml` app for browsing cached rFactor 2 TGM
-tyres and plotting only the tyre geometry/cross-section.
+tyres and plotting the tyre geometry/cross-section.
 
 Start from the repository root:
 
 ```matlab
 addpath("matlab")
-rf2TgmGeometryApp
+tyre_designer
 ```
 
 This app reads the tyre database at
