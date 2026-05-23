@@ -91,8 +91,9 @@ end
 
 function layerTable = localBuildPlyCrossSection(geometry, plyParams)
 if isempty(geometry) || isempty(plyParams)
-    layerTable = table([], [], [], [], [], [], [], ...
-        'VariableNames', {'nodeIndex', 'plyIndex', 'x', 'y', 'angleDeg', 'thicknessM', 'offsetM'});
+    layerTable = table([], [], [], [], [], [], [], [], [], [], [], [], ...
+        'VariableNames', {'nodeIndex', 'plyIndex', 'segmentIndex', 'x', 'y', ...
+        'innerX', 'innerY', 'outerX', 'outerY', 'angleDeg', 'thicknessM', 'offsetM'});
     return;
 end
 
@@ -112,20 +113,48 @@ for nodeRow = 1:height(geometry)
         if isnan(thickness)
             thickness = 0;
         end
-        offset = cumulativeThickness + 0.5 * thickness;
+        innerOffset = cumulativeThickness;
+        outerOffset = cumulativeThickness + thickness;
+        offset = innerOffset + 0.5 * thickness;
         xy = points(nodeRow, :) + normal(nodeRow, :) * offset;
-        rows(end + 1, :) = {node, plyParams.plyIndex(rowIndex), xy(1), xy(2), ...
+        innerXy = points(nodeRow, :) + normal(nodeRow, :) * innerOffset;
+        outerXy = points(nodeRow, :) + normal(nodeRow, :) * outerOffset;
+        rows(end + 1, :) = {node, plyParams.plyIndex(rowIndex), NaN, xy(1), xy(2), ...
+            innerXy(1), innerXy(2), outerXy(1), outerXy(2), ...
             plyParams.angleDeg(rowIndex), thickness, offset}; %#ok<AGROW>
-        cumulativeThickness = cumulativeThickness + thickness;
+        cumulativeThickness = outerOffset;
     end
 end
 
 if isempty(rows)
-    layerTable = table([], [], [], [], [], [], [], ...
-        'VariableNames', {'nodeIndex', 'plyIndex', 'x', 'y', 'angleDeg', 'thicknessM', 'offsetM'});
+    layerTable = table([], [], [], [], [], [], [], [], [], [], [], [], ...
+        'VariableNames', {'nodeIndex', 'plyIndex', 'segmentIndex', 'x', 'y', ...
+        'innerX', 'innerY', 'outerX', 'outerY', 'angleDeg', 'thicknessM', 'offsetM'});
 else
     layerTable = cell2table(rows, ...
-        'VariableNames', {'nodeIndex', 'plyIndex', 'x', 'y', 'angleDeg', 'thicknessM', 'offsetM'});
+        'VariableNames', {'nodeIndex', 'plyIndex', 'segmentIndex', 'x', 'y', ...
+        'innerX', 'innerY', 'outerX', 'outerY', 'angleDeg', 'thicknessM', 'offsetM'});
+    layerTable.segmentIndex = localLayerSegmentIndex(layerTable.nodeIndex, layerTable.plyIndex);
+end
+end
+
+function segmentIndex = localLayerSegmentIndex(nodeIndex, plyIndex)
+segmentIndex = nan(numel(nodeIndex), 1);
+layers = unique(plyIndex(~isnan(plyIndex)));
+for layer = reshape(layers, 1, [])
+    rows = find(plyIndex == layer);
+    [~, order] = sort(nodeIndex(rows));
+    layerRows = rows(order);
+    segment = 1;
+    previousNode = NaN;
+    for row = reshape(layerRows, 1, [])
+        node = nodeIndex(row);
+        if ~isnan(previousNode) && node > previousNode + 1
+            segment = segment + 1;
+        end
+        segmentIndex(row) = segment;
+        previousNode = node;
+    end
 end
 end
 

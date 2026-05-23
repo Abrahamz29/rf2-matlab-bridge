@@ -1289,7 +1289,15 @@
       if (!points.length) return;
       const layerPoints = (layerRows || []).filter(row => Number.isFinite(Number(row.x)) && Number.isFinite(Number(row.y)));
       const pointsMm = points.map(p => ({ ...p, xMm: Number(p.x) * 1000, yMm: Number(p.y) * 1000 }));
-      const layerPointsMm = layerPoints.map(p => ({ ...p, xMm: Number(p.x) * 1000, yMm: Number(p.y) * 1000 }));
+      const layerPointsMm = layerPoints.map(p => ({
+        ...p,
+        xMm: Number(p.x) * 1000,
+        yMm: Number(p.y) * 1000,
+        innerXMm: Number(p.innerX) * 1000,
+        innerYMm: Number(p.innerY) * 1000,
+        outerXMm: Number(p.outerX) * 1000,
+        outerYMm: Number(p.outerY) * 1000
+      }));
       const xs = pointsMm.map(p => p.xMm).concat(layerPointsMm.map(p => p.xMm));
       const ys = pointsMm.map(p => p.yMm).concat(layerPointsMm.map(p => p.yMm));
       const frame = makePlotFrame(svg, xs, ys, "Radial coordinate X [mm]", "Lateral coordinate Y [mm]", { equalScale: true, title: "Equal millimetre scale" });
@@ -1307,10 +1315,61 @@
         const subset = rows
           .filter(row => Number(row.plyIndex || 1) === layer)
           .sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex));
-        const path = subset.map((row, pointIndex) => `${pointIndex ? "L" : "M"}${frame.sx(Number(row.xMm)).toFixed(1)},${frame.sy(Number(row.yMm)).toFixed(1)}`).join(" ");
-        svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${PLOT_COLORS[index % PLOT_COLORS.length]}" stroke-width="1.6"><title>Layer ${layer}</title></path>`);
+        const color = PLOT_COLORS[index % PLOT_COLORS.length];
+        splitContinuousLayerSegments(subset).forEach(segment => {
+          if (segment.length < 2) return;
+          const bandPath = layerBandPath(segment, frame);
+          if (bandPath) {
+            svg.insertAdjacentHTML("beforeend", `<path d="${bandPath}" fill="${color}" fill-opacity="0.16" stroke="${color}" stroke-opacity="0.35" stroke-width="0.8"><title>Layer ${layer} thickness</title></path>`);
+          }
+          const path = pointPath(segment, frame, "xMm", "yMm");
+          svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${color}" stroke-width="1.3"><title>Layer ${layer} centreline</title></path>`);
+        });
       });
       drawLegend(svg, layers.map((layer, index) => ({ label: `Layer ${layer}`, color: PLOT_COLORS[index % PLOT_COLORS.length] })));
+    }
+
+    function splitContinuousLayerSegments(rows) {
+      const segments = [];
+      let current = [];
+      let previousNode = NaN;
+      let previousSegment = NaN;
+      rows.forEach(row => {
+        const node = Number(row.nodeIndex);
+        const segment = Number(row.segmentIndex);
+        const hasGap = Number.isFinite(previousNode) && Number.isFinite(node) && node > previousNode + 1;
+        const segmentChanged = Number.isFinite(previousSegment) && Number.isFinite(segment) && segment !== previousSegment;
+        if (current.length && (hasGap || segmentChanged)) {
+          segments.push(current);
+          current = [];
+        }
+        current.push(row);
+        previousNode = node;
+        previousSegment = segment;
+      });
+      if (current.length) segments.push(current);
+      return segments;
+    }
+
+    function pointPath(rows, frame, xKey, yKey) {
+      return rows
+        .filter(row => Number.isFinite(Number(row[xKey])) && Number.isFinite(Number(row[yKey])))
+        .map((row, pointIndex) => `${pointIndex ? "L" : "M"}${frame.sx(Number(row[xKey])).toFixed(1)},${frame.sy(Number(row[yKey])).toFixed(1)}`)
+        .join(" ");
+    }
+
+    function layerBandPath(rows, frame) {
+      const hasEdges = rows.every(row =>
+        Number.isFinite(Number(row.innerXMm)) &&
+        Number.isFinite(Number(row.innerYMm)) &&
+        Number.isFinite(Number(row.outerXMm)) &&
+        Number.isFinite(Number(row.outerYMm)));
+      if (!hasEdges) return "";
+      const innerPath = pointPath(rows, frame, "innerXMm", "innerYMm");
+      const outerPath = rows.slice().reverse()
+        .map(row => `L${frame.sx(Number(row.outerXMm)).toFixed(1)},${frame.sy(Number(row.outerYMm)).toFixed(1)}`)
+        .join(" ");
+      return `${innerPath} ${outerPath} Z`;
     }
 
     function drawMaterials(rows, targetId) {
