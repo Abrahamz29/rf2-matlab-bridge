@@ -1,50 +1,9 @@
-function report = rf2TgmGenFormulaReport(options)
-%RF2TGMGENFORMULAREPORT Run the ODS formula harness for selected sheets.
-arguments
-    options.OdsPath (1,1) string = fullfile("tools", "downloads", "studio397", "TGM Gen V0.33 - GY F1 1975 Front.ods")
-    options.Sheets string = ["General", "Realtime", "Materials"]
-    options.Mode (1,1) string {mustBeMember(options.Mode, ["cached", "recursive"])} = "recursive"
-    options.FallbackOnError (1,1) logical = false
-    options.ProjectPath (1,1) string = ""
-    options.PythonExe (1,1) string = ""
+function varargout = rf2TgmGenFormulaReport(varargin)
+%RF2TGMGENFORMULAREPORT Compatibility wrapper for the TGM Generator app implementation.
+rf2TgmAppPath();
+if nargout == 0
+    rf2TgmGenFormulaReportImpl(varargin{:});
+else
+    [varargout{1:nargout}] = rf2TgmGenFormulaReportImpl(varargin{:});
 end
-
-pythonExe = options.PythonExe;
-if pythonExe == ""
-    pythonExe = localFindPython();
-end
-
-sheetArgs = strjoin("""" + options.Sheets + """", " ");
-scriptPath = fullfile("tools", "tgm_gen_ods.py");
-fallbackArg = "";
-if options.FallbackOnError
-    fallbackArg = " --fallback-on-error";
-end
-projectArg = "";
-if options.ProjectPath ~= ""
-    projectArg = " --project """ + options.ProjectPath + """";
-end
-command = sprintf('"%s" "%s" --ods "%s" formula-report --sheets %s --mode %s%s%s --json', ...
-    pythonExe, scriptPath, options.OdsPath, sheetArgs, options.Mode, fallbackArg, projectArg);
-[status, output] = system(command);
-if status ~= 0
-    error("rf2TgmGenFormulaReport:CommandFailed", "Formula report failed:\n%s", output);
-end
-report = jsondecode(output);
-end
-
-function pythonExe = localFindPython()
-candidates = [
-    fullfile(getenv("USERPROFILE"), ".platformio", "penv", "Scripts", "python.exe")
-    "python"
-    "py"
-];
-for index = 1:numel(candidates)
-    [status, ~] = system(sprintf('"%s" --version', candidates(index)));
-    if status == 0
-        pythonExe = candidates(index);
-        return;
-    end
-end
-error("rf2TgmGenFormulaReport:PythonNotFound", "Could not find a Python executable.");
 end

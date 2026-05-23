@@ -11,8 +11,9 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-HTML_PATH = REPO_ROOT / "matlab" / "assets" / "rf2_tgm_generator.html"
-APP_PATH = REPO_ROOT / "matlab" / "rf2TgmGeneratorApp.m"
+APP_DIR = REPO_ROOT / "matlab" / "apps" / "tgm_generator"
+HTML_PATH = APP_DIR / "assets" / "rf2_tgm_generator.html"
+APP_PATH = APP_DIR / "rf2TgmGeneratorAppImpl.m"
 
 EXPECTED_BUTTON_COMMANDS = {
     "inputs-button": "loadOdsInputs",
