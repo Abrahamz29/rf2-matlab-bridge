@@ -29,7 +29,7 @@
     }
     .app {
       display: grid;
-      grid-template-rows: 58px 1fr 30px;
+      grid-template-rows: 58px 38px 1fr 30px;
       height: 100vh;
       min-width: 920px;
     }
@@ -73,7 +73,7 @@
       font-weight: 650;
       text-align: right;
     }
-    select, button {
+    select, button, input[type="search"] {
       height: 31px;
       background: #0b0f13;
       color: var(--text);
@@ -85,6 +85,14 @@
       width: 100%;
       padding: 4px 8px;
     }
+    input[type="search"] {
+      width: 100%;
+      padding: 4px 9px;
+      outline: none;
+    }
+    input[type="search"]:focus {
+      border-color: var(--accent);
+    }
     button {
       background: var(--panel-2);
       cursor: pointer;
@@ -92,9 +100,38 @@
     button:hover, select:hover {
       border-color: var(--accent);
     }
+    .view-nav {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 14px;
+      border-bottom: 1px solid var(--line);
+      background: #10151a;
+    }
+    .view-tab {
+      height: 28px;
+      min-width: 106px;
+      padding: 0 14px;
+      border-color: transparent;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 650;
+    }
+    .view-tab:hover {
+      border-color: var(--line);
+      color: var(--text);
+    }
+    .view-tab.active {
+      border-color: var(--accent);
+      background: #142231;
+      color: var(--text);
+    }
     main {
       overflow: auto;
       padding: 14px;
+    }
+    .view-page[hidden] {
+      display: none !important;
     }
     .geometry-page {
       display: grid;
@@ -136,20 +173,517 @@
       font-size: 11px;
     }
     .plot-panel {
+      display: grid;
+      grid-template-rows: auto minmax(320px, 1fr);
+      gap: 8px;
       min-height: 360px;
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 7px;
       padding: 10px;
     }
-    svg {
+    .plot-toolbar {
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      color: var(--muted);
+    }
+    .plot-toolbar label {
+      min-width: 86px;
+      color: var(--text);
+      text-align: left;
+    }
+    .plot-toolbar .toggle {
+      min-width: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--muted);
+      font-weight: 650;
+      cursor: pointer;
+    }
+    .plot-toolbar input[type="checkbox"] {
+      accent-color: var(--accent);
+    }
+    .plot-toolbar input[type="range"] {
+      width: min(320px, 36vw);
+      accent-color: var(--accent);
+    }
+    .plot-toolbar input[type="range"]:disabled {
+      opacity: 0.42;
+    }
+    .plot-toolbar output {
+      min-width: 28px;
+      color: #b9d8f2;
+      font-weight: 700;
+      text-align: right;
+    }
+    .model-plot {
       display: block;
       width: 100%;
-      height: calc(100vh - 172px);
-      min-height: 360px;
+      height: calc(100vh - 248px);
+      min-height: 320px;
       background: #0b0f12;
       border: 1px solid var(--line);
       border-radius: 5px;
+    }
+    .node-explorer-page {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 12px;
+      height: calc(100vh - 154px);
+      min-height: 0;
+    }
+    .materials-page {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 12px;
+      height: calc(100vh - 154px);
+      min-height: 0;
+    }
+    .materials-workspace {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: minmax(300px, 0.82fr) minmax(560px, 2fr);
+      gap: 12px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 10px;
+      overflow: hidden;
+    }
+    .materials-browser {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto auto auto minmax(0, 1fr);
+      gap: 9px;
+      overflow: hidden;
+    }
+    .materials-browser-head,
+    .materials-plot-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .materials-browser-head h3,
+    .materials-plot-head h3 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .materials-browser-meta,
+    .materials-plot-meta {
+      color: var(--muted);
+      font-size: 10px;
+      text-align: right;
+    }
+    .material-filter {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 6px;
+      align-items: center;
+    }
+    .material-filter button {
+      min-width: 74px;
+      padding: 0 9px;
+      font-size: 11px;
+    }
+    .material-category-actions {
+      display: grid;
+      grid-template-columns: 1fr auto auto;
+      gap: 6px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 10px;
+    }
+    .material-category-actions button {
+      min-width: 58px;
+      height: 24px;
+      padding: 0 8px;
+      font-size: 11px;
+    }
+    .material-category-list {
+      min-height: 0;
+      max-height: none;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 5px;
+      overflow: visible;
+      padding-right: 2px;
+    }
+    .material-category-option {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 7px;
+      padding: 5px 7px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #0b0f12;
+      color: var(--text);
+      text-align: left;
+      cursor: pointer;
+    }
+    .material-category-option input,
+    .material-row input {
+      accent-color: var(--accent);
+    }
+    .material-category-option .name,
+    .material-row .name {
+      min-width: 0;
+      display: block;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      font-weight: 700;
+    }
+    .material-category-option .count,
+    .material-row .meta,
+    .material-row .range {
+      display: block;
+      color: var(--muted);
+      font-size: 10px;
+      white-space: nowrap;
+    }
+    .material-list {
+      min-height: 0;
+      overflow: auto;
+      display: grid;
+      align-content: start;
+      gap: 5px;
+      padding-right: 2px;
+    }
+    .material-row {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+      padding: 7px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #0b0f12;
+      cursor: pointer;
+    }
+    .material-row.selected {
+      border-color: var(--accent);
+      background: #102032;
+    }
+    .material-row .details {
+      min-width: 0;
+      display: grid;
+      gap: 1px;
+    }
+    .material-row .swatch {
+      width: 9px;
+      height: 28px;
+      border-radius: 3px;
+      border: 1px solid #0b0f12;
+    }
+    .materials-plot-panel {
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 9px;
+      overflow: hidden;
+    }
+    .materials-selection-summary {
+      min-height: 35px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-content: start;
+      overflow: hidden;
+    }
+    .materials-selected-chip {
+      min-width: 0;
+      max-width: 230px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 7px;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #0b0f12;
+      color: #dceaf7;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    button.materials-selected-chip {
+      cursor: pointer;
+      font: inherit;
+    }
+    button.materials-selected-chip:hover {
+      border-color: var(--accent);
+      background: #102032;
+    }
+    .materials-selected-chip .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      flex: none;
+    }
+    .materials-selected-chip .text {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .materials-plot-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(260px, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .materials-empty {
+      min-height: 0;
+      display: grid;
+      place-items: center;
+      color: var(--muted);
+      background: #0b0f12;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      padding: 18px;
+      text-align: center;
+    }
+    .node-explorer-grid {
+      display: grid;
+      grid-template-columns: minmax(360px, 1fr) minmax(360px, 1fr);
+      grid-template-rows: minmax(0, 0.47fr) minmax(0, 0.53fr);
+      gap: 12px;
+      min-height: 0;
+      height: 100%;
+    }
+    .node-overview-panel {
+      grid-column: 1;
+      grid-row: 1;
+      min-width: 0;
+      min-height: 0;
+    }
+    .node-explorer-plot {
+      height: 100%;
+      min-height: 0;
+    }
+    .node-explorer-plot:focus {
+      outline: 1px solid var(--accent);
+      outline-offset: 2px;
+    }
+    .node-detail-panel {
+      grid-column: 1;
+      grid-row: 2;
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 8px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 10px;
+    }
+    .node-detail-head {
+      min-height: 30px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .node-detail-head h3 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .node-detail-tools {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+    }
+    .node-display-toggles {
+      display: inline-grid;
+      grid-auto-flow: column;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      overflow: hidden;
+      background: #0b0f13;
+    }
+    .node-display-toggles button {
+      height: 25px;
+      min-width: 52px;
+      padding: 0 9px;
+      border: 0;
+      border-right: 1px solid var(--line);
+      border-radius: 0;
+      background: transparent;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .node-display-toggles button:last-child {
+      border-right: 0;
+    }
+    .node-display-toggles button.active {
+      background: #142231;
+      color: var(--text);
+    }
+    .node-display-toggles button:not(.active) {
+      opacity: 0.55;
+    }
+    .node-detail-tools label {
+      min-width: 82px;
+      color: var(--text);
+      text-align: left;
+    }
+    .node-detail-tools input[type="range"] {
+      width: min(220px, 18vw);
+      accent-color: var(--accent);
+    }
+    .node-detail-tools output {
+      min-width: 28px;
+      color: #b9d8f2;
+      font-weight: 700;
+      text-align: right;
+    }
+    .node-detail-plot {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      background: #0b0f12;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+    }
+    .material-teardown-panel {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      min-width: 0;
+      min-height: 0;
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr);
+      gap: 10px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 10px;
+      overflow: hidden;
+    }
+    .material-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .material-head h3 {
+      margin: 0;
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .material-note {
+      color: var(--muted);
+      font-size: 10px;
+      text-align: right;
+    }
+    .material-summary {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .material-recognition {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      min-height: 26px;
+    }
+    .material-match-chip {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #0b0f12;
+      padding: 5px 7px;
+      overflow: hidden;
+    }
+    .material-match-chip .kind,
+    .material-match-chip .name,
+    .material-match-chip .meta {
+      display: block;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .material-match-chip .kind {
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+    }
+    .material-match-chip .name {
+      color: #dceaf7;
+      font-size: 10.5px;
+      font-weight: 700;
+    }
+    .material-match-chip .meta {
+      color: #b9d8f2;
+      font-size: 9px;
+    }
+    .material-chip {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #0b0f12;
+      padding: 6px 7px;
+    }
+    button.material-chip {
+      cursor: pointer;
+      text-align: left;
+      font: inherit;
+    }
+    button.material-chip:hover {
+      border-color: var(--accent);
+    }
+    .material-chip.inactive {
+      opacity: 0.42;
+      background: #11161b;
+    }
+    .material-chip .name {
+      color: #dceaf7;
+      font-weight: 700;
+      font-size: 11px;
+    }
+    .material-chart-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(210px, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      grid-auto-rows: minmax(0, 1fr);
+      gap: 8px;
+      min-height: 0;
+      overflow: hidden;
+      padding-right: 2px;
+    }
+    .material-chart {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+      background: #0b0f12;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+    }
+    .material-series-toggle {
+      cursor: pointer;
+    }
+    .empty-panel {
+      min-height: 320px;
+      background: #0b0f12;
+      border: 1px solid var(--line);
+      border-radius: 7px;
     }
     .axis line, .axis path {
       stroke: #617286;
@@ -163,6 +697,37 @@
       fill: #dceaf7;
       font-size: 11px;
       font-weight: 650;
+    }
+    .callout {
+      cursor: pointer;
+    }
+    .node-layer-guide {
+      stroke: #dceaf7;
+      stroke-width: 0.55;
+      stroke-opacity: 0.3;
+      stroke-dasharray: 2 3;
+      pointer-events: none;
+    }
+    .node-label {
+      fill: #e6edf3;
+      font-size: 8.5px;
+      font-weight: 650;
+      paint-order: stroke;
+      stroke: #0b0f12;
+      stroke-width: 3px;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+    .node-marker {
+      cursor: pointer;
+    }
+    .node-selection-box {
+      fill: #4fb3ff;
+      fill-opacity: 0.14;
+      stroke: #4fb3ff;
+      stroke-width: 1;
+      stroke-dasharray: 4 3;
+      pointer-events: none;
     }
     .axis-label {
       font-size: 13px;
@@ -191,15 +756,75 @@
       <button id="reload-button" type="button">Reload</button>
       <button id="ping-button" type="button">Ping MATLAB</button>
     </header>
+    <nav class="view-nav" aria-label="Tyre designer views">
+      <button class="view-tab active" type="button" data-view="model">Model View</button>
+      <button class="view-tab" type="button" data-view="node-explorer">Node Explorer</button>
+      <button class="view-tab" type="button" data-view="materials">Materials</button>
+    </nav>
     <main>
-      <section class="geometry-page">
+      <section id="model-view" class="geometry-page view-page">
         <div class="page-head">
           <h2>Geometry</h2>
           <div id="metrics" class="metrics"></div>
         </div>
         <div class="plot-panel">
-          <svg id="geometry-plot" viewBox="0 0 1100 520" preserveAspectRatio="none" aria-label="Tyre geometry plot"></svg>
+          <div class="plot-toolbar" aria-label="Geometry view controls">
+            <label for="layer-explode-slider">Layer spread</label>
+            <input id="layer-explode-slider" type="range" min="0" max="100" step="1" value="0" />
+            <label class="toggle" for="layer-explode-enabled">
+              <input id="layer-explode-enabled" type="checkbox" checked />
+              On
+            </label>
+            <output id="layer-explode-value" for="layer-explode-slider">0</output>
+          </div>
+          <svg id="geometry-plot" class="model-plot" viewBox="0 0 1100 520" preserveAspectRatio="none" aria-label="Tyre geometry plot"></svg>
         </div>
+      </section>
+      <section id="node-explorer-view" class="node-explorer-page view-page" hidden>
+        <div class="page-head">
+          <h2>Node Explorer</h2>
+        </div>
+        <div class="node-explorer-grid">
+          <div class="node-overview-panel">
+            <svg id="node-explorer-plot" class="model-plot node-explorer-plot" viewBox="0 0 1100 520" preserveAspectRatio="none" tabindex="0" aria-label="Node explorer tyre overview"></svg>
+          </div>
+          <div class="node-detail-panel">
+            <div class="node-detail-head">
+              <h3 id="node-detail-title">Node</h3>
+              <div class="node-detail-tools" aria-label="Node detail controls">
+                <div class="node-display-toggles" aria-label="Node section display">
+                  <button type="button" data-node-display-target="layers" aria-pressed="true">Layer</button>
+                  <button type="button" data-node-display-target="rest" aria-pressed="true">Rest</button>
+                </div>
+                <label for="node-layer-spread-slider">Node spread</label>
+                <input id="node-layer-spread-slider" type="range" min="0" max="100" step="1" value="100" />
+                <output id="node-layer-spread-value" for="node-layer-spread-slider">100</output>
+              </div>
+            </div>
+            <svg id="node-detail-plot" class="node-detail-plot" viewBox="0 0 720 260" preserveAspectRatio="none" aria-label="Selected node layer slice"></svg>
+          </div>
+          <div class="material-teardown-panel">
+            <div class="material-head">
+              <h3 id="node-material-title">Material teardown</h3>
+              <div id="node-material-note" class="material-note"></div>
+            </div>
+            <div id="node-material-summary" class="material-summary"></div>
+            <div id="node-material-recognition" class="material-recognition"></div>
+            <div class="material-chart-grid">
+              <svg id="material-young-chart" class="material-chart" viewBox="0 0 320 240" preserveAspectRatio="none" aria-label="Young modulus by temperature"></svg>
+              <svg id="material-density-chart" class="material-chart" viewBox="0 0 320 240" preserveAspectRatio="none" aria-label="Density by temperature"></svg>
+              <svg id="material-heat-chart" class="material-chart" viewBox="0 0 320 240" preserveAspectRatio="none" aria-label="Specific heat by temperature"></svg>
+              <svg id="material-conductivity-chart" class="material-chart" viewBox="0 0 320 240" preserveAspectRatio="none" aria-label="Conductivity by temperature"></svg>
+              <svg id="material-dimensionless-chart" class="material-chart" viewBox="0 0 320 240" preserveAspectRatio="none" aria-label="Dimensionless material properties"></svg>
+            </div>
+          </div>
+        </div>
+      </section>
+      <section id="materials-view" class="materials-page view-page" hidden>
+        <div class="page-head">
+          <h2>Materials</h2>
+        </div>
+        <div id="materials-workspace" class="materials-workspace"></div>
       </section>
     </main>
     <footer id="message">Ready.</footer>
@@ -208,12 +833,28 @@
   <script>
     let matlabComponent = null;
     let state = null;
+    let materialRecognitionCache = null;
+    let responsivePlotObserver = null;
+    let responsivePlotTimer = null;
+    const responsiveObservedSvgs = new WeakSet();
+    const plotHitMaps = new Map();
+    const materialHiddenSeries = new Set();
+    const materialKindFilters = new Set(["TreadMaterial", "BulkMaterial", "PlyMaterial"]);
+    const nodeSelectionDrag = { active: false, dragging: false, plotId: "", start: null, current: null, additive: false, suppressClick: false };
+    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0 };
+    const LAYER_EXPLODE_TARGET_MM = 30;
+    const NODE_LAYER_SPREAD_TARGET_MM = 30;
+    const NODE_REST_SPREAD_TARGET_MM = 30;
+    const NODE_SLICE_LABEL_MIN_GAP_PX = 4;
+    const MATERIAL_RECOGNITION_TOP_N = 5;
     const COLORS = ["#e7eef5", "#72b7ff", "#6be675", "#f07d9d", "#b99cff", "#8ce3df", "#f0b85a", "#ff7a45"];
 
     function setup(htmlComponent) {
       matlabComponent = htmlComponent;
       state = htmlComponent.Data;
+      viewState.currentView = normalizeViewName(state?.startView || viewState.currentView);
       bindControls();
+      bindResponsivePlotSizing();
       render();
       htmlComponent.addEventListener("DataChanged", () => {
         const incoming = htmlComponent.Data;
@@ -222,6 +863,8 @@
           return;
         }
         state = incoming;
+        materialRecognitionCache = null;
+        viewState.currentView = normalizeViewName(state?.startView || viewState.currentView);
         render();
       });
     }
@@ -231,17 +874,128 @@
         const path = event.target.value || "";
         if (!path || !matlabComponent) return;
         setMessage("loading " + (event.target.selectedOptions?.[0]?.textContent || path));
-        matlabComponent.Data = { command: "loadTgm", path };
+        matlabComponent.Data = { command: "loadTgm", path, startView: viewState.currentView };
       });
       document.getElementById("reload-button").addEventListener("click", () => {
         if (matlabComponent && state?.inputPath) {
           setMessage("reloading " + state.inputPath);
-          matlabComponent.Data = { command: "loadTgm", path: state.inputPath };
+          matlabComponent.Data = { command: "loadTgm", path: state.inputPath, startView: viewState.currentView };
         }
       });
       document.getElementById("ping-button").addEventListener("click", () => {
         if (matlabComponent) matlabComponent.Data = { command: "ping" };
       });
+      document.getElementById("layer-explode-slider").addEventListener("input", event => {
+        viewState.layerExplode = clamp(Number(event.target.value), 0, 100);
+        updateLayerExplodeReadout();
+        renderCurrentView();
+      });
+      document.getElementById("layer-explode-enabled").addEventListener("change", event => {
+        viewState.layerExplodeEnabled = event.target.checked;
+        updateLayerExplodeReadout();
+        renderCurrentView();
+      });
+      document.getElementById("node-layer-spread-slider").addEventListener("input", event => {
+        viewState.nodeLayerSpread = clamp(Number(event.target.value), 0, 100);
+        updateNodeLayerSpreadReadout();
+        drawNodeExplorer();
+      });
+      document.querySelectorAll("[data-node-display-target]").forEach(button => {
+        button.addEventListener("click", () => {
+          toggleNodeDisplayTarget(button.dataset.nodeDisplayTarget);
+          updateNodeDisplayControls();
+          drawNodeExplorer();
+        });
+      });
+      document.addEventListener("click", event => {
+        const kindTarget = event.target.closest("[data-material-kind-filter]");
+        if (kindTarget) {
+          toggleMaterialKindFilter(kindTarget.dataset.materialKindFilter || "");
+          drawMaterialTeardown();
+          return;
+        }
+        const target = event.target.closest("[data-material-series-key]");
+        if (!target) return;
+        toggleMaterialSeries(target.dataset.materialChartKey || "", target.dataset.materialSeriesKey || "");
+      });
+      const materialsWorkspace = document.getElementById("materials-workspace");
+      materialsWorkspace.addEventListener("input", handleMaterialsWorkspaceInput);
+      materialsWorkspace.addEventListener("change", handleMaterialsWorkspaceChange);
+      materialsWorkspace.addEventListener("click", handleMaterialsWorkspaceClick);
+      ["geometry-plot", "node-explorer-plot"].forEach(plotId => {
+        document.getElementById(plotId).addEventListener("click", event => {
+          if (plotId === "node-explorer-plot") event.currentTarget.focus();
+          if (nodeSelectionDrag.suppressClick) {
+            nodeSelectionDrag.suppressClick = false;
+            return;
+          }
+          const nodeTarget = event.target.closest("[data-node-index]");
+          if (nodeTarget) {
+            handleNodeClickSelection(Number(nodeTarget.dataset.nodeIndex), event);
+            return;
+          }
+          const target = event.target.closest("[data-focus-key]");
+          if (!target && plotId === "node-explorer-plot") {
+            const nodeIndex = nearestNodeFromEvent(event, plotId);
+            if (Number.isFinite(nodeIndex)) {
+              handleNodeClickSelection(nodeIndex, event);
+              return;
+            }
+          }
+          toggleGeometryFocus(target?.dataset?.focusKey || "");
+        });
+      });
+      const nodeExplorerPlot = document.getElementById("node-explorer-plot");
+      nodeExplorerPlot.addEventListener("pointerdown", beginNodeSelectionDrag);
+      nodeExplorerPlot.addEventListener("pointermove", updateNodeSelectionDrag);
+      nodeExplorerPlot.addEventListener("pointerup", finishNodeSelectionDrag);
+      nodeExplorerPlot.addEventListener("pointercancel", cancelNodeSelectionDrag);
+      nodeExplorerPlot.addEventListener("pointerleave", finishNodeSelectionDrag);
+      nodeExplorerPlot.addEventListener("keydown", handleNodeExplorerKeydown);
+      document.querySelectorAll("[data-view]").forEach(button => {
+        button.addEventListener("click", () => {
+          setCurrentView(button.dataset.view || "model");
+        });
+      });
+    }
+
+    function bindResponsivePlotSizing() {
+      if (responsivePlotObserver || typeof ResizeObserver === "undefined") {
+        window.addEventListener("resize", queueResponsivePlotRender);
+        return;
+      }
+      responsivePlotObserver = new ResizeObserver(queueResponsivePlotRender);
+      window.addEventListener("resize", queueResponsivePlotRender);
+      observeResponsiveSvgs();
+    }
+
+    function observeResponsiveSvgs() {
+      if (!responsivePlotObserver) return;
+      document.querySelectorAll(".model-plot, .node-detail-plot, .material-chart").forEach(svg => {
+        if (!responsiveObservedSvgs.has(svg)) {
+          responsiveObservedSvgs.add(svg);
+          responsivePlotObserver.observe(svg);
+        }
+      });
+    }
+
+    function queueResponsivePlotRender() {
+      if (responsivePlotTimer !== null) return;
+      responsivePlotTimer = setTimeout(() => {
+        responsivePlotTimer = null;
+        if (state) renderCurrentView();
+      }, 80);
+    }
+
+    function syncSvgViewBox(svg, fallbackWidth = 320, fallbackHeight = 180) {
+      if (!svg) return { width: fallbackWidth, height: fallbackHeight };
+      const rect = svg.getBoundingClientRect();
+      const current = svg.viewBox?.baseVal;
+      const width = Math.max(80, Math.round(rect.width || svg.clientWidth || current?.width || fallbackWidth));
+      const height = Math.max(60, Math.round(rect.height || svg.clientHeight || current?.height || fallbackHeight));
+      const next = `0 0 ${width} ${height}`;
+      if (svg.getAttribute("viewBox") !== next) svg.setAttribute("viewBox", next);
+      return { width, height };
     }
 
     function render() {
@@ -255,7 +1009,9 @@
       setMessage(state.message || state.status || "Ready.");
       renderTyres();
       renderMetrics();
-      drawGeometry();
+      updateLayerExplodeReadout();
+      updateNodeLayerSpreadReadout();
+      renderCurrentView();
     }
 
     function renderTyres() {
@@ -269,6 +1025,397 @@
         return `<option value="${escapeAttr(item.path)}" ${selectedAttr}>${escapeHtml(item.displayName || item.fileName || item.path)}</option>`;
       }).join("")}`;
       if (currentPath) select.value = currentPath;
+    }
+
+    function setCurrentView(viewName) {
+      viewState.currentView = normalizeViewName(viewName);
+      renderCurrentView();
+      if (viewState.currentView === "node-explorer") {
+        setTimeout(() => document.getElementById("node-explorer-plot")?.focus(), 0);
+      }
+    }
+
+    function normalizeViewName(viewName) {
+      const value = String(viewName || "").trim().toLowerCase().replace(/[_\s]+/g, "-");
+      if (["node", "nodes", "node-explorer", "nodeexplorer"].includes(value)) return "node-explorer";
+      if (["material", "materials"].includes(value)) return "materials";
+      return "model";
+    }
+
+    function renderCurrentView() {
+      const isModel = viewState.currentView === "model";
+      const isNodeExplorer = viewState.currentView === "node-explorer";
+      const isMaterials = viewState.currentView === "materials";
+      document.getElementById("model-view").hidden = !isModel;
+      document.getElementById("node-explorer-view").hidden = !isNodeExplorer;
+      document.getElementById("materials-view").hidden = !isMaterials;
+      document.querySelectorAll("[data-view]").forEach(button => {
+        const active = button.dataset.view === viewState.currentView;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-current", active ? "page" : "false");
+      });
+      if (isModel) {
+        drawGeometry();
+      } else if (isNodeExplorer) {
+        drawNodeExplorer();
+      } else {
+        drawMaterialsPage();
+      }
+      observeResponsiveSvgs();
+    }
+
+    function drawMaterialsPage(options = {}) {
+      const workspace = document.getElementById("materials-workspace");
+      if (!workspace) return;
+      if (options.preserveScroll !== false) rememberMaterialScrollPositions();
+      const library = materialLibraryData();
+      if (!library.available) {
+        workspace.innerHTML = `<div class="materials-empty">${escapeHtml(library.message || "Material database unavailable.")}<br>${escapeHtml(library.path || "")}</div>`;
+        return;
+      }
+
+      const materials = materialLibraryMaterials();
+      const categories = materialLibraryCategories();
+      ensureMaterialBrowserState(materials, categories);
+      const filtered = filteredMaterialLibraryMaterials(materials);
+      const selected = selectedLibraryMaterials(materials);
+      const selectedIds = new Set(selected.map(material => Number(material.id)));
+      const selectedCategories = new Set(viewState.materialCategories || []);
+      const categoryStatus = `${selectedCategories.size}/${categories.length} categories`;
+      const selectedLabel = selected.length
+        ? `${selected.length} selected`
+        : "No material selected";
+      workspace.innerHTML = `
+        <aside class="materials-browser" aria-label="Material database browser">
+          <div class="materials-browser-head">
+            <h3>Material database</h3>
+            <div class="materials-browser-meta">${escapeHtml(materials.length)} materials / ${escapeHtml(library.pointCount || 0)} pts | ${escapeHtml(categoryStatus)}</div>
+          </div>
+          <div class="material-filter">
+            <input id="material-search" type="search" value="${escapeAttr(viewState.materialSearch || "")}" placeholder="Filter materials" aria-label="Filter materials" />
+            <button type="button" data-material-action="select-filtered">Select</button>
+            <button type="button" data-material-action="clear-selection">Clear</button>
+          </div>
+          <div class="material-category-actions">
+            <span>Category filter</span>
+            <button type="button" data-material-action="categories-all">All</button>
+            <button type="button" data-material-action="categories-none">None</button>
+          </div>
+          <div class="material-category-list" aria-label="Material categories">
+            ${categories.map(category => `
+              <label class="material-category-option">
+                <input type="checkbox" data-material-category="${escapeAttr(category.name)}" ${selectedCategories.has(String(category.name)) ? "checked" : ""} />
+                <span class="name">${escapeHtml(category.name)}</span>
+                <span class="count">${escapeHtml(category.materialCount || 0)}</span>
+              </label>
+            `).join("")}
+          </div>
+          <div id="material-list" class="material-list" aria-label="Materials">
+            ${filtered.length ? filtered.map((material, index) => materialListRowHtml(material, selectedIds.has(Number(material.id)), materialLibraryColor(index))).join("") : `<div class="materials-empty">${selectedCategories.size ? "No materials match the filter." : "No categories selected."}</div>`}
+          </div>
+        </aside>
+        <section class="materials-plot-panel" aria-label="Material temperature plots">
+          <div class="materials-plot-head">
+            <h3>Temperature behaviour</h3>
+            <div class="materials-plot-meta">${escapeHtml(selectedLabel)}</div>
+          </div>
+          <div class="materials-selection-summary">
+            ${selected.length ? selected.map((material, index) => `
+              <button type="button" class="materials-selected-chip" data-selected-material-id="${escapeAttr(material.id)}" title="Remove ${escapeAttr(material.name)}">
+                <span class="dot" style="background:${materialLibraryColor(index)}"></span>
+                <span class="text">${escapeHtml(material.name)}</span>
+              </button>
+            `).join("") : `<div class="materials-selected-chip"><span class="text">Use the browser filter and select materials.</span></div>`}
+          </div>
+          <div class="materials-plot-grid material-chart-grid">
+            <svg id="materials-young-chart" class="material-chart" viewBox="0 0 420 245" preserveAspectRatio="none" aria-label="Young modulus by temperature"></svg>
+            <svg id="materials-density-chart" class="material-chart" viewBox="0 0 420 245" preserveAspectRatio="none" aria-label="Density by temperature"></svg>
+            <svg id="materials-heat-chart" class="material-chart" viewBox="0 0 420 245" preserveAspectRatio="none" aria-label="Specific heat by temperature"></svg>
+            <svg id="materials-conductivity-chart" class="material-chart" viewBox="0 0 420 245" preserveAspectRatio="none" aria-label="Conductivity by temperature"></svg>
+            <svg id="materials-ratio-chart" class="material-chart" viewBox="0 0 420 245" preserveAspectRatio="none" aria-label="Poisson and compression by temperature"></svg>
+            <svg id="materials-shore-chart" class="material-chart" viewBox="0 0 420 245" preserveAspectRatio="none" aria-label="Shore A by temperature"></svg>
+          </div>
+        </section>`;
+      drawMaterialsLibraryPlots(selected);
+      restoreMaterialScrollPositions(options);
+      if (options.focusSearch) {
+        const search = document.getElementById("material-search");
+        if (search) {
+          search.focus();
+          const cursor = String(search.value || "").length;
+          search.setSelectionRange(cursor, cursor);
+        }
+      }
+    }
+
+    function handleMaterialsWorkspaceInput(event) {
+      if (event.target?.id !== "material-search") return;
+      viewState.materialSearch = event.target.value || "";
+      drawMaterialsPage({ focusSearch: true });
+    }
+
+    function handleMaterialsWorkspaceChange(event) {
+      const category = event.target?.dataset?.materialCategory;
+      if (category) {
+        setMaterialCategory(category, event.target.checked);
+        drawMaterialsPage({ preserveScroll: false });
+        return;
+      }
+      const materialId = event.target?.dataset?.materialId;
+      if (materialId) {
+        toggleMaterialSelection(Number(materialId), event.target.checked);
+        drawMaterialsPage({ preserveScroll: true });
+      }
+    }
+
+    function handleMaterialsWorkspaceClick(event) {
+      const action = event.target.closest("[data-material-action]")?.dataset?.materialAction;
+      if (action === "select-filtered") {
+        viewState.selectedMaterialIds = filteredMaterialLibraryMaterials(materialLibraryMaterials()).map(material => Number(material.id));
+        drawMaterialsPage({ preserveScroll: true });
+        return;
+      }
+      if (action === "clear-selection") {
+        viewState.selectedMaterialIds = [];
+        drawMaterialsPage({ preserveScroll: true });
+        return;
+      }
+      if (action === "categories-all") {
+        viewState.materialCategories = materialLibraryCategories().map(category => category.name);
+        drawMaterialsPage({ preserveScroll: false });
+        return;
+      }
+      if (action === "categories-none") {
+        viewState.materialCategories = [];
+        drawMaterialsPage({ preserveScroll: false });
+        return;
+      }
+      const selectedChip = event.target.closest("[data-selected-material-id]");
+      if (selectedChip) {
+        toggleMaterialSelection(Number(selectedChip.dataset.selectedMaterialId), false);
+        drawMaterialsPage({ preserveScroll: true });
+        return;
+      }
+      const row = event.target.closest("[data-material-row-id]");
+      if (!row || event.target.closest("input")) return;
+      const materialId = Number(row.dataset.materialRowId);
+      const selected = !(viewState.selectedMaterialIds || []).map(Number).includes(materialId);
+      toggleMaterialSelection(materialId, selected);
+      drawMaterialsPage({ preserveScroll: true });
+    }
+
+    function rememberMaterialScrollPositions() {
+      const list = document.getElementById("material-list");
+      if (list) viewState.materialListScrollTop = Number(list.scrollTop) || 0;
+    }
+
+    function restoreMaterialScrollPositions(options = {}) {
+      const list = document.getElementById("material-list");
+      if (!list) return;
+      if (options.preserveScroll === false) {
+        viewState.materialListScrollTop = 0;
+      }
+      const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
+      list.scrollTop = clamp(Number(viewState.materialListScrollTop) || 0, 0, maxScroll);
+    }
+
+    function materialLibraryData() {
+      return state?.materialLibrary || { available: false, message: "Material database unavailable.", materials: [], categories: [] };
+    }
+
+    function materialLibraryMaterials() {
+      return asArray(materialLibraryData().materials)
+        .filter(material => Number.isFinite(Number(material.id)))
+        .map(material => ({ ...material, id: Number(material.id), points: asArray(material.points) }));
+    }
+
+    function materialLibraryCategories() {
+      return asArray(materialLibraryData().categories)
+        .filter(category => String(category.name || "").trim() !== "")
+        .map(category => ({ ...category, name: String(category.name), materialCount: Number(category.materialCount) || 0 }));
+    }
+
+    function ensureMaterialBrowserState(materials, categories) {
+      const categoryNames = categories.map(category => category.name);
+      if (!Array.isArray(viewState.materialCategories)) {
+        viewState.materialCategories = categoryNames.slice();
+      } else {
+        const valid = new Set(categoryNames);
+        viewState.materialCategories = viewState.materialCategories.filter(category => valid.has(category));
+      }
+      if (!Array.isArray(viewState.selectedMaterialIds)) {
+        viewState.selectedMaterialIds = [];
+      } else {
+        const validIds = new Set(materials.map(material => Number(material.id)));
+        viewState.selectedMaterialIds = viewState.selectedMaterialIds.map(Number).filter(id => validIds.has(id));
+      }
+    }
+
+    function filteredMaterialLibraryMaterials(materials = materialLibraryMaterials()) {
+      const selectedCategories = new Set(viewState.materialCategories || []);
+      const query = String(viewState.materialSearch || "").trim().toLowerCase();
+      return materials.filter(material => {
+        if (!selectedCategories.has(String(material.category || ""))) return false;
+        if (!query) return true;
+        return [material.name, material.title, material.category].some(value => String(value || "").toLowerCase().includes(query));
+      });
+    }
+
+    function selectedLibraryMaterials(materials = materialLibraryMaterials()) {
+      const selectedIds = new Set((viewState.selectedMaterialIds || []).map(Number));
+      return materials.filter(material => selectedIds.has(Number(material.id)));
+    }
+
+    function setMaterialCategory(category, checked) {
+      const selected = new Set(viewState.materialCategories || []);
+      if (checked) selected.add(String(category));
+      else selected.delete(String(category));
+      viewState.materialCategories = Array.from(selected);
+    }
+
+    function toggleMaterialSelection(materialId, selected) {
+      const ids = new Set((viewState.selectedMaterialIds || []).map(Number));
+      if (selected) ids.add(Number(materialId));
+      else ids.delete(Number(materialId));
+      viewState.selectedMaterialIds = Array.from(ids);
+    }
+
+    function materialListRowHtml(material, selected, color) {
+      return `
+        <label class="material-row ${selected ? "selected" : ""}" data-material-row-id="${escapeAttr(material.id)}">
+          <input type="checkbox" data-material-id="${escapeAttr(material.id)}" ${selected ? "checked" : ""} />
+          <span class="details">
+            <span class="name">${escapeHtml(material.name)}</span>
+            <span class="meta">${escapeHtml(material.category)} | ${escapeHtml(material.pointCount || 0)} pts | ${escapeHtml(materialTemperatureRangeText(material))}</span>
+            <span class="range">${escapeHtml(materialModulusRangeText(material))}</span>
+          </span>
+          <span class="swatch" style="background:${color}"></span>
+        </label>`;
+    }
+
+    function drawMaterialsLibraryPlots(materials) {
+      const charts = {
+        young: document.getElementById("materials-young-chart"),
+        density: document.getElementById("materials-density-chart"),
+        heat: document.getElementById("materials-heat-chart"),
+        conductivity: document.getElementById("materials-conductivity-chart"),
+        ratio: document.getElementById("materials-ratio-chart"),
+        shore: document.getElementById("materials-shore-chart")
+      };
+      if (!materials.length) {
+        Object.values(charts).forEach(svg => drawMaterialEmptyChart(svg, "Material data", "No material selected"));
+        return;
+      }
+      drawMaterialTrendChart(charts.young, "Young's modulus", materialLibraryPropertySeries(materials, "youngsModulusPa", value => value / 1e6, "MPa"), "MPa", "library-young");
+      drawMaterialTrendChart(charts.density, "Density", materialLibraryPropertySeries(materials, "densityKgM3", value => value, "kg/m3"), "kg/m3", "library-density");
+      drawMaterialTrendChart(charts.heat, "Specific heat", materialLibraryPropertySeries(materials, "specificHeat", value => value, "J/kgK"), "J/kgK", "library-heat");
+      drawMaterialTrendChart(charts.conductivity, "Conductivity", materialLibraryConductivitySeries(materials), "W/mK", "library-conductivity");
+      drawMaterialTrendChart(charts.ratio, "Poisson / Compression", materialLibraryDimensionlessSeries(materials), "-", "library-ratio");
+      drawMaterialTrendChart(charts.shore, "Shore A", materialLibraryPropertySeries(materials, "shoreA", value => value, "Shore A"), "Shore A", "library-shore");
+    }
+
+    function materialLibraryPropertySeries(materials, field, convert, unit) {
+      return materials.map((material, index) => {
+        const color = materialLibraryColor(index);
+        const points = materialLibraryPoints(material, field, convert, unit, material.name);
+        return {
+          key: `material-${material.id}-${field}`,
+          label: materialShortLabel(material),
+          color,
+          dash: "",
+          points
+        };
+      }).filter(series => series.points.length);
+    }
+
+    function materialLibraryConductivitySeries(materials) {
+      return materials.flatMap((material, index) => {
+        const color = materialLibraryColor(index);
+        return [
+          {
+            key: `material-${material.id}-thermalConductivity`,
+            label: `${materialShortLabel(material)} k`,
+            color,
+            dash: "",
+            points: materialLibraryPoints(material, "thermalConductivity", value => value, "W/mK", `${material.name} conductivity`)
+          },
+          {
+            key: `material-${material.id}-longitudinalConductivity`,
+            label: `${materialShortLabel(material)} kL`,
+            color,
+            dash: "4 2",
+            points: materialLibraryPoints(material, "longitudinalConductivity", value => value, "W/mK", `${material.name} longitudinal conductivity`)
+          }
+        ];
+      }).filter(series => series.points.length);
+    }
+
+    function materialLibraryDimensionlessSeries(materials) {
+      return materials.flatMap((material, index) => {
+        const color = materialLibraryColor(index);
+        return [
+          {
+            key: `material-${material.id}-poissonsRatio`,
+            label: `${materialShortLabel(material)} v`,
+            color,
+            dash: "",
+            points: materialLibraryPoints(material, "poissonsRatio", value => value, "-", `${material.name} Poisson`)
+          },
+          {
+            key: `material-${material.id}-compressionTensionRatio`,
+            label: `${materialShortLabel(material)} c/t`,
+            color,
+            dash: "3 2",
+            points: materialLibraryPoints(material, "compressionTensionRatio", value => value, "-", `${material.name} compression/tension`)
+          }
+        ];
+      }).filter(series => series.points.length);
+    }
+
+    function materialLibraryPoints(material, field, convert, unit, titlePrefix) {
+      return mergeMaterialSeriesPoints(asArray(material.points).map(point => {
+        const raw = Number(point[field]);
+        const value = Number.isFinite(raw) ? convert(raw) : NaN;
+        const tempC = temperatureC(point);
+        return {
+          x: tempC,
+          y: value,
+          title: `${titlePrefix} ${fmt(tempC)} C: ${fmt(value)} ${unit}`
+        };
+      }).filter(point => Number.isFinite(point.x) && Number.isFinite(point.y)));
+    }
+
+    function materialTemperatureRangeText(material) {
+      const values = asArray(material.points).map(temperatureC).filter(Number.isFinite);
+      if (!values.length) return "temp -";
+      return `${fmt(Math.min(...values))}..${fmt(Math.max(...values))} C`;
+    }
+
+    function materialModulusRangeText(material) {
+      const values = asArray(material.points).map(point => Number(point.youngsModulusPa) / 1e6).filter(Number.isFinite);
+      if (!values.length) return "E -";
+      return `E ${fmt(Math.min(...values))}..${fmt(Math.max(...values))} MPa`;
+    }
+
+    function materialShortLabel(material) {
+      const words = String(material?.name || "Material")
+        .replace(/[()]/g, " ")
+        .split(/[\s/_-]+/)
+        .filter(Boolean);
+      const label = words.length > 1
+        ? words.slice(0, 2).map(word => word.slice(0, 5)).join(" ")
+        : String(material?.name || "Material");
+      return label.length > 15 ? label.slice(0, 14) + "." : label;
+    }
+
+    function materialLibraryColor(index) {
+      return COLORS[Math.abs(Number(index) || 0) % COLORS.length];
+    }
+
+    function asArray(value) {
+      if (Array.isArray(value)) return value;
+      if (value === null || value === undefined) return [];
+      return [value];
     }
 
     function renderMetrics() {
@@ -292,11 +1439,23 @@
     }
 
     function drawGeometry() {
-      const svg = document.getElementById("geometry-plot");
+      drawGeometryPlot(document.getElementById("geometry-plot"));
+    }
+
+    function drawNodeExplorer() {
+      drawGeometryPlot(document.getElementById("node-explorer-plot"));
+      drawNodeDetail();
+      drawMaterialTeardown();
+    }
+
+    function drawGeometryPlot(svg) {
+      if (!svg) return;
+      syncSvgViewBox(svg, 1100, 520);
       svg.innerHTML = "";
       const data = state?.plotData || {};
       const geometry = data.geometry || [];
       if (!geometry.length) {
+        plotHitMaps.delete(svg.id);
         svg.insertAdjacentHTML("beforeend", `<text x="50%" y="50%" fill="#9aa7b3" text-anchor="middle">No tyre loaded</text>`);
         return;
       }
@@ -320,6 +1479,7 @@
         outerXMm: Number(p.outerX) * 1000,
         outerYMm: Number(p.outerY) * 1000
       }));
+      const materials = data.materials || [];
       const xs = points.map(p => p.xMm)
         .concat(rubber.map(p => p.treadXMm))
         .concat(rubber.map(p => p.innerXMm))
@@ -329,15 +1489,26 @@
         .concat(rubber.map(p => p.innerYMm))
         .concat(layers.map(p => p.outerYMm));
       const frame = makeFrame(svg, xs, ys, true);
+      const displayLayers = applyLayerExplosion(rubber, layers, layerExplodeStrength(), LAYER_EXPLODE_TARGET_MM);
+      storeNodeHitMap(svg, frame, points);
+      const cloneGroups = svg.id === "node-explorer-plot"
+        ? nodeCloneGroups(points, rubber, layers, materials)
+        : null;
 
       drawAxes(svg, frame, "Radial coordinate X [mm]", "Lateral coordinate Y [mm]");
       drawRubber(svg, frame, rubber);
-      drawLayers(svg, frame, layers);
+      drawLayers(svg, frame, displayLayers);
+      drawNodeLayerGuides(svg, frame, points, displayLayers);
       const shellPath = pointPath(points, frame, "xMm", "yMm");
-      svg.insertAdjacentHTML("beforeend", `<path d="${shellPath}" fill="none" stroke="#dce6ef" stroke-width="1.2"/>`);
-      points.forEach(p => svg.insertAdjacentHTML("beforeend",
-        `<circle cx="${frame.sx(p.xMm).toFixed(1)}" cy="${frame.sy(p.yMm).toFixed(1)}" r="2.2" fill="#e6edf3"><title>Node ${p.nodeIndex}</title></circle>`));
-      drawLineCallouts(svg, frame, rubber, layers);
+      svg.insertAdjacentHTML("beforeend", `<path d="${shellPath}" fill="none" stroke="#dce6ef" stroke-width="1.2" opacity="${focusOpacity(geometryFocusKey("surface")).toFixed(2)}"/>`);
+      points.forEach(p => {
+        const marker = nodeMarkerStyle(p.nodeIndex, cloneGroups);
+        svg.insertAdjacentHTML("beforeend",
+          `<circle class="node-marker" data-node-index="${escapeAttr(p.nodeIndex)}" cx="${frame.sx(p.xMm).toFixed(1)}" cy="${frame.sy(p.yMm).toFixed(1)}" r="${marker.radius}" fill="${marker.fill}" stroke="${marker.stroke}" stroke-width="${marker.strokeWidth}" stroke-opacity="${marker.strokeOpacity}"><title>${escapeHtml(marker.title)}</title></circle>`);
+      });
+      drawNodeNumbers(svg, frame, points, displayLayers);
+      drawLineCallouts(svg, frame, rubber, displayLayers);
+      if (cloneGroups) drawCloneLegend(svg, cloneGroups);
       drawLegend(svg, [
         { label: "Surface", color: "#dce6ef" },
         { label: "Tread depth", color: "#f0b85a" },
@@ -345,11 +1516,1963 @@
       ]);
     }
 
+    function drawNodeDetail() {
+      const svg = document.getElementById("node-detail-plot");
+      const title = document.getElementById("node-detail-title");
+      if (!svg) return;
+      syncSvgViewBox(svg, 720, 260);
+      svg.innerHTML = "";
+
+      const data = state?.plotData || {};
+      const geometry = data.geometry || [];
+      if (!geometry.length) {
+        if (title) title.textContent = "Node";
+        svg.insertAdjacentHTML("beforeend", `<text x="50%" y="50%" fill="#9aa7b3" text-anchor="middle">No node selected</text>`);
+        return;
+      }
+
+      const points = geometry.map(p => ({ ...p, xMm: Number(p.x) * 1000, yMm: Number(p.y) * 1000 }));
+      const selectedNodes = selectedNodeIndicesOrDefault(points);
+      const rubber = (data.rubberCrossSection || []).map(p => ({
+        ...p,
+        surfaceXMm: Number(p.surfaceX) * 1000,
+        surfaceYMm: Number(p.surfaceY) * 1000,
+        treadXMm: Number(p.treadX) * 1000,
+        treadYMm: Number(p.treadY) * 1000,
+        innerXMm: Number(p.innerX) * 1000,
+        innerYMm: Number(p.innerY) * 1000
+      }));
+      const layers = (data.plyCrossSection || []).map(p => ({
+        ...p,
+        xMm: Number(p.x) * 1000,
+        yMm: Number(p.y) * 1000,
+        innerXMm: Number(p.innerX) * 1000,
+        innerYMm: Number(p.innerY) * 1000,
+        outerXMm: Number(p.outerX) * 1000,
+        outerYMm: Number(p.outerY) * 1000
+      }));
+      const groups = buildNodeSectionGroups(selectedNodes, rubber, layers);
+      if (title) title.textContent = selectedNodeLabel(selectedNodes);
+      if (!groups.length) {
+        svg.insertAdjacentHTML("beforeend", `<text x="50%" y="50%" fill="#9aa7b3" text-anchor="middle">No node data</text>`);
+        return;
+      }
+
+      const view = svg.viewBox.baseVal;
+      const w = view.width || 720;
+      const h = view.height || 260;
+      const margin = { left: 66, right: groups.length === 1 ? 170 : 145, top: 44, bottom: 30 };
+      const yStart = margin.top + 24;
+      const yEnd = h - margin.bottom - 10;
+      const sectionLayout = nodeSectionLayoutMetrics(groups.length, yStart, yEnd);
+      const groupGap = sectionLayout.gap;
+      const groupHeight = sectionLayout.height;
+      const trueMaxDepth = Math.max(1, ...groups.map(group => group.trueMaxDepthMm));
+      const visibility = nodeSectionVisibility();
+      const sectionX = nodeSectionXScale(groups, visibility, margin, w);
+      const xAt = (offsetMm, group = null) => nodeSectionXAt(offsetMm, group, sectionX);
+
+      svg.insertAdjacentHTML("beforeend", `<text x="${margin.left}" y="24" fill="#b9d8f2" font-size="12" font-weight="700">${escapeHtml(selectedNodeLabel(selectedNodes))} section</text>`);
+      if (groups.length > 1) {
+        drawNodeSectionHeaderLabels(svg, xAt, groups, margin.top + 17, sectionX);
+      }
+
+      groups.forEach((group, index) => {
+        const yTop = yStart + index * (groupHeight + groupGap);
+        const yBottom = yTop + groupHeight;
+        const yMid = (yTop + yBottom) / 2;
+        const groupLabel = selectedNodeLabel(group.nodes, 6);
+        if (groupHeight >= 8) {
+          const labelSize = groupHeight < 13 ? 6.5 : 8.5;
+          svg.insertAdjacentHTML("beforeend", `<text x="${(margin.left - 10).toFixed(1)}" y="${(yMid + labelSize * 0.35).toFixed(1)}" fill="#b9d8f2" font-size="${labelSize}" text-anchor="end">${escapeHtml(groupLabel)}</text>`);
+        }
+        svg.insertAdjacentHTML("beforeend", `<line x1="${sectionX.left.toFixed(1)}" y1="${yTop.toFixed(1)}" x2="${sectionX.right.toFixed(1)}" y2="${yTop.toFixed(1)}" stroke="#617286" stroke-opacity="0.55"/>`);
+        svg.insertAdjacentHTML("beforeend", `<line x1="${sectionX.left.toFixed(1)}" y1="${yBottom.toFixed(1)}" x2="${sectionX.right.toFixed(1)}" y2="${yBottom.toFixed(1)}" stroke="#617286" stroke-opacity="0.55"/>`);
+
+        const sliceLabels = [];
+        if (visibility.rest) {
+          sliceLabels.push(drawNodeSliceBand(svg, xAt, yTop, yBottom, 0, group.displayTreadDepthMm, "#f0b85a", 0.2, "TD", group));
+          sliceLabels.push(drawNodeSliceBand(svg, xAt, yTop, yBottom, group.displayTreadDepthMm, group.displayNodeThicknessMm, "#78d3ff", 0.13, "NT", group));
+        }
+        if (visibility.layers) {
+          group.layerPlan.forEach(item => {
+            const layer = Number(item.row.plyIndex || 1);
+            const color = COLORS[(layer - 1) % COLORS.length];
+            sliceLabels.push(drawNodeSliceBand(svg, xAt, yTop, yBottom, item.displayInner, item.displayOuter, color, 0.22, `L${layer}`, group));
+          });
+        }
+        if (groups.length === 1 && groupHeight >= 34) drawNodeSliceLabels(svg, sliceLabels, yTop - 4);
+
+        if (visibility.rest) {
+          svg.insertAdjacentHTML("beforeend", `<line x1="${xAt(0, group).toFixed(1)}" y1="${(yTop - 4).toFixed(1)}" x2="${xAt(0, group).toFixed(1)}" y2="${(yBottom + 4).toFixed(1)}" stroke="#dce6ef" stroke-width="1.4"/>`);
+          svg.insertAdjacentHTML("beforeend", `<circle cx="${xAt(0, group).toFixed(1)}" cy="${yMid.toFixed(1)}" r="3.6" fill="#4fb3ff" stroke="#0b0f12" stroke-width="1.1"><title>${escapeHtml(groupLabel)}</title></circle>`);
+        }
+      });
+
+      if (visibility.rest) {
+        svg.insertAdjacentHTML("beforeend", `<text x="${xAt(0, groups[0]).toFixed(1)}" y="${(h - 8).toFixed(1)}" fill="#dce6ef" font-size="9" text-anchor="middle">Surface</text>`);
+      }
+      if (groups.length === 1) {
+        drawNodeSliceLegend(svg, groups[0].layerPlan, w - margin.right + 18, margin.top + 10, {
+          treadDepthMm: groups[0].treadDepthMm,
+          nodeThicknessMm: groups[0].nodeThicknessMm,
+          trueMaxDepthMm: trueMaxDepth
+        }, nodeSectionVisibility());
+      } else {
+        drawNodeSectionGroupLegend(svg, groups, w - margin.right + 16, margin.top + 10, h - margin.bottom);
+      }
+    }
+
+    function selectedNodeIndexOrDefault(points) {
+      return selectedNodeIndicesOrDefault(points)[0] ?? NaN;
+    }
+
+    function selectedNodeIndicesOrDefault(points) {
+      const nodes = points.map(point => Number(point.nodeIndex)).filter(Number.isFinite);
+      if (!nodes.length) return [];
+      const selected = (viewState.selectedNodeIndices || [])
+        .map(Number)
+        .filter(node => nodes.includes(node));
+      if (!selected.length) selected.push(nodes[0]);
+      selected.sort((a, b) => a - b);
+      const activeNode = Number(viewState.selectedNodeIndex);
+      viewState.selectedNodeIndices = selected;
+      viewState.selectedNodeIndex = selected.includes(activeNode) ? activeNode : selected[0];
+      return selected;
+    }
+
+    function selectedNodeSet(points) {
+      return new Set(selectedNodeIndicesOrDefault(points));
+    }
+
+    function selectedNodeLabel(nodes, maxItems = 5) {
+      const values = Array.from(nodes || []).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
+      if (!values.length) return "Node";
+      if (values.length === 1) return `Node ${values[0]}`;
+      const shown = values.slice(0, maxItems).join(", ");
+      const suffix = values.length > maxItems ? ` +${values.length - maxItems}` : "";
+      return `Nodes ${shown}${suffix}`;
+    }
+
+    function buildNodeSectionGroups(nodeIndices, rubber, layers) {
+      const referenceGapMm = layerReferenceGapMm(layers);
+      const spreadStrength = nodeLayerSpreadStrength();
+      const visibility = nodeSectionVisibility();
+      const byKey = new Map();
+      nodeIndices.forEach(nodeIndex => {
+        const rubberRow = rubber.find(row => sameNode(row.nodeIndex, nodeIndex));
+        if (!rubberRow) return;
+        const nodeLayers = layers.filter(row => sameNode(row.nodeIndex, nodeIndex));
+        const treadDepthMm = Math.max(0, Number(rubberRow.treadDepthM) * 1000 || 0);
+        const nodeThicknessMm = Math.max(treadDepthMm, Number(rubberRow.nodeThicknessM) * 1000 || 0);
+        const restPlan = buildNodeRestSpreadPlan(treadDepthMm, nodeThicknessMm, spreadStrength, NODE_REST_SPREAD_TARGET_MM);
+        let layerPlan = buildNodeLayerSpreadPlan(nodeLayers, nodeThicknessMm, referenceGapMm, spreadStrength, NODE_LAYER_SPREAD_TARGET_MM);
+        layerPlan = shiftNodeLayerPlan(layerPlan, restPlan.nodeExtraMm);
+        const displayDepths = [1];
+        if (visibility.rest) displayDepths.push(restPlan.displayNodeThicknessMm, restPlan.displayTreadDepthMm);
+        if (visibility.layers) displayDepths.push(...layerPlan.map(item => item.displayOuter));
+        const key = nodeSectionGroupKey(rubberRow, nodeLayers);
+        if (!byKey.has(key)) {
+          byKey.set(key, {
+            key,
+            nodes: [],
+            treadDepthMm,
+            nodeThicknessMm,
+            displayTreadDepthMm: restPlan.displayTreadDepthMm,
+            displayNodeThicknessMm: restPlan.displayNodeThicknessMm,
+            layerPlan,
+            trueMaxDepthMm: Math.max(1, nodeThicknessMm, treadDepthMm, ...layerPlan.map(item => item.outerOffset)),
+            displayMaxDepthMm: Math.max(...displayDepths)
+          });
+        }
+        byKey.get(key).nodes.push(Number(nodeIndex));
+      });
+      return Array.from(byKey.values()).map(group => ({
+        ...group,
+        nodes: group.nodes.sort((a, b) => a - b)
+      })).sort((a, b) => a.nodes[0] - b.nodes[0]);
+    }
+
+    function nodeSectionLayoutMetrics(count, yStart, yEnd) {
+      const n = Math.max(1, Number(count) || 1);
+      const available = Math.max(1, yEnd - yStart);
+      if (n <= 1) return { gap: 0, height: available };
+      let gap = Math.min(7, Math.max(1, available / (n * 5)));
+      let height = (available - gap * (n - 1)) / n;
+      if (height < 1) {
+        gap = Math.min(0.5, available / (n * 8));
+        height = (available - gap * (n - 1)) / n;
+      }
+      return {
+        gap: Math.max(0, gap),
+        height: Math.max(0.35, height)
+      };
+    }
+
+    function nodeSectionXScale(groups, visibility, margin, width) {
+      const left = Number(margin.left);
+      const right = Number(width) - Number(margin.right);
+      const plotW = Math.max(1, right - left);
+      const layerOnly = visibility.layers && !visibility.rest;
+      if (!layerOnly) {
+        const maxDepth = Math.max(1, ...groups.map(group => group.displayMaxDepthMm)) + 2;
+        return { mode: "stack", left, right, plotW, maxDepth, packages: new Map(), referenceGroup: groups[0] || null };
+      }
+
+      const packages = new Map();
+      let referenceGroup = groups[0] || null;
+      let maxWidth = 0;
+      groups.forEach(group => {
+        const trueStarts = group.layerPlan.map(item => Number(item.innerOffset)).filter(Number.isFinite);
+        const trueEnds = group.layerPlan.map(item => Number(item.outerOffset)).filter(Number.isFinite);
+        const displayStarts = group.layerPlan.map(item => Number(item.displayInner)).filter(Number.isFinite);
+        const displayEnds = group.layerPlan.map(item => Number(item.displayOuter)).filter(Number.isFinite);
+        const trueStart = trueStarts.length ? Math.min(...trueStarts) : 0;
+        const trueEnd = trueEnds.length ? Math.max(...trueEnds) : trueStart + 1;
+        const displayStart = displayStarts.length ? Math.min(...displayStarts) : trueStart;
+        const displayEnd = displayEnds.length ? Math.max(...displayEnds) : displayStart + 1;
+        const trueWidth = Math.max(1e-6, trueEnd - trueStart);
+        const displayWidth = Math.max(1e-6, displayEnd - displayStart);
+        packages.set(group.key, { trueStart, trueEnd, trueWidth, displayStart, displayEnd, displayWidth });
+        if (trueWidth > maxWidth) {
+          maxWidth = trueWidth;
+          referenceGroup = group;
+        }
+      });
+      if (!(maxWidth > 0)) maxWidth = 1;
+      return { mode: "layers-only", left, right, plotW, maxWidth, packages, referenceGroup };
+    }
+
+    function nodeSectionXAt(offsetMm, group, scale) {
+      const offset = Number(offsetMm);
+      if (scale.mode !== "layers-only") {
+        return scale.left + clamp(offset, 0, scale.maxDepth) / scale.maxDepth * scale.plotW;
+      }
+
+      const packageInfo = scale.packages.get(group?.key) || scale.packages.get(scale.referenceGroup?.key);
+      if (!packageInfo) return scale.right;
+      const packagePx = packageInfo.trueWidth / scale.maxWidth * scale.plotW;
+      const packageLeft = scale.right - packagePx;
+      const fraction = (offset - packageInfo.displayStart) / packageInfo.displayWidth;
+      return packageLeft + fraction * packagePx;
+    }
+
+    function nodeSectionGroupKey(rubberRow, nodeLayers) {
+      const layersKey = nodeLayers.slice()
+        .sort((a, b) => Number(a.plyIndex) - Number(b.plyIndex))
+        .map(row => [
+          numberKey(row.plyIndex),
+          numberKey(row.angleDeg),
+          numberKey(row.thicknessM),
+          numberKey(row.connectFlag),
+          numberKey(row.offsetM)
+        ].join(":"))
+        .join("|");
+      return [
+        `td=${numberKey(rubberRow.treadDepthM)}`,
+        `nt=${numberKey(rubberRow.nodeThicknessM)}`,
+        `layers=${layersKey}`
+      ].join(";");
+    }
+
+    function drawNodeSectionGroupLegend(svg, groups, x, y, bottomY) {
+      svg.insertAdjacentHTML("beforeend", `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="#b9d8f2" font-size="10" font-weight="700">Groups</text>`);
+      const available = Math.max(18, Number(bottomY) - y - 16);
+      const rowStep = clamp(available / Math.max(groups.length, 1), 5.5, 14);
+      const fontSize = rowStep < 7 ? 5.8 : rowStep < 9 ? 7 : 8.5;
+      groups.forEach((group, index) => {
+        const rowY = y + 16 + index * rowStep;
+        svg.insertAdjacentHTML("beforeend", `<circle cx="${x.toFixed(1)}" cy="${(rowY - 2).toFixed(1)}" r="3.1" fill="#4fb3ff" stroke="#0b0f12" stroke-width="0.8"></circle>`);
+        svg.insertAdjacentHTML("beforeend", `<text x="${(x + 9).toFixed(1)}" y="${(rowY + 1).toFixed(1)}" fill="#dceaf7" font-size="${fontSize}">${escapeHtml(selectedNodeLabel(group.nodes, 3))}</text>`);
+        if (rowStep >= 8) {
+          svg.insertAdjacentHTML("beforeend", `<text x="${(x + 118).toFixed(1)}" y="${(rowY + 1).toFixed(1)}" fill="#9aa7b3" font-size="${fontSize}" text-anchor="end">${escapeHtml(fmtMm(group.trueMaxDepthMm))}</text>`);
+        }
+      });
+    }
+
+    function drawNodeSectionHeaderLabels(svg, xAt, groups, y, scale = null) {
+      const reference = scale?.referenceGroup || groups[0];
+      if (!reference) return;
+      const visibility = nodeSectionVisibility();
+      const labels = [];
+      if (visibility.rest) {
+        labels.push({ x: (xAt(0, reference) + xAt(reference.displayTreadDepthMm, reference)) / 2, width: estimateNodeSliceLabelWidth("TD"), label: "TD", color: "#f0b85a" });
+        labels.push({ x: (xAt(reference.displayTreadDepthMm, reference) + xAt(reference.displayNodeThicknessMm, reference)) / 2, width: estimateNodeSliceLabelWidth("NT"), label: "NT", color: "#78d3ff" });
+      }
+      if (visibility.layers) {
+        reference.layerPlan.forEach(item => {
+          const layer = Number(item.row.plyIndex || 1);
+          labels.push({
+            x: (xAt(item.displayInner, reference) + xAt(item.displayOuter, reference)) / 2,
+            width: estimateNodeSliceLabelWidth(`L${layer}`),
+            label: `L${layer}`,
+            color: COLORS[(layer - 1) % COLORS.length]
+          });
+        });
+      }
+      drawNodeSliceLabels(svg, labels, y);
+    }
+
+    function drawNodeSliceBand(svg, xAt, yTop, yBottom, startMm, endMm, color, opacity, label, group = null) {
+      const x1 = xAt(startMm, group);
+      const x2 = xAt(endMm, group);
+      const width = Math.max(1, x2 - x1);
+      svg.insertAdjacentHTML("beforeend",
+        `<rect x="${x1.toFixed(1)}" y="${yTop.toFixed(1)}" width="${width.toFixed(1)}" height="${(yBottom - yTop).toFixed(1)}" fill="${color}" fill-opacity="${opacity}" stroke="${color}" stroke-opacity="0.75" stroke-width="0.9"><title>${escapeHtml(label)}</title></rect>`);
+      return {
+        x: x1 + width / 2,
+        width: estimateNodeSliceLabelWidth(label),
+        label,
+        color
+      };
+    }
+
+    function drawNodeSliceLabels(svg, candidates, y) {
+      chooseNodeSliceLabels(candidates).forEach(item => {
+        svg.insertAdjacentHTML("beforeend", `<text x="${item.x.toFixed(1)}" y="${y.toFixed(1)}" fill="${item.color}" font-size="9" text-anchor="middle">${escapeHtml(item.label)}</text>`);
+      });
+    }
+
+    function chooseNodeSliceLabels(candidates) {
+      const ordered = candidates
+        .filter(item => item && Number.isFinite(item.x) && Number.isFinite(item.width))
+        .sort((a, b) => a.x - b.x);
+      const groups = [];
+      ordered.forEach(item => {
+        const group = groups[groups.length - 1];
+        if (!group?.length || textGapPx(group[group.length - 1], item) >= NODE_SLICE_LABEL_MIN_GAP_PX) {
+          groups.push([item]);
+        } else {
+          group.push(item);
+        }
+      });
+
+      return groups.flatMap(group => selectAlternatingNodeSliceLabels(group))
+        .sort((a, b) => a.x - b.x);
+    }
+
+    function selectAlternatingNodeSliceLabels(group) {
+      if (group.length <= 1) return group;
+      const center = Math.floor((group.length - 1) / 2);
+      const order = [];
+      for (let step = 0; step <= group.length; step++) {
+        const left = center - step;
+        const right = center + step;
+        if (left >= 0) order.push(left);
+        if (right < group.length && right !== left) order.push(right);
+      }
+
+      const selected = [];
+      order.forEach(index => {
+        const candidate = group[index];
+        if (selected.every(item => textGapPx(item, candidate) >= NODE_SLICE_LABEL_MIN_GAP_PX)) {
+          selected.push(candidate);
+        }
+      });
+      return selected.length ? selected : [group[center]];
+    }
+
+    function textGapPx(left, right) {
+      const a = left.x <= right.x ? left : right;
+      const b = left.x <= right.x ? right : left;
+      return b.x - b.width / 2 - (a.x + a.width / 2);
+    }
+
+    function estimateNodeSliceLabelWidth(label) {
+      return String(label ?? "").length * 5.4 + 1;
+    }
+
+    function drawNodeSliceLegend(svg, layerPlan, x, y, values, visibility = nodeSectionVisibility()) {
+      svg.insertAdjacentHTML("beforeend", `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="#b9d8f2" font-size="10" font-weight="700">Stack</text>`);
+      const rows = visibility.rest ? [
+        { label: "TD", color: "#f0b85a", valueMm: values.treadDepthMm },
+        { label: "NT", color: "#78d3ff", valueMm: values.nodeThicknessMm }
+      ] : [];
+      rows.forEach((row, index) => {
+        const rowY = y + 18 + index * 15;
+        drawNodeSliceLegendRow(svg, x, rowY, row.color, row.label, row.valueMm);
+      });
+
+      let layerTitleY = y + 18 + rows.length * 15 + (rows.length ? 25 : 10);
+      if (visibility.layers) {
+        svg.insertAdjacentHTML("beforeend", `<text x="${x.toFixed(1)}" y="${layerTitleY.toFixed(1)}" fill="#b9d8f2" font-size="10" font-weight="700">Layers</text>`);
+        if (!layerPlan.length) {
+          svg.insertAdjacentHTML("beforeend", `<text x="${x.toFixed(1)}" y="${(layerTitleY + 18).toFixed(1)}" fill="#9aa7b3" font-size="10">-</text>`);
+        }
+        layerPlan.forEach((item, index) => {
+          const layer = Number(item.row.plyIndex || 1);
+          const color = COLORS[(layer - 1) % COLORS.length];
+          const rowY = layerTitleY + 18 + index * 15;
+          drawNodeSliceLegendRow(svg, x, rowY, color, `L${layer}`, layerThicknessMm(item.row));
+        });
+      } else if (!visibility.rest) {
+        svg.insertAdjacentHTML("beforeend", `<text x="${x.toFixed(1)}" y="${(y + 18).toFixed(1)}" fill="#9aa7b3" font-size="10">hidden</text>`);
+        layerTitleY = y + 18;
+      }
+
+      const totalY = layerTitleY + 24 + (visibility.layers ? Math.max(layerPlan.length, 1) * 15 : 0);
+      svg.insertAdjacentHTML("beforeend", `<text x="${x.toFixed(1)}" y="${totalY.toFixed(1)}" fill="#9aa7b3" font-size="9">true stack ${escapeHtml(fmtMm(values.trueMaxDepthMm))}</text>`);
+    }
+
+    function drawNodeSliceLegendRow(svg, x, y, color, label, valueMm) {
+      svg.insertAdjacentHTML("beforeend", `<line x1="${x.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(x + 15).toFixed(1)}" y2="${y.toFixed(1)}" stroke="${color}" stroke-width="3"/>`);
+      svg.insertAdjacentHTML("beforeend", `<text x="${(x + 22).toFixed(1)}" y="${(y + 3).toFixed(1)}" fill="#dceaf7" font-size="10">${escapeHtml(label)}</text>`);
+      svg.insertAdjacentHTML("beforeend", `<text x="${(x + 140).toFixed(1)}" y="${(y + 3).toFixed(1)}" fill="#b9d8f2" font-size="10" text-anchor="end">${escapeHtml(fmtMm(valueMm))}</text>`);
+    }
+
+    function drawMaterialTeardown() {
+      const title = document.getElementById("node-material-title");
+      const note = document.getElementById("node-material-note");
+      const summary = document.getElementById("node-material-summary");
+      const recognition = document.getElementById("node-material-recognition");
+      const charts = {
+        young: document.getElementById("material-young-chart"),
+        density: document.getElementById("material-density-chart"),
+        heat: document.getElementById("material-heat-chart"),
+        conductivity: document.getElementById("material-conductivity-chart"),
+        dimensionless: document.getElementById("material-dimensionless-chart")
+      };
+      if (!title || !summary) return;
+
+      const data = state?.plotData || {};
+      const geometry = data.geometry || [];
+      if (!geometry.length) {
+        title.textContent = "Material teardown";
+        if (note) note.textContent = "";
+        summary.innerHTML = "";
+        if (recognition) recognition.innerHTML = "";
+        Object.values(charts).forEach(svg => drawMaterialEmptyChart(svg, "Material data", "No tyre loaded"));
+        return;
+      }
+
+      const points = geometry.map(point => ({ ...point, xMm: Number(point.x) * 1000, yMm: Number(point.y) * 1000 }));
+      const selectedNodes = selectedNodeIndicesOrDefault(points);
+      const rows = materialRowsForNodes(selectedNodes);
+      title.textContent = `${selectedNodeLabel(selectedNodes)} material teardown`;
+      const pressureFields = materialPressureFields(rows);
+      if (note) {
+        note.textContent = pressureFields.length
+          ? `pressure fields: ${pressureFields.join(", ")}`
+          : "no pressure-dependent material rows";
+      }
+      drawMaterialSummary(summary, rows);
+      drawMaterialRecognition(recognition, selectedNodes);
+      const filteredRows = filterMaterialRowsByKind(rows);
+
+      drawMaterialTrendChart(charts.young, "Young's modulus", materialPropertySeries(filteredRows, "youngsModulusPa", value => value / 1e6, "MPa", selectedNodes), "MPa", "young");
+      drawMaterialTrendChart(charts.density, "Density", materialPropertySeries(filteredRows, "densityKgM3", value => value, "kg/m3", selectedNodes), "kg/m3", "density");
+      drawMaterialTrendChart(charts.heat, "Specific heat", materialPropertySeries(filteredRows, "specificHeatJKgK", value => value, "J/kgK", selectedNodes), "J/kgK", "heat");
+      drawMaterialTrendChart(charts.conductivity, "Conductivity", materialPropertySeries(filteredRows, "conductivityWMK", value => value, "W/mK", selectedNodes), "W/mK", "conductivity");
+      drawMaterialTrendChart(charts.dimensionless, "Poisson / Compression", materialDimensionlessSeries(filteredRows, selectedNodes), "-", "dimensionless");
+    }
+
+    function toggleMaterialKindFilter(kind) {
+      const key = String(kind || "");
+      if (!key) return;
+      if (materialKindFilters.has(key)) {
+        materialKindFilters.delete(key);
+      } else {
+        materialKindFilters.add(key);
+      }
+    }
+
+    function filterMaterialRowsByKind(rows) {
+      return sortMaterialRows((rows || []).filter(row => materialKindFilters.has(String(row.kind || ""))));
+    }
+
+    function toggleMaterialSeries(chartKey, seriesKey) {
+      const key = materialSeriesVisibilityKey(chartKey, seriesKey);
+      if (!key) return;
+      if (materialHiddenSeries.has(key)) {
+        materialHiddenSeries.delete(key);
+      } else {
+        materialHiddenSeries.add(key);
+      }
+      if (viewState.currentView === "materials") {
+        drawMaterialsPage();
+      } else {
+        drawMaterialTeardown();
+      }
+    }
+
+    function materialSeriesVisibilityKey(chartKey, seriesKey) {
+      return chartKey && seriesKey ? `${chartKey}:${seriesKey}` : "";
+    }
+
+    function isMaterialSeriesHidden(chartKey, seriesKey) {
+      const key = materialSeriesVisibilityKey(chartKey, seriesKey);
+      return key ? materialHiddenSeries.has(key) : false;
+    }
+
+    function materialRowsForNode(nodeIndex) {
+      return materialRowsForNodes([nodeIndex]);
+    }
+
+    function materialRowsForNodes(nodeIndices) {
+      const selected = new Set((nodeIndices || []).map(Number).filter(Number.isFinite));
+      return sortMaterialRows((state?.plotData?.materials || [])
+        .filter(row => selected.has(Number(row.nodeIndex))));
+    }
+
+    function sortMaterialRows(rows) {
+      return rows.slice().sort((a, b) =>
+        materialKindOrder(a.kind) - materialKindOrder(b.kind)
+        || Number(a.materialIndex) - Number(b.materialIndex)
+        || Number(a.temperatureK) - Number(b.temperatureK)
+        || String(a.kind || "").localeCompare(String(b.kind || "")));
+    }
+
+    function materialKindOrder(kind) {
+      const key = String(kind || "");
+      if (key === "TreadMaterial") return 0;
+      if (key === "BulkMaterial") return 1;
+      if (key === "PlyMaterial") return 2;
+      return 9;
+    }
+
+    function materialKindLabel(kind) {
+      const key = String(kind || "");
+      if (key === "TreadMaterial") return "Tread";
+      if (key === "BulkMaterial") return "Bulk";
+      if (key === "PlyMaterial") return "Ply";
+      return key || "Material";
+    }
+
+    function materialKindShort(kind) {
+      const key = String(kind || "");
+      if (key === "TreadMaterial") return "T";
+      if (key === "BulkMaterial") return "B";
+      if (key === "PlyMaterial") return "P";
+      return key ? key.slice(0, 1).toUpperCase() : "M";
+    }
+
+    function materialKindColor(kind) {
+      const key = String(kind || "");
+      if (key === "TreadMaterial") return "#f0b85a";
+      if (key === "BulkMaterial") return "#78d3ff";
+      if (key === "PlyMaterial") return "#b99cff";
+      return "#dce6ef";
+    }
+
+    function materialKindDash(kind) {
+      const key = String(kind || "");
+      if (key === "BulkMaterial") return "4 2";
+      if (key === "PlyMaterial") return "2 2";
+      return "";
+    }
+
+    function nodeSeriesColor(nodeIndex, selectedNodes, kind) {
+      const nodes = (selectedNodes || []).map(Number).filter(Number.isFinite);
+      if (nodes.length <= 1) return materialKindColor(kind);
+      const index = Math.max(0, nodes.indexOf(Number(nodeIndex)));
+      return COLORS[index % COLORS.length];
+    }
+
+    function temperatureC(row) {
+      const value = Number(row?.temperatureK);
+      return Number.isFinite(value) ? value - 273.15 : NaN;
+    }
+
+    function materialPressureFields(rows) {
+      const fields = new Set();
+      rows.forEach(row => {
+        Object.keys(row || {}).forEach(key => {
+          const lowered = key.toLowerCase();
+          const pressureLike = lowered.includes("pressure") || lowered.includes("druck") || lowered.includes("kpa") || lowered.includes("bar");
+          if (pressureLike && Number.isFinite(Number(row[key]))) fields.add(key);
+        });
+      });
+      return Array.from(fields);
+    }
+
+    function drawMaterialSummary(element, rows) {
+      const groups = ["TreadMaterial", "BulkMaterial", "PlyMaterial"].map(kind => ({
+        kind,
+        rows: rows.filter(row => String(row.kind || "") === kind)
+      }));
+      element.innerHTML = groups.map(group => {
+        const active = materialKindFilters.has(group.kind);
+        const activeClass = active ? "active" : "inactive";
+        const pressed = active ? "true" : "false";
+        return `<button type="button" class="material-chip ${activeClass}" data-material-kind-filter="${escapeAttr(group.kind)}" aria-pressed="${pressed}"><div class="name">${escapeHtml(materialKindLabel(group.kind))}</div></button>`;
+      }).join("");
+    }
+
+    function drawMaterialRecognition(element, selectedNodes) {
+      if (!element) return;
+      const recognition = materialRecognitionData();
+      const kinds = ["TreadMaterial", "BulkMaterial", "PlyMaterial"];
+      if (!recognition.available) {
+        element.innerHTML = kinds.map(kind => `<div class="material-match-chip"><span class="kind">${escapeHtml(materialKindLabel(kind))}</span><span class="name">-</span><span class="meta">not matched</span></div>`).join("");
+        return;
+      }
+
+      const selectedSet = new Set((selectedNodes || []).map(Number).filter(Number.isFinite));
+      const selectedMatches = recognition.localMatches.filter(match => selectedSet.has(Number(match.nodeIndex)) && match.best);
+      element.innerHTML = kinds.map(kind => {
+        const aggregate = aggregateSelectedMaterialMatches(selectedMatches.filter(match => match.kind === kind));
+        if (!aggregate) {
+          return `<div class="material-match-chip"><span class="kind">${escapeHtml(materialKindLabel(kind))}</span><span class="name">-</span><span class="meta">no rows</span></div>`;
+        }
+        const confidence = Math.round(clamp(aggregate.confidence, 0, 1) * 100);
+        const eText = materialMultiplierRangeText(aggregate.modulusMultipliers, "E");
+        const dText = materialMultiplierRangeText(aggregate.densityMultipliers, "rho");
+        const title = `${materialKindLabel(kind)}: ${aggregate.name} | ${confidence}% | ${aggregate.matchType} | ${eText} | ${dText} | ${aggregate.groupCount} groups`;
+        return `
+          <div class="material-match-chip" title="${escapeAttr(title)}">
+            <span class="kind">${escapeHtml(materialKindLabel(kind))} ${escapeHtml(aggregate.matchType)}</span>
+            <span class="name">${escapeHtml(aggregate.name)}</span>
+            <span class="meta">${confidence}% | ${escapeHtml(eText)} | ${escapeHtml(dText)}</span>
+          </div>`;
+      }).join("");
+    }
+
+    function aggregateSelectedMaterialMatches(matches) {
+      const byMaterial = new Map();
+      matches.forEach(match => {
+        const best = match.best;
+        const key = best.baseKey;
+        const item = byMaterial.get(key) || {
+          key,
+          name: best.materialName,
+          confidenceSum: 0,
+          confidenceWeight: 0,
+          groupCount: 0,
+          matchTypes: new Map(),
+          modulusMultipliers: [],
+          densityMultipliers: []
+        };
+        const weight = Math.max(0.02, Number(best.confidence) || 0);
+        item.confidenceSum += weight * weight;
+        item.confidenceWeight += weight;
+        item.groupCount += 1;
+        item.matchTypes.set(best.matchType, (item.matchTypes.get(best.matchType) || 0) + 1);
+        if (Number.isFinite(best.modulusMultiplier)) item.modulusMultipliers.push(best.modulusMultiplier);
+        if (Number.isFinite(best.densityMultiplier)) item.densityMultipliers.push(best.densityMultiplier);
+        byMaterial.set(key, item);
+      });
+      const items = Array.from(byMaterial.values()).map(item => ({
+        ...item,
+        confidence: item.confidenceWeight > 0 ? item.confidenceSum / item.confidenceWeight : 0,
+        matchType: dominantMatchType(item.matchTypes)
+      })).sort((a, b) => b.confidenceWeight - a.confidenceWeight || b.confidence - a.confidence);
+      return items[0] || null;
+    }
+
+    function dominantMatchType(types) {
+      const ordered = ["exact", "scaled", "ambiguous", "unknown"];
+      let best = "unknown";
+      let bestCount = -1;
+      ordered.forEach(type => {
+        const count = types.get(type) || 0;
+        if (count > bestCount) {
+          best = type;
+          bestCount = count;
+        }
+      });
+      return best;
+    }
+
+    function materialMultiplierRangeText(values, label) {
+      const finite = (values || []).map(Number).filter(Number.isFinite);
+      if (!finite.length) return `${label}x-`;
+      const min = Math.min(...finite);
+      const max = Math.max(...finite);
+      const value = Math.abs(max - min) < 0.015 ? fmt((min + max) / 2) : `${fmt(min)}..${fmt(max)}`;
+      return `${label}x${value}`;
+    }
+
+    function materialRecognitionData() {
+      if (materialRecognitionCache) return materialRecognitionCache;
+      const library = materialLibraryMaterials();
+      const groups = observedMaterialGroups(state?.plotData?.materials || []);
+      if (!library.length || !groups.length) {
+        materialRecognitionCache = { available: false, localMatches: [], globalSummaries: [], globalByKey: new Map() };
+        return materialRecognitionCache;
+      }
+
+      const localMatches = groups.map(group => {
+        const candidates = library
+          .filter(material => isMaterialCandidateForKind(group.kind, material))
+          .map(material => matchMaterialCandidate(group, material))
+          .filter(Boolean)
+          .sort((a, b) => a.score - b.score);
+        return {
+          ...group,
+          candidates: dedupeMaterialCandidates(candidates).slice(0, MATERIAL_RECOGNITION_TOP_N),
+          best: null
+        };
+      });
+
+      const global = aggregateGlobalMaterialMatches(localMatches);
+      enrichMaterialMatches(localMatches, global.byKey);
+      materialRecognitionCache = {
+        available: true,
+        localMatches,
+        globalSummaries: global.summaries,
+        globalByKey: global.byKey
+      };
+      return materialRecognitionCache;
+    }
+
+    function observedMaterialGroups(rows) {
+      const groups = new Map();
+      const fallbackState = new Map();
+      asArray(rows).forEach((row, order) => {
+        const node = Number(row.nodeIndex);
+        const kind = String(row.kind || "");
+        const temperatureK = Number(row.temperatureK);
+        if (!Number.isFinite(node) || !kind || !Number.isFinite(temperatureK)) return;
+        const materialIndex = Number.isFinite(Number(row.materialIndex))
+          ? Number(row.materialIndex)
+          : fallbackMaterialIndex(fallbackState, row);
+        const key = `${node}:${kind}:${materialIndex}`;
+        if (!groups.has(key)) {
+          groups.set(key, {
+            key,
+            nodeIndex: node,
+            kind,
+            materialIndex,
+            order,
+            points: []
+          });
+        }
+        groups.get(key).points.push({
+          temperatureK,
+          densityKgM3: Number(row.densityKgM3),
+          youngsModulusPa: Number(row.youngsModulusPa),
+          poissonRatio: Number(row.poissonRatio),
+          compressionMultiplier: Number(row.compressionMultiplier),
+          specificHeatJKgK: Number(row.specificHeatJKgK),
+          conductivityWMK: Number(row.conductivityWMK)
+        });
+      });
+      return Array.from(groups.values())
+        .map(group => ({
+          ...group,
+          points: group.points.sort((a, b) => a.temperatureK - b.temperatureK)
+        }))
+        .filter(group => group.points.length);
+    }
+
+    function fallbackMaterialIndex(stateMap, row) {
+      const baseKey = `${Number(row.nodeIndex)}:${String(row.kind || "")}`;
+      const temperature = Number(row.temperatureK);
+      const item = stateMap.get(baseKey) || { index: 0, lastTemperature: NaN };
+      if (item.index === 0 || (Number.isFinite(item.lastTemperature) && Number.isFinite(temperature) && temperature <= item.lastTemperature)) {
+        item.index += 1;
+      }
+      item.lastTemperature = temperature;
+      stateMap.set(baseKey, item);
+      return item.index;
+    }
+
+    function dedupeMaterialCandidates(candidates) {
+      const byKey = new Map();
+      candidates.forEach(candidate => {
+        const existing = byKey.get(candidate.baseKey);
+        if (!existing || candidate.score < existing.score) byKey.set(candidate.baseKey, candidate);
+      });
+      return Array.from(byKey.values()).sort((a, b) => a.score - b.score);
+    }
+
+    function isMaterialCandidateForKind(kind, material) {
+      const category = String(material?.category || "").toLowerCase();
+      if (kind === "PlyMaterial") return category.includes("ply") || category.includes("reinforcement");
+      if (kind === "BulkMaterial") return /(bulk|filler|bead|apex|inner liner)/.test(category);
+      if (kind === "TreadMaterial") return /(rubber tread|tread sidewall|inner liner)/.test(category);
+      return true;
+    }
+
+    function matchMaterialCandidate(group, material) {
+      const candidatePoints = asArray(material.points)
+        .map(normalizedMaterialPoint)
+        .filter(point => Number.isFinite(point.temperatureK))
+        .sort((a, b) => a.temperatureK - b.temperatureK);
+      if (!candidatePoints.length) return null;
+
+      const fields = [
+        { observed: "youngsModulusPa", base: "youngsModulusPa", weight: 2.6, scaled: true, scaleName: "modulusMultiplier" },
+        { observed: "densityKgM3", base: "densityKgM3", weight: 1.1, scaled: true, scaleName: "densityMultiplier" },
+        { observed: "poissonRatio", base: "poissonsRatio", weight: 1.7, tolerance: 0.08 },
+        { observed: "compressionMultiplier", base: "compressionTensionRatio", weight: 1.7, log: true },
+        { observed: "specificHeatJKgK", base: "specificHeat", weight: 0.65, log: true },
+        { observed: "conductivityWMK", base: "thermalConductivity", weight: 0.9, log: true }
+      ];
+
+      let weightedScore = 0;
+      let weightSum = 0;
+      const result = {
+        baseKey: materialIdentityKey(material),
+        materialId: Number(material.id),
+        materialName: String(material.name || "Material"),
+        category: String(material.category || ""),
+        score: Infinity,
+        modulusMultiplier: NaN,
+        densityMultiplier: NaN,
+        fieldScores: {}
+      };
+
+      fields.forEach(field => {
+        const observedValues = [];
+        const baseValues = [];
+        group.points.forEach(point => {
+          const observed = Number(point[field.observed]);
+          const base = interpolateMaterialValue(candidatePoints, Number(point.temperatureK), field.base);
+          if (Number.isFinite(observed) && Number.isFinite(base)) {
+            observedValues.push(observed);
+            baseValues.push(base);
+          }
+        });
+        if (!observedValues.length) return;
+
+        let residual = NaN;
+        if (field.scaled) {
+          const fit = scaledLogFit(observedValues, baseValues);
+          residual = fit.residual;
+          result[field.scaleName] = fit.multiplier;
+          residual += scalePlausibilityPenalty(fit.multiplier);
+        } else if (field.log) {
+          residual = logResidual(observedValues, baseValues);
+        } else {
+          residual = absoluteResidual(observedValues, baseValues, field.tolerance || 1);
+        }
+        if (!Number.isFinite(residual)) return;
+        result.fieldScores[field.observed] = residual;
+        weightedScore += residual * field.weight;
+        weightSum += field.weight;
+      });
+
+      if (weightSum <= 0) return null;
+      result.score = weightedScore / weightSum;
+      result.localLikelihood = materialCandidateLikelihood(result.score);
+      return result;
+    }
+
+    function normalizedMaterialPoint(point) {
+      return {
+        temperatureK: Number(point.temperatureK),
+        densityKgM3: Number(point.densityKgM3),
+        youngsModulusPa: Number(point.youngsModulusPa),
+        poissonsRatio: Number(point.poissonsRatio),
+        compressionTensionRatio: Number(point.compressionTensionRatio),
+        specificHeat: Number(point.specificHeat),
+        thermalConductivity: Number(point.thermalConductivity),
+        longitudinalConductivity: Number(point.longitudinalConductivity),
+        shoreA: Number(point.shoreA)
+      };
+    }
+
+    function interpolateMaterialValue(points, temperatureK, field) {
+      const values = points
+        .map(point => ({ temperatureK: Number(point.temperatureK), value: Number(point[field]) }))
+        .filter(point => Number.isFinite(point.temperatureK) && Number.isFinite(point.value))
+        .sort((a, b) => a.temperatureK - b.temperatureK);
+      if (!values.length || !Number.isFinite(temperatureK)) return NaN;
+      if (temperatureK <= values[0].temperatureK) return values[0].value;
+      if (temperatureK >= values[values.length - 1].temperatureK) return values[values.length - 1].value;
+      for (let index = 0; index < values.length - 1; index += 1) {
+        const left = values[index];
+        const right = values[index + 1];
+        if (temperatureK >= left.temperatureK && temperatureK <= right.temperatureK) {
+          const ratio = (temperatureK - left.temperatureK) / safeRange(left.temperatureK, right.temperatureK);
+          return left.value + (right.value - left.value) * ratio;
+        }
+      }
+      return NaN;
+    }
+
+    function scaledLogFit(observedValues, baseValues) {
+      const pairs = observedValues.map((observed, index) => [Number(observed), Number(baseValues[index])])
+        .filter(([observed, base]) => observed > 0 && base > 0 && Number.isFinite(observed) && Number.isFinite(base));
+      if (!pairs.length) return { multiplier: NaN, residual: NaN };
+      const logs = pairs.map(([observed, base]) => Math.log(observed / base));
+      const multiplier = Math.exp(logs.reduce((sum, value) => sum + value, 0) / logs.length);
+      const residual = Math.sqrt(pairs.reduce((sum, [observed, base]) => {
+        const error = Math.log(observed / (base * multiplier));
+        return sum + error * error;
+      }, 0) / pairs.length);
+      return { multiplier, residual };
+    }
+
+    function logResidual(observedValues, baseValues) {
+      const pairs = observedValues.map((observed, index) => [Number(observed), Number(baseValues[index])])
+        .filter(([observed, base]) => observed > 0 && base > 0 && Number.isFinite(observed) && Number.isFinite(base));
+      if (!pairs.length) return NaN;
+      return Math.sqrt(pairs.reduce((sum, [observed, base]) => {
+        const error = Math.log(observed / base);
+        return sum + error * error;
+      }, 0) / pairs.length);
+    }
+
+    function absoluteResidual(observedValues, baseValues, tolerance) {
+      const pairs = observedValues.map((observed, index) => [Number(observed), Number(baseValues[index])])
+        .filter(([observed, base]) => Number.isFinite(observed) && Number.isFinite(base));
+      if (!pairs.length) return NaN;
+      const scale = Math.max(Number(tolerance) || 1, 1e-12);
+      return Math.sqrt(pairs.reduce((sum, [observed, base]) => {
+        const error = (observed - base) / scale;
+        return sum + error * error;
+      }, 0) / pairs.length);
+    }
+
+    function scalePlausibilityPenalty(multiplier) {
+      const value = Number(multiplier);
+      if (!(value > 0)) return 2;
+      const logValue = Math.abs(Math.log(value));
+      const close = logValue * 0.08;
+      const soft = Math.max(0, logValue - Math.log(1.35)) * 0.18;
+      const hard = value < 0.25 || value > 4 ? 0.5 : 0;
+      return close + soft + hard;
+    }
+
+    function aggregateGlobalMaterialMatches(localMatches) {
+      const byKey = new Map();
+      localMatches.forEach(match => {
+        match.candidates.forEach(candidate => {
+          const key = `${match.kind}:${candidate.baseKey}`;
+          const item = byKey.get(key) || {
+            key,
+            kind: match.kind,
+            baseKey: candidate.baseKey,
+            materialId: candidate.materialId,
+            materialName: candidate.materialName,
+            category: candidate.category,
+            likelihood: 0,
+            scoreSum: 0,
+            groupCount: 0,
+            nodes: new Set(),
+            modulusMultipliers: [],
+            densityMultipliers: []
+          };
+          const likelihood = materialCandidateLikelihood(candidate.score);
+          item.likelihood += likelihood;
+          item.scoreSum += candidate.score * likelihood;
+          item.groupCount += 1;
+          item.nodes.add(match.nodeIndex);
+          if (Number.isFinite(candidate.modulusMultiplier)) item.modulusMultipliers.push(candidate.modulusMultiplier);
+          if (Number.isFinite(candidate.densityMultiplier)) item.densityMultipliers.push(candidate.densityMultiplier);
+          byKey.set(key, item);
+        });
+      });
+
+      const totalsByKind = new Map();
+      byKey.forEach(item => totalsByKind.set(item.kind, (totalsByKind.get(item.kind) || 0) + item.likelihood));
+      const summaries = Array.from(byKey.values()).map(item => ({
+        ...item,
+        nodeCount: item.nodes.size,
+        probability: item.likelihood / Math.max(totalsByKind.get(item.kind) || 0, 1e-12),
+        score: item.likelihood > 0 ? item.scoreSum / item.likelihood : Infinity,
+        nodes: Array.from(item.nodes).sort((a, b) => a - b)
+      })).sort((a, b) => materialKindOrder(a.kind) - materialKindOrder(b.kind) || b.probability - a.probability);
+      const summaryByKey = new Map(summaries.map(item => [item.key, item]));
+      return { summaries, byKey: summaryByKey };
+    }
+
+    function enrichMaterialMatches(localMatches, globalByKey) {
+      localMatches.forEach(match => {
+        const alternatives = match.candidates.map(candidate => {
+          const global = globalByKey.get(`${match.kind}:${candidate.baseKey}`);
+          const support = global ? 1 + Math.log1p(global.groupCount) * 0.35 + global.probability : 1;
+          return {
+            ...candidate,
+            globalProbability: global?.probability || 0,
+            globalGroupCount: global?.groupCount || 0,
+            combinedLikelihood: candidate.localLikelihood * support
+          };
+        }).sort((a, b) => b.combinedLikelihood - a.combinedLikelihood);
+        const likelihoodSum = alternatives.reduce((sum, candidate) => sum + candidate.combinedLikelihood, 0);
+        match.alternatives = alternatives.map(candidate => ({
+          ...candidate,
+          confidence: likelihoodSum > 0 ? candidate.combinedLikelihood / likelihoodSum : 0,
+          matchType: materialMatchType(candidate, likelihoodSum)
+        }));
+        match.best = match.alternatives[0] || null;
+      });
+    }
+
+    function materialCandidateLikelihood(score) {
+      const value = clamp(Number(score), 0, 10);
+      return Math.exp(-value * 14);
+    }
+
+    function materialMatchType(candidate, likelihoodSum) {
+      if (!candidate || candidate.score > 0.28) return "unknown";
+      const confidence = likelihoodSum > 0 ? candidate.combinedLikelihood / likelihoodSum : 0;
+      if (confidence < 0.46) return "ambiguous";
+      const eScaled = Number.isFinite(candidate.modulusMultiplier) && Math.abs(Math.log(candidate.modulusMultiplier)) > Math.log(1.04);
+      const dScaled = Number.isFinite(candidate.densityMultiplier) && Math.abs(Math.log(candidate.densityMultiplier)) > Math.log(1.04);
+      return eScaled || dScaled ? "scaled" : "exact";
+    }
+
+    function materialIdentityKey(material) {
+      return `${String(material?.category || "")}|${String(material?.name || "")}`.toLowerCase();
+    }
+
+    function materialPropertySeries(rows, field, convert, unit, selectedNodes = []) {
+      const multiNode = (selectedNodes || []).length > 1;
+      const byKind = new Map();
+      sortMaterialRows(rows).forEach(row => {
+        const raw = Number(row[field]);
+        const value = Number.isFinite(raw) ? convert(raw) : NaN;
+        const tempC = temperatureC(row);
+        if (!Number.isFinite(value) || !Number.isFinite(tempC)) return;
+        const kind = String(row.kind || "Material");
+        const node = Number(row.nodeIndex);
+        const key = multiNode ? `${node}:${kind}` : kind;
+        if (!byKind.has(key)) {
+          byKind.set(key, {
+            key,
+            label: multiNode ? `N${node} ${materialKindShort(kind)}` : materialKindLabel(kind),
+            color: nodeSeriesColor(node, selectedNodes, kind),
+            dash: multiNode ? materialKindDash(kind) : "",
+            points: []
+          });
+        }
+        byKind.get(key).points.push({
+          x: tempC,
+          y: value,
+          title: `${multiNode ? `Node ${node} ` : ""}${materialKindLabel(kind)} ${fmt(tempC)} C: ${fmt(value)} ${unit}`
+        });
+      });
+
+      return Array.from(byKind.values()).map(series => ({
+        ...series,
+        points: mergeMaterialSeriesPoints(series.points)
+      })).filter(series => series.points.length);
+    }
+
+    function mergeMaterialSeriesPoints(points) {
+      const byTemperature = new Map();
+      points.forEach(point => {
+        const key = numberKey(point.x);
+        const bucket = byTemperature.get(key) || { x: point.x, values: [], titles: [] };
+        bucket.values.push(point.y);
+        bucket.titles.push(point.title);
+        byTemperature.set(key, bucket);
+      });
+      return Array.from(byTemperature.values())
+        .map(bucket => ({
+          x: bucket.x,
+          y: bucket.values.reduce((sum, value) => sum + value, 0) / bucket.values.length,
+          title: bucket.titles.join(" | ")
+        }))
+        .sort((a, b) => a.x - b.x);
+    }
+
+    function materialDimensionlessSeries(rows, selectedNodes = []) {
+      const multiNode = (selectedNodes || []).length > 1;
+      const seriesByKey = new Map();
+      sortMaterialRows(rows).forEach(row => {
+        const tempC = temperatureC(row);
+        if (!Number.isFinite(tempC)) return;
+        const kind = String(row.kind || "Material");
+        const node = Number(row.nodeIndex);
+        const nodePrefix = multiNode ? `${node}:` : "";
+        const labelPrefix = multiNode ? `N${node} ${materialKindShort(kind)}` : materialKindShort(kind);
+        [
+          {
+            key: `${nodePrefix}${kind}-poisson`,
+            label: `${labelPrefix} v`,
+            value: Number(row.poissonRatio),
+            color: nodeSeriesColor(node, selectedNodes, kind),
+            dash: "",
+            suffix: "Poisson"
+          },
+          {
+            key: `${nodePrefix}${kind}-compression`,
+            label: `${labelPrefix} c`,
+            value: Number(row.compressionMultiplier),
+            color: nodeSeriesColor(node, selectedNodes, kind),
+            dash: "3 2",
+            suffix: "Compression"
+          }
+        ].forEach(item => {
+          if (!Number.isFinite(item.value)) return;
+          if (!seriesByKey.has(item.key)) {
+            seriesByKey.set(item.key, {
+              key: item.key,
+              label: item.label,
+              color: item.color,
+              dash: item.dash,
+              points: []
+            });
+          }
+          seriesByKey.get(item.key).points.push({
+            x: tempC,
+            y: item.value,
+            title: `${multiNode ? `Node ${node} ` : ""}${materialKindLabel(kind)} ${fmt(tempC)} C: ${item.suffix} ${fmt(item.value)}`
+          });
+        });
+      });
+
+      return Array.from(seriesByKey.values()).map(series => ({
+        ...series,
+        points: mergeMaterialSeriesPoints(series.points)
+      })).filter(series => series.points.length);
+    }
+
+    function drawMaterialTrendChart(svg, title, seriesList, unit, chartKey) {
+      if (!svg) return;
+      syncSvgViewBox(svg, 320, 240);
+      svg.innerHTML = "";
+      const view = svg.viewBox.baseVal;
+      const w = view.width || 320;
+      const h = view.height || 178;
+      const margin = { left: 42, right: 14, top: 32, bottom: 34 };
+      const plotW = Math.max(1, w - margin.left - margin.right);
+      const plotH = Math.max(1, h - margin.top - margin.bottom);
+      const validSeries = seriesList
+        .map(series => ({
+          ...series,
+          points: (series.points || []).filter(point => Number.isFinite(point.x) && Number.isFinite(point.y))
+            .sort((a, b) => a.x - b.x)
+        }))
+        .filter(series => series.points.length);
+      const visibleSeries = validSeries.filter(series => !isMaterialSeriesHidden(chartKey, series.key));
+      const allPoints = visibleSeries.flatMap(series => series.points);
+
+      svg.insertAdjacentHTML("beforeend", `<text x="10" y="16" fill="#b9d8f2" font-size="10.5" font-weight="700">${escapeHtml(title)}</text>`);
+      if (!validSeries.length) {
+        drawMaterialEmptyChart(svg, title, "No temperature rows");
+        return;
+      }
+      if (!allPoints.length) {
+        svg.insertAdjacentHTML("beforeend", `<text x="${(w / 2).toFixed(1)}" y="${(h / 2).toFixed(1)}" fill="#9aa7b3" font-size="10" text-anchor="middle">All series hidden</text>`);
+        drawMaterialSeriesLegend(svg, validSeries, margin.left + 4, margin.top - 8, w - margin.right - margin.left - 8, chartKey);
+        return;
+      }
+
+      const xValues = allPoints.map(point => point.x);
+      const yValues = allPoints.map(point => point.y);
+      const xDomain = materialPlotDomain(Math.min(...xValues), Math.max(...xValues), false);
+      const yDomain = materialPlotDomain(Math.min(...yValues), Math.max(...yValues), true);
+      const xAt = value => margin.left + (Number(value) - xDomain.min) / safeRange(xDomain.min, xDomain.max) * plotW;
+      const yAt = value => margin.top + (1 - (Number(value) - yDomain.min) / safeRange(yDomain.min, yDomain.max)) * plotH;
+
+      const yTicks = niceTicks(yDomain.min, yDomain.max, 4).filter(tick => tick >= yDomain.min - Math.abs(yDomain.max) * 1e-9 && tick <= yDomain.max + Math.abs(yDomain.max) * 1e-9);
+      const xTicks = niceTicks(xDomain.min, xDomain.max, 4).filter(tick => tick >= xDomain.min - Math.abs(xDomain.max) * 1e-9 && tick <= xDomain.max + Math.abs(xDomain.max) * 1e-9);
+      yTicks.forEach(tick => {
+        const y = yAt(tick);
+        svg.insertAdjacentHTML("beforeend", `<line x1="${margin.left}" y1="${y.toFixed(1)}" x2="${(w - margin.right).toFixed(1)}" y2="${y.toFixed(1)}" stroke="#27323c" stroke-width="0.6"></line>`);
+        svg.insertAdjacentHTML("beforeend", `<text x="${(margin.left - 5).toFixed(1)}" y="${(y + 3).toFixed(1)}" fill="#9aa7b3" font-size="7.5" text-anchor="end">${escapeHtml(tickFormat(tick))}</text>`);
+      });
+      xTicks.forEach(tick => {
+        const x = xAt(tick);
+        svg.insertAdjacentHTML("beforeend", `<line x1="${x.toFixed(1)}" y1="${margin.top}" x2="${x.toFixed(1)}" y2="${(h - margin.bottom).toFixed(1)}" stroke="#1e2830" stroke-width="0.5"></line>`);
+        svg.insertAdjacentHTML("beforeend", `<text x="${x.toFixed(1)}" y="${(h - margin.bottom + 12).toFixed(1)}" fill="#9aa7b3" font-size="7" text-anchor="middle">${escapeHtml(tickFormat(tick))}</text>`);
+      });
+      svg.insertAdjacentHTML("beforeend", `<line x1="${margin.left}" y1="${margin.top}" x2="${margin.left}" y2="${(h - margin.bottom).toFixed(1)}" stroke="#617286" stroke-width="0.8"></line>`);
+      svg.insertAdjacentHTML("beforeend", `<line x1="${margin.left}" y1="${(h - margin.bottom).toFixed(1)}" x2="${(w - margin.right).toFixed(1)}" y2="${(h - margin.bottom).toFixed(1)}" stroke="#617286" stroke-width="0.8"></line>`);
+      svg.insertAdjacentHTML("beforeend", `<text x="${(w - margin.right).toFixed(1)}" y="16" fill="#9aa7b3" font-size="7.5" text-anchor="end">${escapeHtml(unit)}</text>`);
+      svg.insertAdjacentHTML("beforeend", `<text x="${((margin.left + w - margin.right) / 2).toFixed(1)}" y="${(h - 6).toFixed(1)}" fill="#9aa7b3" font-size="7.5" text-anchor="middle">Temperature [C]</text>`);
+
+      visibleSeries.forEach(series => {
+        const path = series.points.map((point, index) => `${index === 0 ? "M" : "L"}${xAt(point.x).toFixed(1)},${yAt(point.y).toFixed(1)}`).join(" ");
+        if (series.points.length > 1) {
+          svg.insertAdjacentHTML("beforeend",
+            `<path d="${path}" fill="none" stroke="${series.color}" stroke-width="1.4" stroke-opacity="0.82" stroke-dasharray="${escapeAttr(series.dash || "")}"></path>`);
+        }
+        series.points.forEach(point => {
+          svg.insertAdjacentHTML("beforeend",
+            `<circle cx="${xAt(point.x).toFixed(1)}" cy="${yAt(point.y).toFixed(1)}" r="2.3" fill="${series.color}" stroke="#0b0f12" stroke-width="0.7"><title>${escapeHtml(point.title)}</title></circle>`);
+        });
+      });
+
+      drawMaterialSeriesLegend(svg, validSeries, margin.left + 4, margin.top - 8, w - margin.right - margin.left - 8, chartKey);
+    }
+
+    function drawMaterialSeriesLegend(svg, seriesList, x, y, maxWidth, chartKey) {
+      const compact = seriesList.slice(0, 5);
+      let cursor = x;
+      compact.forEach(series => {
+        const label = String(series.label || "");
+        const width = Math.min(74, label.length * 5.5 + 24);
+        if (cursor + width > x + maxWidth) return;
+        const hidden = isMaterialSeriesHidden(chartKey, series.key);
+        const opacity = hidden ? 0.34 : 1;
+        const textFill = hidden ? "#7f8b96" : "#dceaf7";
+        svg.insertAdjacentHTML("beforeend", `
+          <g class="material-series-toggle" data-material-chart-key="${escapeAttr(chartKey)}" data-material-series-key="${escapeAttr(series.key)}" opacity="${opacity.toFixed(2)}">
+            <rect x="${(cursor - 3).toFixed(1)}" y="${(y - 8).toFixed(1)}" width="${width.toFixed(1)}" height="13" fill="transparent"></rect>
+            <line x1="${cursor.toFixed(1)}" y1="${y.toFixed(1)}" x2="${(cursor + 13).toFixed(1)}" y2="${y.toFixed(1)}" stroke="${series.color}" stroke-width="1.7" stroke-dasharray="${escapeAttr(series.dash || "")}"></line>
+            <text x="${(cursor + 17).toFixed(1)}" y="${(y + 3).toFixed(1)}" fill="${textFill}" font-size="7.5">${escapeHtml(label)}</text>
+            <title>${hidden ? "Show" : "Hide"} ${escapeHtml(label)}</title>
+          </g>`);
+        cursor += width;
+      });
+    }
+
+    function drawMaterialEmptyChart(svg, title, message) {
+      if (!svg) return;
+      syncSvgViewBox(svg, 320, 240);
+      svg.innerHTML = "";
+      const view = svg.viewBox.baseVal;
+      const w = view.width || 320;
+      const h = view.height || 178;
+      svg.insertAdjacentHTML("beforeend", `<text x="10" y="16" fill="#b9d8f2" font-size="10.5" font-weight="700">${escapeHtml(title)}</text>`);
+      svg.insertAdjacentHTML("beforeend", `<text x="${(w / 2).toFixed(1)}" y="${(h / 2).toFixed(1)}" fill="#9aa7b3" font-size="10" text-anchor="middle">${escapeHtml(message)}</text>`);
+    }
+
+    function materialPlotDomain(minValue, maxValue, allowZeroFloor) {
+      let min = Number(minValue);
+      let max = Number(maxValue);
+      if (!Number.isFinite(min) || !Number.isFinite(max)) return { min: 0, max: 1 };
+      if (Math.abs(max - min) < 1e-12) {
+        const pad = Math.max(Math.max(Math.abs(max), 1) * 0.08, 1e-6);
+        min -= pad;
+        max += pad;
+      } else {
+        const pad = Math.max(Math.abs(max - min) * 0.08, 1e-9);
+        min -= pad;
+        max += pad;
+      }
+      if (allowZeroFloor && min > 0 && min / Math.max(max, 1e-9) < 0.08) min = 0;
+      const step = materialNiceStep((max - min) / 3.5);
+      let domainMin = Math.floor(min / step) * step;
+      let domainMax = Math.ceil(max / step) * step;
+      if (domainMax <= domainMin) domainMax = domainMin + step;
+      return {
+        min: Number(domainMin.toPrecision(12)),
+        max: Number(domainMax.toPrecision(12))
+      };
+    }
+
+    function materialNiceStep(rawStep) {
+      const step = Math.abs(Number(rawStep));
+      if (!(step > 0)) return 1;
+      const magnitude = Math.pow(10, Math.floor(Math.log10(step)));
+      const normalized = step / magnitude;
+      const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 2.5 ? 2.5 : normalized <= 5 ? 5 : 10;
+      return nice * magnitude;
+    }
+
+    function materialNiceFloor(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n === 0) return 0;
+      if (n < 0) return -materialNiceCeil(-n);
+      const magnitude = Math.pow(10, Math.floor(Math.log10(n)));
+      const normalized = n / magnitude;
+      const nice = normalized < 2 ? 1 : normalized < 5 ? 2 : 5;
+      return nice * magnitude;
+    }
+
+    function materialNiceCeil(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n) || n === 0) return 1;
+      if (n < 0) return -materialNiceFloor(-n);
+      const magnitude = Math.pow(10, Math.floor(Math.log10(n)));
+      const normalized = n / magnitude;
+      const nice = normalized <= 1 ? 1 : normalized <= 2 ? 2 : normalized <= 5 ? 5 : 10;
+      return nice * magnitude;
+    }
+
+    function updateLayerExplodeReadout() {
+      const slider = document.getElementById("layer-explode-slider");
+      const output = document.getElementById("layer-explode-value");
+      const value = clamp(Number(viewState.layerExplode), 0, 100);
+      viewState.layerExplode = value;
+      if (slider) slider.value = String(Math.round(value));
+      if (slider) slider.disabled = viewState.layerExplodeEnabled === false;
+      if (output) output.textContent = viewState.layerExplodeEnabled === false ? "off" : String(Math.round(value));
+    }
+
+    function updateNodeLayerSpreadReadout() {
+      const slider = document.getElementById("node-layer-spread-slider");
+      const output = document.getElementById("node-layer-spread-value");
+      const value = clamp(Number(viewState.nodeLayerSpread), 0, 100);
+      viewState.nodeLayerSpread = value;
+      if (slider) slider.value = String(Math.round(value));
+      if (output) output.textContent = String(Math.round(value));
+      updateNodeDisplayControls();
+    }
+
+    function updateNodeDisplayControls() {
+      const visibility = nodeSectionVisibility();
+      document.querySelectorAll("[data-node-display-target]").forEach(button => {
+        const target = normalizeNodeDisplayTarget(button.dataset.nodeDisplayTarget);
+        const active = target === "layers" ? visibility.layers : visibility.rest;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+    }
+
+    function toggleNodeDisplayTarget(target) {
+      const normalized = normalizeNodeDisplayTarget(target);
+      if (normalized === "layers") {
+        viewState.nodeShowLayers = viewState.nodeShowLayers !== false ? false : true;
+      } else {
+        viewState.nodeShowRest = viewState.nodeShowRest !== false ? false : true;
+      }
+    }
+
+    function normalizeNodeDisplayTarget(target) {
+      const value = String(target || "").trim().toLowerCase();
+      return value === "rest" ? "rest" : "layers";
+    }
+
+    function nodeSectionVisibility() {
+      return {
+        layers: viewState.nodeShowLayers !== false,
+        rest: viewState.nodeShowRest !== false
+      };
+    }
+
+    function layerExplodeStrength() {
+      if (viewState.layerExplodeEnabled === false) return 0;
+      const value = clamp(Number(viewState.layerExplode), 0, 100) / 100;
+      return Math.pow(value, 1.25);
+    }
+
+    function nodeLayerSpreadStrength() {
+      const value = clamp(Number(viewState.nodeLayerSpread), 0, 100) / 100;
+      return Math.pow(value, 1.25);
+    }
+
+    function handleNodeClickSelection(nodeIndex, event) {
+      if (event?.ctrlKey || event?.metaKey) {
+        toggleSelectedNode(nodeIndex);
+      } else {
+        selectNode(nodeIndex);
+      }
+    }
+
+    function handleNodeExplorerKeydown(event) {
+      if (viewState.currentView !== "node-explorer") return;
+      const nodes = nodeExplorerNodeIndices();
+      if (!nodes.length) return;
+
+      if ((event.ctrlKey || event.metaKey) && String(event.key).toLowerCase() === "a") {
+        event.preventDefault();
+        setSelectedNodes(nodes, nodes[0]);
+        return;
+      }
+
+      const activeNode = Number(viewState.selectedNodeIndex);
+      let activeIndex = nodes.indexOf(activeNode);
+      if (activeIndex < 0) {
+        const selected = (viewState.selectedNodeIndices || []).map(Number).filter(Number.isFinite);
+        activeIndex = Math.max(0, nodes.indexOf(selected[0]));
+      }
+
+      let nextIndex = activeIndex;
+      switch (event.key) {
+        case "ArrowRight":
+        case "ArrowDown":
+          nextIndex = Math.max(0, activeIndex - 1);
+          break;
+        case "ArrowLeft":
+        case "ArrowUp":
+          nextIndex = Math.min(nodes.length - 1, activeIndex + 1);
+          break;
+        case "PageDown":
+          nextIndex = Math.min(nodes.length - 1, activeIndex + 5);
+          break;
+        case "PageUp":
+          nextIndex = Math.max(0, activeIndex - 5);
+          break;
+        case "Home":
+          nextIndex = 0;
+          break;
+        case "End":
+          nextIndex = nodes.length - 1;
+          break;
+        default:
+          return;
+      }
+
+      const nextNode = nodes[nextIndex];
+      if (!Number.isFinite(nextNode)) return;
+      event.preventDefault();
+      if (event.shiftKey) {
+        const selected = new Set((viewState.selectedNodeIndices || []).map(Number).filter(Number.isFinite));
+        selected.add(nextNode);
+        setSelectedNodes(Array.from(selected), nextNode);
+      } else {
+        setSelectedNodes([nextNode], nextNode);
+      }
+    }
+
+    function nodeExplorerNodeIndices() {
+      return Array.from(new Set((state?.plotData?.geometry || [])
+        .map(point => Number(point.nodeIndex))
+        .filter(Number.isFinite)))
+        .sort((a, b) => a - b);
+    }
+
+    function beginNodeSelectionDrag(event) {
+      if (event.button !== 0) return;
+      if (event.target.closest("[data-focus-key]")) return;
+      const svg = event.currentTarget;
+      const point = svgPointFromEvent(svg, event);
+      if (!point) return;
+      svg.focus?.();
+      nodeSelectionDrag.active = true;
+      nodeSelectionDrag.dragging = false;
+      nodeSelectionDrag.plotId = svg.id;
+      nodeSelectionDrag.start = point;
+      nodeSelectionDrag.current = point;
+      nodeSelectionDrag.additive = Boolean(event.ctrlKey || event.metaKey);
+      nodeSelectionDrag.suppressClick = false;
+      if (svg.setPointerCapture) svg.setPointerCapture(event.pointerId);
+    }
+
+    function updateNodeSelectionDrag(event) {
+      if (!nodeSelectionDrag.active || nodeSelectionDrag.plotId !== event.currentTarget.id) return;
+      const svg = event.currentTarget;
+      const point = svgPointFromEvent(svg, event);
+      if (!point) return;
+      nodeSelectionDrag.current = point;
+      const distance = Math.hypot(point.x - nodeSelectionDrag.start.x, point.y - nodeSelectionDrag.start.y);
+      if (!nodeSelectionDrag.dragging && distance < 5) return;
+      nodeSelectionDrag.dragging = true;
+      nodeSelectionDrag.suppressClick = true;
+      drawNodeSelectionBox(svg, nodeSelectionDrag.start, point);
+      event.preventDefault();
+    }
+
+    function finishNodeSelectionDrag(event) {
+      if (!nodeSelectionDrag.active || nodeSelectionDrag.plotId !== event.currentTarget.id) return;
+      const svg = event.currentTarget;
+      if (nodeSelectionDrag.dragging) {
+        const rect = selectionRectFromPoints(nodeSelectionDrag.start, nodeSelectionDrag.current);
+        const nodes = nodesInSelectionRect(nodeSelectionDrag.plotId, rect);
+        applyNodeBoxSelection(nodes, nodeSelectionDrag.additive);
+        nodeSelectionDrag.suppressClick = true;
+      }
+      clearNodeSelectionBox(svg);
+      nodeSelectionDrag.active = false;
+      nodeSelectionDrag.dragging = false;
+      nodeSelectionDrag.plotId = "";
+      nodeSelectionDrag.start = null;
+      nodeSelectionDrag.current = null;
+      if (svg.releasePointerCapture && event.pointerId !== undefined) {
+        try { svg.releasePointerCapture(event.pointerId); } catch {}
+      }
+      if (nodeSelectionDrag.suppressClick) event.preventDefault();
+    }
+
+    function cancelNodeSelectionDrag(event) {
+      clearNodeSelectionBox(event.currentTarget);
+      nodeSelectionDrag.active = false;
+      nodeSelectionDrag.dragging = false;
+      nodeSelectionDrag.plotId = "";
+      nodeSelectionDrag.start = null;
+      nodeSelectionDrag.current = null;
+    }
+
+    function drawNodeSelectionBox(svg, start, current) {
+      clearNodeSelectionBox(svg);
+      const rect = selectionRectFromPoints(start, current);
+      svg.insertAdjacentHTML("beforeend",
+        `<rect id="node-selection-box" class="node-selection-box" x="${rect.x.toFixed(1)}" y="${rect.y.toFixed(1)}" width="${rect.width.toFixed(1)}" height="${rect.height.toFixed(1)}"></rect>`);
+    }
+
+    function clearNodeSelectionBox(svg) {
+      svg?.querySelector("#node-selection-box")?.remove();
+    }
+
+    function selectionRectFromPoints(start, current) {
+      const x1 = Math.min(start.x, current.x);
+      const y1 = Math.min(start.y, current.y);
+      const x2 = Math.max(start.x, current.x);
+      const y2 = Math.max(start.y, current.y);
+      return { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
+    }
+
+    function nodesInSelectionRect(plotId, rect) {
+      return (plotHitMaps.get(plotId) || [])
+        .filter(entry => entry.x >= rect.x && entry.x <= rect.x + rect.width && entry.y >= rect.y && entry.y <= rect.y + rect.height)
+        .map(entry => entry.nodeIndex)
+        .filter(Number.isFinite)
+        .sort((a, b) => a - b);
+    }
+
+    function applyNodeBoxSelection(nodeIndices, additive) {
+      const nodes = Array.from(new Set((nodeIndices || []).map(Number).filter(Number.isFinite)));
+      if (!nodes.length) return;
+      if (!additive) {
+        setSelectedNodes(nodes, nodes[0]);
+        return;
+      }
+      const selected = new Set((viewState.selectedNodeIndices || []).map(Number).filter(Number.isFinite));
+      nodes.forEach(node => {
+        if (selected.has(node) && selected.size > 1) {
+          selected.delete(node);
+        } else {
+          selected.add(node);
+        }
+      });
+      setSelectedNodes(Array.from(selected), nodes[0]);
+    }
+
+    function selectNode(nodeIndex) {
+      setSelectedNodes([nodeIndex], nodeIndex);
+    }
+
+    function toggleSelectedNode(nodeIndex) {
+      if (!Number.isFinite(nodeIndex)) return;
+      const selected = new Set((viewState.selectedNodeIndices || []).map(Number).filter(Number.isFinite));
+      if (selected.has(nodeIndex) && selected.size > 1) {
+        selected.delete(nodeIndex);
+      } else {
+        selected.add(nodeIndex);
+      }
+      setSelectedNodes(Array.from(selected), nodeIndex);
+    }
+
+    function setSelectedNodes(nodeIndices, activeNode = null) {
+      const selected = Array.from(new Set((nodeIndices || []).map(Number).filter(Number.isFinite))).sort((a, b) => a - b);
+      const active = Number(activeNode);
+      viewState.selectedNodeIndices = selected;
+      viewState.selectedNodeIndex = selected.includes(active) ? active : selected[0] ?? null;
+      renderCurrentView();
+    }
+
+    function sameNode(left, right) {
+      return Number.isFinite(Number(left)) && Number(left) === Number(right);
+    }
+
+    function nodeCloneGroups(points, rubber, layers, materials) {
+      const selectedNodes = selectedNodeIndicesOrDefault(points);
+      const selectedSet = new Set(selectedNodes);
+      const selectedProfiles = selectedNodes.map(node => nodeCloneProfile(node, rubber, layers, materials));
+      const exactKeys = new Set(selectedProfiles.map(profile => profile.exactKey));
+      const familyKeys = new Set(selectedProfiles.map(profile => profile.familyKey));
+      const exact = new Set();
+      const family = new Set();
+
+      points.forEach(point => {
+        const node = Number(point.nodeIndex);
+        if (!Number.isFinite(node) || selectedSet.has(node)) return;
+        const profile = nodeCloneProfile(node, rubber, layers, materials);
+        if (exactKeys.has(profile.exactKey)) {
+          exact.add(node);
+        } else if (familyKeys.has(profile.familyKey)) {
+          family.add(node);
+        }
+      });
+
+      return {
+        selectedNodes,
+        selectedSet,
+        exact,
+        family,
+        selectedProfiles
+      };
+    }
+
+    function nodeCloneProfile(nodeIndex, rubber, layers, materials) {
+      const rubberRow = rubber.find(row => sameNode(row.nodeIndex, nodeIndex)) || {};
+      const nodeLayers = layers.filter(row => sameNode(row.nodeIndex, nodeIndex))
+        .sort((a, b) => Number(a.plyIndex) - Number(b.plyIndex));
+      const materialRows = (materials || []).filter(row => sameNode(row.nodeIndex, nodeIndex))
+        .sort((a, b) => String(a.kind).localeCompare(String(b.kind)) || numberKey(a.temperatureK).localeCompare(numberKey(b.temperatureK)));
+
+      const materialKey = materialRows.map(row => [
+        String(row.kind || ""),
+        numberKey(row.temperatureK),
+        numberKey(row.densityKgM3),
+        numberKey(row.youngsModulusPa),
+        numberKey(row.poissonRatio),
+        numberKey(row.compressionMultiplier),
+        numberKey(row.specificHeatJKgK),
+        numberKey(row.conductivityWMK)
+      ].join(":")).join("|");
+
+      const familyLayers = nodeLayers.map(row => [
+        numberKey(row.plyIndex),
+        numberKey(row.angleDeg),
+        numberKey(row.connectFlag)
+      ].join(":")).join("|");
+      const exactLayers = nodeLayers.map(row => [
+        numberKey(row.plyIndex),
+        numberKey(row.angleDeg),
+        numberKey(row.connectFlag),
+        numberKey(row.thicknessM)
+      ].join(":")).join("|");
+
+      const familyKey = [
+        `plies=${familyLayers}`,
+        `materials=${materialKey}`
+      ].join(";");
+      const exactKey = [
+        familyKey,
+        `tread=${numberKey(rubberRow.treadDepthM)}`,
+        `node=${numberKey(rubberRow.nodeThicknessM)}`,
+        `layers=${exactLayers}`
+      ].join(";");
+
+      return { familyKey, exactKey };
+    }
+
+    function nodeMarkerStyle(nodeIndex, cloneGroups) {
+      const node = Number(nodeIndex);
+      if (cloneGroups?.selectedSet?.has(node)) {
+        return {
+          fill: "#4fb3ff",
+          stroke: "#dce6ef",
+          strokeWidth: "1.6",
+          strokeOpacity: "1",
+          radius: "4.4",
+          title: `Node ${node} selected`
+        };
+      }
+      if (cloneGroups?.exact.has(node)) {
+        return {
+          fill: "#6be675",
+          stroke: "#0b0f12",
+          strokeWidth: "1.1",
+          strokeOpacity: "1",
+          radius: "3.8",
+          title: `Node ${node} exact clone`
+        };
+      }
+      if (cloneGroups?.family.has(node)) {
+        return {
+          fill: "#f0b85a",
+          stroke: "#0b0f12",
+          strokeWidth: "1",
+          strokeOpacity: "1",
+          radius: "3.4",
+          title: `Node ${node} same build, different thickness`
+        };
+      }
+      return {
+        fill: "#e6edf3",
+        stroke: "#0b0f12",
+        strokeWidth: "0.4",
+        strokeOpacity: "1",
+        radius: "2.4",
+        title: `Node ${node}`
+      };
+    }
+
+    function drawCloneLegend(svg, cloneGroups) {
+      const x = 70;
+      const y = 46;
+      const rows = [
+        { label: `${cloneGroups.selectedNodes.length} selected`, color: "#4fb3ff" },
+        { label: `exact ${cloneGroups.exact.size}`, color: "#6be675" },
+        { label: `same build ${cloneGroups.family.size}`, color: "#f0b85a" }
+      ];
+      rows.forEach((row, index) => {
+        const rowY = y + index * 15;
+        svg.insertAdjacentHTML("beforeend", `<circle cx="${x}" cy="${rowY}" r="3.4" fill="${row.color}" stroke="#0b0f12" stroke-width="0.7"></circle>`);
+        svg.insertAdjacentHTML("beforeend", `<text x="${x + 10}" y="${rowY + 3}" fill="#dceaf7" font-size="9">${escapeHtml(row.label)}</text>`);
+      });
+    }
+
+    function storeNodeHitMap(svg, frame, points) {
+      const entries = points
+        .map(point => ({
+          nodeIndex: Number(point.nodeIndex),
+          x: frame.sx(point.xMm),
+          y: frame.sy(point.yMm)
+        }))
+        .filter(point => Number.isFinite(point.nodeIndex) && Number.isFinite(point.x) && Number.isFinite(point.y));
+
+      entries.forEach(entry => {
+        const nearestDistance = entries.reduce((best, other) => {
+          if (other === entry) return best;
+          return Math.min(best, Math.hypot(entry.x - other.x, entry.y - other.y));
+        }, Infinity);
+        entry.radius = Number.isFinite(nearestDistance) ? Math.max(12, nearestDistance / 2 + 2) : 24;
+      });
+      plotHitMaps.set(svg.id, entries);
+    }
+
+    function nearestNodeFromEvent(event, plotId) {
+      const svg = document.getElementById(plotId);
+      const point = svgPointFromEvent(svg, event);
+      const hit = nearestNodeHit(plotHitMaps.get(plotId) || [], point);
+      return hit ? hit.nodeIndex : NaN;
+    }
+
+    function nearestNodeHit(entries, point) {
+      if (!entries.length || !point) return null;
+      const best = entries.reduce((candidate, entry) => {
+        const distance = Math.hypot(entry.x - point.x, entry.y - point.y);
+        return !candidate || distance < candidate.distance ? { ...entry, distance } : candidate;
+      }, null);
+      return best && best.distance <= best.radius ? best : null;
+    }
+
+    function svgPointFromEvent(svg, event) {
+      const rect = svg.getBoundingClientRect();
+      const view = svg.viewBox.baseVal;
+      return {
+        x: view.x + (event.clientX - rect.left) / Math.max(rect.width, 1) * view.width,
+        y: view.y + (event.clientY - rect.top) / Math.max(rect.height, 1) * view.height
+      };
+    }
+
+    function numberKey(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? n.toPrecision(12) : "";
+    }
+
+    function applyLayerExplosion(rubber, layers, strength, targetShiftMm = 0) {
+      if (!layers.length || !(strength > 0)) return layers;
+
+      const rubberByNode = new Map();
+      rubber.forEach(row => {
+        const node = Number(row.nodeIndex);
+        if (Number.isFinite(node)) rubberByNode.set(node, row);
+      });
+
+      const referenceGapMm = layerReferenceGapMm(layers);
+      const byNode = new Map();
+      layers.forEach(row => {
+        const node = Number(row.nodeIndex);
+        if (!Number.isFinite(node)) return;
+        if (!byNode.has(node)) byNode.set(node, []);
+        byNode.get(node).push(row);
+      });
+
+      const transformed = new Map();
+      byNode.forEach((rows, node) => {
+        const rubberRow = rubberByNode.get(node);
+        const unit = layerExplosionUnit(rubberRow);
+        if (!rubberRow || !unit) {
+          rows.forEach(row => transformed.set(row, row));
+          return;
+        }
+
+        const surfaceX = Number(rubberRow.surfaceXMm);
+        const surfaceY = Number(rubberRow.surfaceYMm);
+        const nodeThicknessMm = Number(rubberRow.nodeThicknessM) * 1000;
+        const baseOffsetMm = Number.isFinite(nodeThicknessMm) && nodeThicknessMm > 0 ? nodeThicknessMm : 0;
+        const layerPlan = buildNodeLayerSpreadPlan(rows, baseOffsetMm, referenceGapMm, strength, targetShiftMm);
+
+        layerPlan.forEach(item => {
+          transformed.set(item.row, {
+            ...item.row,
+            xMm: surfaceX + unit.x * item.displayCenter,
+            yMm: surfaceY + unit.y * item.displayCenter,
+            innerXMm: surfaceX + unit.x * item.displayInner,
+            innerYMm: surfaceY + unit.y * item.displayInner,
+            outerXMm: surfaceX + unit.x * item.displayOuter,
+            outerYMm: surfaceY + unit.y * item.displayOuter
+          });
+        });
+      });
+
+      return layers.map(row => transformed.get(row) || row);
+    }
+
+    function buildNodeLayerSpreadPlan(rows, baseOffsetMm, referenceGapMm, strength, targetShiftMm) {
+      let trueCursor = baseOffsetMm;
+      let displayCursor = baseOffsetMm;
+      const layerPlan = [];
+
+      rows.slice()
+        .sort((a, b) => layerInnerOffsetMm(a) - layerInnerOffsetMm(b) || Number(a.plyIndex) - Number(b.plyIndex))
+        .forEach(row => {
+          const innerOffset = Math.max(baseOffsetMm, layerInnerOffsetMm(row));
+          const outerOffset = Math.max(innerOffset, layerOuterOffsetMm(row));
+          const interGap = positiveLayerGapMm(innerOffset - trueCursor);
+          displayCursor += explodedLayerGap(interGap, referenceGapMm, 1);
+          const expandedInner = displayCursor;
+          const expandedThickness = explodedLayerGap(positiveLayerGapMm(outerOffset - innerOffset), referenceGapMm, 1);
+          const expandedOuter = expandedInner + expandedThickness;
+          const centerOffset = innerOffset + (outerOffset - innerOffset) / 2;
+
+          layerPlan.push({
+            row,
+            innerOffset,
+            outerOffset,
+            centerOffset,
+            innerExtra: expandedInner - innerOffset,
+            outerExtra: expandedOuter - outerOffset,
+            centerExtra: expandedInner + expandedThickness / 2 - centerOffset
+          });
+
+          trueCursor = Math.max(trueCursor, outerOffset);
+          displayCursor = expandedOuter;
+        });
+
+      const maxExtra = Math.max(0, ...layerPlan.map(item => item.outerExtra));
+      const maxShift = Number(targetShiftMm);
+      const extraScale = maxExtra > 0 && Number.isFinite(maxShift) && maxShift > 0 ? maxShift / maxExtra : 1;
+      return layerPlan.map(item => ({
+        ...item,
+        displayInner: item.innerOffset + item.innerExtra * extraScale * strength,
+        displayOuter: item.outerOffset + item.outerExtra * extraScale * strength,
+        displayCenter: item.centerOffset + item.centerExtra * extraScale * strength
+      }));
+    }
+
+    function buildNodeRestSpreadPlan(treadDepthMm, nodeThicknessMm, strength, targetShiftMm) {
+      const treadDepth = Math.max(0, Number(treadDepthMm) || 0);
+      const nodeThickness = Math.max(treadDepth, Number(nodeThicknessMm) || 0);
+      if (!(strength > 0)) {
+        return {
+          displayTreadDepthMm: treadDepth,
+          displayNodeThicknessMm: nodeThickness,
+          nodeExtraMm: 0
+        };
+      }
+
+      const nodeBulk = Math.max(0, nodeThickness - treadDepth);
+      const reference = nodeRestReferenceGapMm(treadDepth, nodeBulk);
+      const expandedTread = explodedRestGap(treadDepth, reference, 1);
+      const expandedBulk = explodedRestGap(nodeBulk, reference, 1);
+      const maxExtra = Math.max(0, expandedTread + expandedBulk - nodeThickness);
+      const maxShift = Number(targetShiftMm);
+      const extraScale = maxExtra > 0 && Number.isFinite(maxShift) && maxShift > 0 ? maxShift / maxExtra : 1;
+      const treadExtra = (expandedTread - treadDepth) * extraScale * strength;
+      const nodeExtra = maxExtra * extraScale * strength;
+
+      return {
+        displayTreadDepthMm: treadDepth + treadExtra,
+        displayNodeThicknessMm: nodeThickness + nodeExtra,
+        nodeExtraMm: nodeExtra
+      };
+    }
+
+    function shiftNodeLayerPlan(layerPlan, offsetMm) {
+      const offset = Number(offsetMm);
+      if (!(Math.abs(offset) > 1e-9)) return layerPlan;
+      return layerPlan.map(item => ({
+        ...item,
+        displayInner: item.displayInner + offset,
+        displayOuter: item.displayOuter + offset,
+        displayCenter: item.displayCenter + offset
+      }));
+    }
+
+    function nodeRestReferenceGapMm(treadDepthMm, nodeBulkMm) {
+      const gaps = [treadDepthMm, nodeBulkMm]
+        .map(Number)
+        .filter(value => Number.isFinite(value) && value > 0)
+        .sort((a, b) => a - b);
+      if (!gaps.length) return 1;
+      return Math.max(0.5, gaps[Math.floor(gaps.length / 2)]);
+    }
+
+    function explodedRestGap(gapMm, referenceGapMm, strength) {
+      const gap = Math.max(0, Number(gapMm));
+      if (!(gap > 0) || !(strength > 0)) return gap;
+
+      const reference = Math.max(0.5, Number(referenceGapMm) || 1);
+      const smallGapWeight = reference / (gap + reference);
+      const targetGap = Math.max(gap, gap * (1 - smallGapWeight) + reference * 2.8 * smallGapWeight);
+      return gap + (targetGap - gap) * strength;
+    }
+
+    function layerReferenceGapMm(layers) {
+      const gaps = layers
+        .map(row => layerThicknessMm(row))
+        .filter(value => Number.isFinite(value) && value > 0)
+        .sort((a, b) => a - b);
+      if (!gaps.length) return 0.25;
+      return Math.max(0.05, gaps[Math.floor(gaps.length / 2)]);
+    }
+
+    function explodedLayerGap(gapMm, referenceGapMm, strength) {
+      const gap = Math.max(0, Number(gapMm));
+      if (!(gap > 0) || !(strength > 0)) return gap;
+
+      const reference = Math.max(0.05, Number(referenceGapMm) || 0.25);
+      const smallGapWeight = reference / (gap + reference);
+      const targetGap = gap * (1 - smallGapWeight) + reference * 20 * smallGapWeight;
+      return gap + (targetGap - gap) * strength;
+    }
+
+    function layerExplosionUnit(row) {
+      if (!row) return null;
+      const surfaceX = Number(row.surfaceXMm);
+      const surfaceY = Number(row.surfaceYMm);
+      const innerX = Number(row.innerXMm);
+      const innerY = Number(row.innerYMm);
+      let dx = innerX - surfaceX;
+      let dy = innerY - surfaceY;
+      let length = Math.hypot(dx, dy);
+      if (!(length > 1e-9)) {
+        dx = Number(row.treadXMm) - surfaceX;
+        dy = Number(row.treadYMm) - surfaceY;
+        length = Math.hypot(dx, dy);
+      }
+      if (!(length > 1e-9)) return null;
+      return { x: dx / length, y: dy / length };
+    }
+
+    function layerInnerOffsetMm(row) {
+      const offset = Number(row.offsetM) * 1000;
+      const thickness = layerThicknessMm(row);
+      return Number.isFinite(offset) ? offset - thickness / 2 : 0;
+    }
+
+    function layerOuterOffsetMm(row) {
+      const offset = Number(row.offsetM) * 1000;
+      const thickness = layerThicknessMm(row);
+      return Number.isFinite(offset) ? offset + thickness / 2 : layerInnerOffsetMm(row);
+    }
+
+    function layerThicknessMm(row) {
+      const thickness = Number(row.thicknessM) * 1000;
+      return Number.isFinite(thickness) && thickness > 0 ? thickness : 0;
+    }
+
+    function positiveLayerGapMm(value) {
+      const gap = Number(value);
+      return Number.isFinite(gap) && gap > 1e-6 ? gap : 0;
+    }
+
+    function drawNodeLayerGuides(svg, frame, points, layers) {
+      if (!points.length || !layers.length) return;
+
+      const deepestByNode = deepestLayerByNode(layers);
+      points.forEach(point => {
+        const node = Number(point.nodeIndex);
+        const layer = deepestByNode.get(node);
+        if (!layer || !Number.isFinite(point.xMm) || !Number.isFinite(point.yMm)) return;
+        const key = geometryFocusKey("layer", layer.plyIndex);
+        svg.insertAdjacentHTML("beforeend",
+          `<line class="node-layer-guide" x1="${frame.sx(point.xMm).toFixed(1)}" y1="${frame.sy(point.yMm).toFixed(1)}" x2="${frame.sx(layer.xMm).toFixed(1)}" y2="${frame.sy(layer.yMm).toFixed(1)}" opacity="${focusOpacity(key, 0.18).toFixed(2)}"><title>Node ${escapeHtml(point.nodeIndex)} to layer ${escapeHtml(layer.plyIndex)}</title></line>`);
+      });
+    }
+
+    function deepestLayerByNode(layers) {
+      const deepestByNode = new Map();
+      layers.forEach(row => {
+        const node = Number(row.nodeIndex);
+        const offset = Number(row.offsetM);
+        if (!Number.isFinite(node) || !Number.isFinite(offset) || !Number.isFinite(row.xMm) || !Number.isFinite(row.yMm)) return;
+        const current = deepestByNode.get(node);
+        if (!current || offset > current.offset) deepestByNode.set(node, { ...row, offset });
+      });
+      return deepestByNode;
+    }
+
+    function drawNodeNumbers(svg, frame, points, layers) {
+      const valid = points.filter(p => Number.isFinite(p.xMm) && Number.isFinite(p.yMm));
+      if (!valid.length) return;
+
+      const centerX = valid.reduce((sum, p) => sum + p.xMm, 0) / valid.length;
+      const centerY = valid.reduce((sum, p) => sum + p.yMm, 0) / valid.length;
+      const deepestByNode = deepestLayerByNode(layers);
+      valid.forEach(p => {
+        const layer = deepestByNode.get(Number(p.nodeIndex));
+        const dx = layer ? p.xMm - layer.xMm : p.xMm - centerX;
+        const dy = layer ? p.yMm - layer.yMm : p.yMm - centerY;
+        const length = Math.hypot(dx, dy) || 1;
+        const unitX = dx / length;
+        const unitY = dy / length;
+        const x = frame.sx(p.xMm) + unitX * 9;
+        const y = frame.sy(p.yMm) - unitY * 9;
+        const anchor = Math.abs(unitX) < 0.25 ? "middle" : unitX < 0 ? "end" : "start";
+        svg.insertAdjacentHTML("beforeend",
+          `<text class="node-label" x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${anchor}" dominant-baseline="middle">${escapeHtml(p.nodeIndex)}</text>`);
+      });
+    }
+
     function makeFrame(svg, xs, ys, equalScale) {
       const view = svg.viewBox.baseVal;
       const w = view.width || 1100;
       const h = view.height || 520;
-      const margin = { left: 58, right: 24, top: 38, bottom: 50 };
+      const margin = { left: 58, right: 36, top: 38, bottom: 50 };
       let minX = Math.min(...xs), maxX = Math.max(...xs);
       let minY = Math.min(...ys), maxY = Math.max(...ys);
       const padX = Math.max((maxX - minX) * 0.05, 1);
@@ -391,65 +3514,363 @@
       svg.insertAdjacentHTML("beforeend", `<text class="axis-label" transform="translate(18 ${(top + bottom) / 2}) rotate(-90)" text-anchor="middle">${escapeHtml(yLabel)}</text>`);
     }
 
+    function toggleGeometryFocus(key) {
+      viewState.focusKey = key && viewState.focusKey !== key ? key : "";
+      renderCurrentView();
+    }
+
+    function geometryFocusKey(kind, layer = null) {
+      return kind === "layer" ? `layer:${Number(layer)}` : String(kind || "");
+    }
+
+    function focusOpacity(key, dimOpacity = 0.18) {
+      return !viewState.focusKey || viewState.focusKey === key ? 1 : dimOpacity;
+    }
+
+    function focusStrokeOpacity(key, baseOpacity, dimOpacity = 0.12) {
+      return baseOpacity * focusOpacity(key, dimOpacity);
+    }
+
     function drawRubber(svg, frame, rows) {
       if (rows.length < 2) return;
       const ordered = rows.slice().sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex));
       const treadBand = bandPath(ordered, frame, "surfaceXMm", "surfaceYMm", "treadXMm", "treadYMm");
       const bulkBand = bandPath(ordered, frame, "treadXMm", "treadYMm", "innerXMm", "innerYMm");
-      svg.insertAdjacentHTML("beforeend", `<path d="${bulkBand}" fill="#78d3ff" fill-opacity="0.11" stroke="#78d3ff" stroke-opacity="0.35" stroke-width="0.9"><title>Node thickness</title></path>`);
-      svg.insertAdjacentHTML("beforeend", `<path d="${treadBand}" fill="#f0b85a" fill-opacity="0.18" stroke="#f0b85a" stroke-opacity="0.5" stroke-width="0.9"><title>Tread depth</title></path>`);
-      svg.insertAdjacentHTML("beforeend", `<path d="${pointPath(ordered, frame, "treadXMm", "treadYMm")}" fill="none" stroke="#f0b85a" stroke-width="1.4" stroke-dasharray="4 3"/>`);
-      svg.insertAdjacentHTML("beforeend", `<path d="${pointPath(ordered, frame, "innerXMm", "innerYMm")}" fill="none" stroke="#78d3ff" stroke-width="1.4"/>`);
+      const treadKey = geometryFocusKey("tread");
+      const thicknessKey = geometryFocusKey("thickness");
+      svg.insertAdjacentHTML("beforeend", `<path d="${bulkBand}" fill="#78d3ff" fill-opacity="${focusStrokeOpacity(thicknessKey, 0.11, 0.08).toFixed(3)}" stroke="#78d3ff" stroke-opacity="${focusStrokeOpacity(thicknessKey, 0.35).toFixed(3)}" stroke-width="0.9"><title>Node thickness</title></path>`);
+      svg.insertAdjacentHTML("beforeend", `<path d="${treadBand}" fill="#f0b85a" fill-opacity="${focusStrokeOpacity(treadKey, 0.18, 0.08).toFixed(3)}" stroke="#f0b85a" stroke-opacity="${focusStrokeOpacity(treadKey, 0.5).toFixed(3)}" stroke-width="0.9"><title>Tread depth</title></path>`);
+      svg.insertAdjacentHTML("beforeend", `<path d="${pointPath(ordered, frame, "treadXMm", "treadYMm")}" fill="none" stroke="#f0b85a" stroke-width="1.4" stroke-dasharray="4 3" opacity="${focusOpacity(treadKey).toFixed(2)}"/>`);
+      svg.insertAdjacentHTML("beforeend", `<path d="${pointPath(ordered, frame, "innerXMm", "innerYMm")}" fill="none" stroke="#78d3ff" stroke-width="1.4" opacity="${focusOpacity(thicknessKey).toFixed(2)}"/>`);
     }
 
     function drawLayers(svg, frame, rows) {
       const layers = [...new Set(rows.map(row => Number(row.plyIndex || 1)))].sort((a, b) => a - b);
       layers.forEach((layer, index) => {
         const color = COLORS[index % COLORS.length];
+        const key = geometryFocusKey("layer", layer);
         const subset = rows.filter(row => Number(row.plyIndex || 1) === layer)
           .sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex));
         splitSegments(subset).forEach(segment => {
           if (segment.length < 2) return;
-          svg.insertAdjacentHTML("beforeend", `<path d="${bandPath(segment, frame, "innerXMm", "innerYMm", "outerXMm", "outerYMm")}" fill="${color}" fill-opacity="0.14" stroke="${color}" stroke-opacity="0.35" stroke-width="0.75"><title>Layer ${layer}</title></path>`);
-          svg.insertAdjacentHTML("beforeend", `<path d="${pointPath(segment, frame, "xMm", "yMm")}" fill="none" stroke="${color}" stroke-width="1.2"/>`);
+          svg.insertAdjacentHTML("beforeend", `<path d="${bandPath(segment, frame, "innerXMm", "innerYMm", "outerXMm", "outerYMm")}" fill="${color}" fill-opacity="${focusStrokeOpacity(key, 0.14, 0.08).toFixed(3)}" stroke="${color}" stroke-opacity="${focusStrokeOpacity(key, 0.35).toFixed(3)}" stroke-width="0.75"><title>Layer ${layer}</title></path>`);
+          svg.insertAdjacentHTML("beforeend", `<path d="${pointPath(segment, frame, "xMm", "yMm")}" fill="none" stroke="${color}" stroke-width="1.2" opacity="${focusOpacity(key).toFixed(2)}"/>`);
         });
       });
     }
 
     function drawLineCallouts(svg, frame, rubber, layers) {
       if (!rubber.length) return;
-      const anchor = pickCalloutAnchor(rubber, layers);
-      if (!anchor) return;
+      const specs = calloutSpecs(rubber, layers);
+      if (!specs.length) return;
 
-      const layerIds = [...new Set(layers.map(row => Number(row.plyIndex)))].filter(Number.isFinite).sort((a, b) => a - b);
-      const layerCallouts = layerIds.slice(0, 7).map(layer => {
-        const row = nearestLayerRow(layers, layer, Number(anchor.nodeIndex));
-        if (!row) return null;
-        return { label: `Layer ${layer}`, color: COLORS[(layer - 1) % COLORS.length], x: row.xMm, y: row.yMm };
-      }).filter(Boolean);
-      const callouts = [
-        { label: "Surface", color: "#dce6ef", x: anchor.surfaceXMm, y: anchor.surfaceYMm },
-        { label: "TreadDepth", color: "#f0b85a", x: anchor.treadXMm, y: anchor.treadYMm },
-        { label: "Node thickness", color: "#78d3ff", x: anchor.innerXMm, y: anchor.innerYMm },
-        ...layerCallouts
-      ].filter(item => Number.isFinite(item.x) && Number.isFinite(item.y));
-
-      const anchorX = frame.sx(anchor.surfaceXMm);
-      const labelX = Math.max(frame.margin.left + 88, Math.min(anchorX - 230, frame.w - frame.margin.right - 300));
-      layoutCallouts(frame, callouts).forEach(item => drawCallout(svg, frame, item, labelX, item.labelY));
+      const labelBox = calloutLabelBox(frame, rubber, specs);
+      const callouts = chooseCalloutTargets(frame, specs, labelBox);
+      layoutCallouts(frame, callouts, labelBox.centerY).forEach(item => drawCallout(svg, frame, item, labelBox.x, item.labelY, labelBox.width));
     }
 
-    function layoutCallouts(frame, callouts) {
+    function calloutSpecs(rubber, layers) {
+      const rubberRows = rubber.filter(row => Number.isFinite(row.surfaceXMm) && Number.isFinite(row.surfaceYMm));
+      const specs = [
+        {
+          label: "Surface",
+          color: "#dce6ef",
+          kind: "surface",
+          depth: 0,
+          candidates: rubberRows.map(row => ({ x: row.surfaceXMm, y: row.surfaceYMm, nodeIndex: row.nodeIndex }))
+        },
+        {
+          label: "TreadDepth",
+          color: "#f0b85a",
+          kind: "tread",
+          depth: 1,
+          candidates: rubberRows.map(row => ({ x: row.treadXMm, y: row.treadYMm, nodeIndex: row.nodeIndex }))
+        },
+        {
+          label: "Node thickness",
+          color: "#78d3ff",
+          kind: "thickness",
+          depth: 2,
+          candidates: rubberRows.map(row => ({ x: row.innerXMm, y: row.innerYMm, nodeIndex: row.nodeIndex }))
+        }
+      ];
+
+      const layerIds = [...new Set(layers.map(row => Number(row.plyIndex)))].filter(Number.isFinite).sort((a, b) => a - b);
+      const totalNodeCount = new Set(rubberRows.map(row => Number(row.nodeIndex))).size || 1;
+      layerIds.slice(0, 7).forEach(layer => {
+        const layerRows = layers.filter(row => Number(row.plyIndex) === layer);
+        const nodeStats = layerNodeStats(layerRows, totalNodeCount);
+        specs.push({
+          label: `Layer ${layer}`,
+          color: COLORS[(layer - 1) % COLORS.length],
+          kind: "layer",
+          depth: 2 + layer,
+          layer,
+          localLayer: nodeStats.localLayer,
+          coverageRatio: nodeStats.coverageRatio,
+          spanCount: nodeStats.spanCount,
+          candidates: layerRows
+            .map(row => ({ x: row.xMm, y: row.yMm, nodeIndex: row.nodeIndex }))
+        });
+      });
+
+      return specs
+        .map(spec => ({ ...spec, candidates: spec.candidates.filter(point => Number.isFinite(point.x) && Number.isFinite(point.y)) }))
+        .filter(spec => spec.candidates.length);
+    }
+
+    function layerNodeStats(rows, totalNodeCount) {
+      const nodes = [...new Set(rows.map(row => Number(row.nodeIndex)).filter(Number.isFinite))].sort((a, b) => a - b);
+      let spanCount = 0;
+      let previous = NaN;
+      nodes.forEach(node => {
+        if (!Number.isFinite(previous) || node > previous + 1) spanCount += 1;
+        previous = node;
+      });
+      const coverageRatio = nodes.length / Math.max(totalNodeCount, 1);
+      return {
+        coverageRatio,
+        spanCount,
+        localLayer: coverageRatio < 0.85 || spanCount > 1
+      };
+    }
+
+    function chooseCalloutTargets(frame, specs, labelBox) {
+      const labelStep = 19;
+      const minTargetGap = 26;
+      const topSlot = labelBox.centerY - (specs.length - 1) * labelStep / 2;
+      const minTargetX = labelBox.x + labelBox.width + 46;
+      const preferredTargetX = minTargetX + 260;
+
+      const plans = specs.map((spec, index) => {
+        const visibleCandidates = spec.candidates
+          .map(point => ({ ...point, sx: frame.sx(point.x), sy: frame.sy(point.y) }))
+          .filter(point => point.sx >= minTargetX);
+        return {
+          spec: { ...spec, orderIndex: index },
+          orderIndex: index,
+          desiredY: spec.localLayer ? medianCandidateY(visibleCandidates.length ? visibleCandidates : spec.candidates, frame) : topSlot + index * labelStep,
+          candidates: visibleCandidates.length
+          ? visibleCandidates
+          : spec.candidates.map(point => ({ ...point, sx: frame.sx(point.x), sy: frame.sy(point.y) }))
+        };
+      });
+
+      let selected = [];
+      plans.forEach(plan => {
+        const point = bestCalloutCandidate(plan, selected, minTargetX, preferredTargetX, minTargetGap, 7);
+        selected.push(calloutFromCandidate(plan.spec, point));
+      });
+
+      selected = relaxCalloutSpacing(plans, selected, minTargetX, preferredTargetX, minTargetGap);
+      return arrangeCalloutOrder(selected);
+    }
+
+    function medianCandidateY(candidates, frame) {
+      const values = candidates
+        .map(point => Number.isFinite(point.sy) ? point.sy : frame.sy(point.y))
+        .filter(Number.isFinite)
+        .sort((a, b) => a - b);
+      return values.length ? values[Math.floor(values.length / 2)] : NaN;
+    }
+
+    function arrangeCalloutOrder(callouts) {
+      return callouts.slice().sort((a, b) => {
+        const aDynamic = a.localLayer === true;
+        const bDynamic = b.localLayer === true;
+        if (aDynamic || bDynamic) return a.sy - b.sy || a.orderIndex - b.orderIndex;
+        return a.orderIndex - b.orderIndex;
+      });
+    }
+
+    function relaxCalloutSpacing(plans, selected, minTargetX, preferredTargetX, minTargetGap) {
+      for (let pass = 0; pass < 3; pass++) {
+        selected = selected.map((current, index) => {
+          const others = selected.filter((_, otherIndex) => otherIndex !== index);
+          const nearest = others.reduce((best, other) => Math.min(best, screenDistance(current, other)), Infinity);
+          if (nearest >= minTargetGap) return current;
+
+          const replacement = bestCalloutCandidate(plans[index], others, minTargetX, preferredTargetX, minTargetGap, 14);
+          return calloutFromCandidate(plans[index].spec, replacement);
+        });
+      }
+      return selected;
+    }
+
+    function bestCalloutCandidate(plan, selected, minTargetX, preferredTargetX, minTargetGap, spacingWeight) {
+      const candidates = orderedCalloutCandidates(plan, selected, minTargetGap);
+      return candidates.reduce((best, point) => {
+        const score = scoreCalloutCandidate(point, plan, selected, minTargetX, preferredTargetX, minTargetGap, spacingWeight);
+        return !best || score < best.score ? { ...point, score } : best;
+      }, null);
+    }
+
+    function orderedCalloutCandidates(plan, selected, minTargetGap) {
+      const previous = selected.filter(other => Number(other.orderIndex) < Number(plan.orderIndex));
+      const next = selected.filter(other => Number(other.orderIndex) > Number(plan.orderIndex));
+      const lowerBound = previous.length ? Math.max(...previous.map(other => other.sy)) + minTargetGap * 0.55 : -Infinity;
+      const upperBound = next.length ? Math.min(...next.map(other => other.sy)) - minTargetGap * 0.55 : Infinity;
+      const ordered = plan.candidates.filter(point => point.sy >= lowerBound && point.sy <= upperBound);
+      if (ordered.length) return layerDepthOrderedCandidates(plan, selected, ordered);
+
+      const looseLower = previous.length ? Math.max(...previous.map(other => other.sy)) + 2 : -Infinity;
+      const looseUpper = next.length ? Math.min(...next.map(other => other.sy)) - 2 : Infinity;
+      const loose = plan.candidates.filter(point => point.sy >= looseLower && point.sy <= looseUpper);
+      return layerDepthOrderedCandidates(plan, selected, loose.length ? loose : plan.candidates);
+    }
+
+    function layerDepthOrderedCandidates(plan, selected, candidates) {
+      if (plan.spec.kind !== "layer" || plan.spec.localLayer) return candidates;
+
+      const previousLayer = selected
+        .filter(other => other.kind === "layer" && Number(other.layer) < Number(plan.spec.layer))
+        .sort((a, b) => a.layer - b.layer);
+      const previous = previousLayer[previousLayer.length - 1];
+      if (!previous) return candidates;
+
+      const strict = candidates.filter(point => point.sx <= previous.sx - 10 && point.sy >= previous.sy + 2);
+      if (strict.length) return strict;
+
+      const loose = candidates.filter(point => point.sx <= previous.sx + 2 && point.sy >= previous.sy - 3);
+      return loose.length ? loose : candidates;
+    }
+
+    function scoreCalloutCandidate(point, plan, selected, minTargetX, preferredTargetX, minTargetGap, spacingWeight) {
+      let score = Math.abs(point.sy - plan.desiredY)
+        + Math.abs(point.sx - preferredTargetX) * 0.08
+        + Math.max(0, minTargetX - point.sx) * 2.5;
+      const previousCandidates = selected
+        .filter(other => Number(other.orderIndex) < Number(plan.orderIndex))
+        .sort((a, b) => a.orderIndex - b.orderIndex);
+      const previous = previousCandidates[previousCandidates.length - 1];
+      const next = selected
+        .filter(other => Number(other.orderIndex) > Number(plan.orderIndex))
+        .sort((a, b) => a.orderIndex - b.orderIndex)[0];
+      if (previous) {
+        score += Math.max(0, previous.sy + 10 - point.sy) * 80;
+      }
+      if (next) {
+        score += Math.max(0, point.sy + 10 - next.sy) * 80;
+      }
+
+      if (plan.spec.kind === "layer" && !plan.spec.localLayer) {
+        const previousLayerCandidates = selected
+          .filter(other => other.kind === "layer" && Number(other.layer) < Number(plan.spec.layer))
+          .sort((a, b) => a.layer - b.layer);
+        const previousLayer = previousLayerCandidates[previousLayerCandidates.length - 1];
+        if (previousLayer) {
+          score += Math.max(0, point.sx - (previousLayer.sx - 10)) * 45;
+          score += Math.max(0, previousLayer.sy + 2 - point.sy) * 45;
+        }
+      }
+
+      selected.forEach(other => {
+        const distance = screenDistance(point, other);
+        const gap = Math.max(0, minTargetGap - distance);
+        const yGap = Math.max(0, 12 - Math.abs(point.sy - other.sy));
+        score += gap * gap * spacingWeight;
+        score += yGap * yGap * spacingWeight * 0.6;
+        if (String(point.nodeIndex) === String(other.nodeIndex) && distance < minTargetGap * 1.6) {
+          score += spacingWeight * 75;
+        }
+      });
+
+      return score;
+    }
+
+    function calloutFromCandidate(spec, point) {
+      return {
+        label: spec.label,
+        color: spec.color,
+        focusKey: geometryFocusKey(spec.kind, spec.layer),
+        kind: spec.kind,
+        layer: spec.layer,
+        localLayer: spec.localLayer,
+        coverageRatio: spec.coverageRatio,
+        spanCount: spec.spanCount,
+        depth: spec.depth,
+        orderIndex: spec.orderIndex,
+        x: point.x,
+        y: point.y,
+        sx: point.sx,
+        sy: point.sy,
+        nodeIndex: point.nodeIndex
+      };
+    }
+
+    function screenDistance(a, b) {
+      return Math.hypot(Number(a.sx) - Number(b.sx), Number(a.sy) - Number(b.sy));
+    }
+
+    function calloutLabelBox(frame, rubber, callouts) {
+      const inner = rubber.filter(row => Number.isFinite(row.innerXMm) && Number.isFinite(row.innerYMm));
+      const labelWidth = Math.max(112, ...callouts.map(item => item.label.length * 7 + 18));
+      const plotLeft = frame.margin.left;
+      const plotRight = frame.w - frame.margin.right;
+      const plotTop = frame.margin.top;
+      const plotBottom = frame.h - frame.margin.bottom;
+      const labelStep = 17;
+      const stackHalf = (callouts.length - 1) * labelStep / 2;
+
+      const innerXs = inner.map(row => frame.sx(row.innerXMm));
+      const centerX = innerXs.length
+        ? (Math.min(...innerXs) + Math.max(...innerXs)) / 2
+        : (plotLeft + plotRight) / 2;
+      const treadInnerY = treadInnerReferenceY(frame, inner);
+      const centerY = Number.isFinite(treadInnerY)
+        ? (plotTop + treadInnerY) / 2
+        : (plotTop + plotBottom) / 2;
+      const labelX = clamp(centerX - labelWidth / 2 - 38, plotLeft + 12, plotRight - labelWidth - 12);
+      const obstacleY = nearestLabelObstacleY(frame, labelX, labelWidth, callouts);
+      const maxCenterY = Number.isFinite(obstacleY)
+        ? Math.min(plotBottom - 18 - stackHalf, obstacleY - 18 - stackHalf)
+        : plotBottom - 18 - stackHalf;
+      const minCenterY = plotTop + 54 + stackHalf;
+
+      return {
+        x: labelX,
+        width: labelWidth,
+        centerY: clamp(centerY, minCenterY, maxCenterY)
+      };
+    }
+
+    function nearestLabelObstacleY(frame, labelX, labelWidth, specs) {
+      const left = labelX - 10;
+      const right = labelX + labelWidth + 10;
+      const ys = [];
+      specs.forEach(spec => {
+        (spec.candidates || []).forEach(point => {
+          const x = frame.sx(point.x);
+          const y = frame.sy(point.y);
+          if (Number.isFinite(x) && Number.isFinite(y) && x >= left && x <= right) ys.push(y);
+        });
+      });
+      return ys.length ? Math.min(...ys) : NaN;
+    }
+
+    function treadInnerReferenceY(frame, innerRows) {
+      const values = innerRows
+        .map(row => frame.sy(row.innerYMm))
+        .filter(Number.isFinite)
+        .sort((a, b) => a - b);
+      if (!values.length) return NaN;
+
+      const index = Math.min(values.length - 1, Math.max(0, Math.floor(values.length * 0.75)));
+      return values[index];
+    }
+
+    function layoutCallouts(frame, callouts, centerY) {
       const labelStep = 17;
       const top = frame.margin.top + 42;
       const bottom = frame.h - frame.margin.bottom - 12;
-      const ordered = callouts.map(item => ({
+      const ordered = callouts.map((item, index) => ({
         ...item,
-        anchorY: frame.sy(item.y)
-      })).sort((a, b) => a.anchorY - b.anchorY);
+        anchorY: frame.sy(item.y),
+        originalIndex: index
+      }));
 
       ordered.forEach((item, index) => {
-        item.labelY = Math.max(item.anchorY, top + index * labelStep);
+        item.labelY = centerY - (ordered.length - 1) * labelStep / 2 + index * labelStep;
         if (index > 0) item.labelY = Math.max(item.labelY, ordered[index - 1].labelY + labelStep);
       });
 
@@ -487,20 +3908,21 @@
       }, subset[0]);
     }
 
-    function drawCallout(svg, frame, item, labelX, labelY) {
+    function drawCallout(svg, frame, item, labelX, labelY, sharedWidth) {
       const anchorX = frame.sx(item.x);
       const anchorY = frame.sy(item.y);
-      const labelWidth = Math.max(92, item.label.length * 7 + 18);
+      const labelWidth = sharedWidth || Math.max(112, item.label.length * 7 + 18);
       const labelHeight = 15;
       const labelRight = labelX + labelWidth;
-      const lineEndX = anchorX >= labelRight ? labelRight + 4 : labelX - 4;
-      const elbowX = anchorX >= labelRight ? lineEndX + 18 : lineEndX - 18;
-      const points = `${anchorX.toFixed(1)},${anchorY.toFixed(1)} ${elbowX.toFixed(1)},${labelY.toFixed(1)} ${lineEndX.toFixed(1)},${labelY.toFixed(1)}`;
+      const labelMidX = labelX + labelWidth / 2;
+      const lineEndX = anchorX >= labelMidX ? labelRight + 4 : labelX - 4;
+      const opacity = focusOpacity(item.focusKey, 0.34);
+      const rectFill = viewState.focusKey === item.focusKey ? "#101923" : "#0b0f12";
       svg.insertAdjacentHTML("beforeend", `
-        <g class="callout" pointer-events="none">
-          <polyline points="${points}" fill="none" stroke="${item.color}" stroke-opacity="0.78" stroke-width="1"></polyline>
+        <g class="callout" data-focus-key="${escapeAttr(item.focusKey)}" opacity="${opacity.toFixed(2)}">
+          <line x1="${lineEndX.toFixed(1)}" y1="${labelY.toFixed(1)}" x2="${anchorX.toFixed(1)}" y2="${anchorY.toFixed(1)}" stroke="${item.color}" stroke-opacity="0.78" stroke-width="1"></line>
           <circle cx="${anchorX.toFixed(1)}" cy="${anchorY.toFixed(1)}" r="2.2" fill="${item.color}" stroke="#0b0f12" stroke-width="0.8"></circle>
-          <rect x="${labelX.toFixed(1)}" y="${(labelY - 11).toFixed(1)}" width="${labelWidth.toFixed(1)}" height="${labelHeight}" rx="3" fill="#0b0f12" fill-opacity="0.88" stroke="${item.color}" stroke-opacity="0.5"></rect>
+          <rect x="${labelX.toFixed(1)}" y="${(labelY - 11).toFixed(1)}" width="${labelWidth.toFixed(1)}" height="${labelHeight}" rx="3" fill="${rectFill}" fill-opacity="0.92" stroke="${item.color}" stroke-opacity="0.5"></rect>
           <text x="${(labelX + 7).toFixed(1)}" y="${(labelY + 0.5).toFixed(1)}">${escapeHtml(item.label)}</text>
         </g>`);
     }
@@ -572,10 +3994,20 @@
       return Number.isFinite(range) && Math.abs(range) > 1e-12 ? range : 1;
     }
 
+    function clamp(value, min, max) {
+      if (max < min) return min;
+      return Math.min(Math.max(value, min), max);
+    }
+
     function fmt(value) {
       const n = Number(value);
       if (!Number.isFinite(n)) return "-";
       return n.toFixed(Math.abs(n) >= 10 ? 2 : 3).replace(/\.?0+$/, "");
+    }
+
+    function fmtMm(value) {
+      const n = Number(value);
+      return Number.isFinite(n) ? `${fmt(n)} mm` : "-";
     }
 
     function setMessage(message) {

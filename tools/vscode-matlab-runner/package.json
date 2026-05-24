@@ -1,0 +1,64 @@
+{
+  "name": "matlab-run-selected",
+  "displayName": "MATLAB Run Selected",
+  "description": "Run selected MATLAB .m files from the VS Code explorer using a visible MATLAB desktop launch.",
+  "version": "0.1.0",
+  "publisher": "rf2",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:matlabRunSelected.runFile"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "matlabRunSelected.runFile",
+        "title": "MATLAB: Run Selected MATLAB File",
+        "category": "MATLAB"
+      }
+    ],
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "matlabRunSelected.runFile",
+          "when": "resourceExtname == .m",
+          "group": "navigation@90"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "matlabRunSelected.runFile",
+          "when": "resourceExtname == .m",
+          "group": "navigation@90"
+        }
+      ],
+      "editor/title/context": [
+        {
+          "command": "matlabRunSelected.runFile",
+          "when": "resourceExtname == .m",
+          "group": "navigation@90"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "MATLAB Run Selected",
+      "properties": {
+        "matlabRunSelected.executable": {
+          "type": "string",
+          "default": "matlab",
+          "description": "MATLAB executable or full path to matlab.exe."
+        },
+        "matlabRunSelected.showTerminal": {
+          "type": "boolean",
+          "default": true,
+          "description": "Start MATLAB from a visible VS Code terminal."
+        }
+      }
+    }
+  }
+}

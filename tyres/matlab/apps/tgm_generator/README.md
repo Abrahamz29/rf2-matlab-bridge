@@ -27,6 +27,7 @@ startTgmGeneratorApp
 - `rf2TgmPrepareTToolImpl.m`: prepares generated files for rFactor 2 `pTool`.
 - `rf2TgmGeneratorSmokeImpl.m`, `rf2TgmAllKnownTyresSmokeImpl.m`: smoke tests.
 
-Public compatibility wrappers stay one level up in `tyres/matlab/` so existing
-commands and scripts continue to work.
+Public compatibility wrappers stay in `tyres/matlab/functions/` so existing
+commands and scripts continue to work after `setup_rf2_matlab()` adds that
+folder to the MATLAB path.
 

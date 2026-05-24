@@ -27,9 +27,10 @@ plotData.plyCrossSection = localBuildPlyCrossSection(plotData.geometry, plotData
 
 materialRows = P.section == "Node" & ismember(P.key, ["BulkMaterial", "TreadMaterial", "PlyMaterial"]);
 material = localRowsToMatrix(P(materialRows, :), 7);
-plotData.materials = table(P.nodeIndex(materialRows), P.key(materialRows), ...
+materialIndex = localMaterialIndexByNodeAndKind(P.nodeIndex(materialRows), P.key(materialRows), material(:, 1));
+plotData.materials = table(P.nodeIndex(materialRows), P.key(materialRows), materialIndex, ...
     material(:, 1), material(:, 2), material(:, 3), material(:, 4), material(:, 5), material(:, 6), material(:, 7), ...
-    'VariableNames', {'nodeIndex', 'kind', 'temperatureK', 'densityKgM3', 'youngsModulusPa', ...
+    'VariableNames', {'nodeIndex', 'kind', 'materialIndex', 'temperatureK', 'densityKgM3', 'youngsModulusPa', ...
     'poissonRatio', 'compressionMultiplier', 'specificHeatJKgK', 'conductivityWMK'});
 
 plotData.summary = model.summary;
@@ -67,6 +68,28 @@ nodes = unique(nodeIndex(~isnan(nodeIndex)));
 for node = reshape(nodes, 1, [])
     rows = find(nodeIndex == node);
     layerIndex(rows) = (1:numel(rows)).';
+end
+end
+
+function materialIndex = localMaterialIndexByNodeAndKind(nodeIndex, kind, temperatureK)
+materialIndex = nan(numel(nodeIndex), 1);
+nodes = unique(nodeIndex(~isnan(nodeIndex)));
+for node = reshape(nodes, 1, [])
+    nodeRows = find(nodeIndex == node);
+    kinds = unique(kind(nodeRows));
+    for kindValue = reshape(kinds, 1, [])
+        rows = nodeRows(kind(nodeRows) == kindValue);
+        currentIndex = 0;
+        previousTemperature = NaN;
+        for row = reshape(rows, 1, [])
+            temperature = temperatureK(row);
+            if currentIndex == 0 || (isfinite(previousTemperature) && isfinite(temperature) && temperature <= previousTemperature)
+                currentIndex = currentIndex + 1;
+            end
+            materialIndex(row) = currentIndex;
+            previousTemperature = temperature;
+        end
+    end
 end
 end
 
