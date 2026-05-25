@@ -1,4 +1,4 @@
-"""Build a local rFactor 2 tyre inventory and behaviour SQLite database."""
+"""Build a local rFactor 2 tyre inventory, construction, and behaviour database."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import argparse
 import csv
 import hashlib
 import json
+import math
 import re
 import shutil
 import sqlite3
@@ -21,55 +22,27 @@ DEFAULT_TGM_CACHE = Path("tyres/cache/tgm")
 DEFAULT_RESULTS_ROOT = Path("tyres/scenarios/ttool/results")
 
 
-TGM_PARAM_KEYS = {
-    "QuasiStaticAnalysis": {
-        "NumLayers",
-        "NumSections",
-        "RimVolume",
-        "RealtimeCamberLimit",
-        "GaugePressure",
-        "CarcassTemperature",
-        "RotationSquared",
-        "NumNodes",
-        "VolumeLoad",
-        "LoadCamber",
-        "LoadInclination",
-        "LoadDeflection",
-        "TotalMass",
-        "TotalInertiaStandard",
-        "RingMass",
-        "RingInertiaStandard",
-    },
-    "Realtime": {
-        "StaticBaseCoefficient",
-        "SlidingBaseCoefficient",
-        "TemporaryBristleSpring",
-        "TemporaryBristleDamper",
-        "MarbleEffectOnEffectiveLoad",
-        "TerrainWeightOnContactTemperature",
-        "WLFParameters",
-        "StaticRoughnessEffect",
-        "GrooveEffects",
-        "DampnessEffects",
-        "StaticCurve",
-        "SlidingAdhesionCurve",
-        "SlidingMicroDeformationCurve",
-        "SlidingMacroDeformationCurve",
-        "RubberPressureSensitivityPower",
-        "SizeMultiplier",
-        "ThermalDepthAtSurface",
-        "ThermalDepthBelowSurface",
-        "BristleLength",
-        "InternalGasHeatTransfer",
-        "ExternalGasHeatTransfer",
-        "GroundContactConductance",
-        "TireRadiationEmissivity",
-        "InternalGasSpecificHeatAtConstantVolume",
-        "TemporaryAbrasion",
-    },
-    "LookupData": {"Version", "Checksum", "Bin"},
-    "Node": {"Geometry", "TreadDepth", "RingAndRim", "PlyParams"},
+EXPECTED_TUPLE_WIDTHS = {
+    "Geometry": 3,
+    "InnerGeometryOverride": 2,
+    "RingAndRim": 2,
+    "PlyParams": 3,
+    "BulkMaterial": 7,
+    "TreadMaterial": 7,
+    "PlyMaterial": 7,
 }
+
+EXPECTED_TUPLE_RANGES = {
+    "Geometry": [(-1, 1), (-1, 1), (-1, 1)],
+    "InnerGeometryOverride": [(-1, 1), (-1, 1)],
+    "RingAndRim": [(-math.inf, math.inf), (-math.inf, math.inf)],
+    "PlyParams": [(-360, 360), (0, 1), (-10, 10)],
+    "BulkMaterial": [(100, 1000), (100, 20000), (1000, 1e13), (-1, 1), (0, 10), (50, 10000), (0, 100)],
+    "TreadMaterial": [(100, 1000), (100, 20000), (1000, 1e13), (-1, 1), (0, 10), (50, 10000), (0, 100)],
+    "PlyMaterial": [(100, 1000), (100, 20000), (1000, 1e13), (-1, 1), (0, 10), (50, 10000), (0, 100)],
+}
+
+MATERIAL_KEYS = {"BulkMaterial", "TreadMaterial", "PlyMaterial"}
 
 
 def utc_now() -> str:
@@ -91,18 +64,13 @@ def relative_or_absolute(path: Path, base: Path) -> str:
         return str(path)
 
 
-def clean_tgm_value(raw: str):
-    value = raw.split("//", 1)[0].strip()
-    if value.startswith("(") and value.endswith(")"):
-        items = [parse_scalar(part.strip()) for part in value[1:-1].split(",") if part.strip()]
-        return items
-    return parse_scalar(value)
-
-
 def parse_scalar(value: str):
+    value = value.strip()
     if value == "":
         return ""
     try:
+        if "," in value and "." not in value:
+            return float(value.replace(",", "."))
         if re.fullmatch(r"[-+]?\d+", value):
             return int(value)
         return float(value)
@@ -110,25 +78,129 @@ def parse_scalar(value: str):
         return value
 
 
-def parse_tgm(path: Path) -> dict[str, dict[str, list]]:
-    parsed: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
+def parse_tgm_value(raw: str, key: str):
+    value = raw.split("//", 1)[0].strip()
+    if value.startswith("(") and value.endswith(")"):
+        parts = [part.strip() for part in value[1:-1].split(",") if part.strip()]
+        width = EXPECTED_TUPLE_WIDTHS.get(key, 0)
+        if width > 0:
+            parsed = parse_tuple_parts(parts, width, EXPECTED_TUPLE_RANGES.get(key, []))
+            if parsed is not None:
+                return parsed
+        return [parse_scalar(part) for part in parts]
+    return parse_scalar(value)
+
+
+def parse_tuple_parts(parts: list[str], width: int, ranges: list[tuple[float, float]]):
+    best_score = math.inf
+    best_values = None
+    part_count = len(parts)
+
+    def search(part_index: int, field_index: int, values: list[float], score: float) -> None:
+        nonlocal best_score, best_values
+        remaining_parts = part_count - part_index
+        remaining_fields = width - field_index
+        if remaining_parts < remaining_fields or remaining_parts > remaining_fields * 2:
+            return
+        if field_index == width:
+            if part_index == part_count and score < best_score:
+                best_score = score
+                best_values = values[:]
+            return
+
+        for group_length in (1, 2):
+            if part_index + group_length > part_count:
+                continue
+            candidate, ok, candidate_score = parse_tuple_candidate(parts[part_index : part_index + group_length])
+            if not ok:
+                continue
+            next_values = values[:]
+            next_values[field_index] = candidate
+            search(
+                part_index + group_length,
+                field_index + 1,
+                next_values,
+                score + candidate_score + range_score(candidate, ranges[field_index] if field_index < len(ranges) else None),
+            )
+
+    search(0, 0, [math.nan] * width, 0)
+    return best_values
+
+
+def parse_tuple_candidate(parts: list[str]) -> tuple[float, bool, float]:
+    if len(parts) == 1:
+        value = parse_scalar(parts[0])
+        return (float(value), True, 0) if isinstance(value, (int, float)) else (math.nan, False, math.inf)
+
+    if len(parts) != 2 or not can_be_decimal_comma(parts[0], parts[1]):
+        return math.nan, False, math.inf
+
+    try:
+        value = float(f"{parts[0].strip()}.{parts[1].strip()}")
+    except ValueError:
+        return math.nan, False, math.inf
+    score = 0.2 if re.search(r"[eE]", parts[1]) else -0.1
+    return value, True, score
+
+
+def can_be_decimal_comma(left: str, right: str) -> bool:
+    return bool(re.fullmatch(r"[+-]?\d+", left.strip())) and bool(re.fullmatch(r"\d+(?:[eE][+-]?\d+)?", right.strip()))
+
+
+def range_score(value: float, valid_range: tuple[float, float] | None) -> float:
+    if valid_range is None or math.isnan(value):
+        return 0
+    low, high = valid_range
+    if math.isinf(low) or math.isinf(high) or low <= value <= high:
+        return 0
+    return 1000 + min(abs(value - low), abs(value - high))
+
+
+def parse_tgm_records(path: Path) -> list[dict]:
+    records = []
     section = ""
+    current_node = None
+    node_counter = 0
 
     with path.open("r", encoding="utf-8", errors="ignore") as f:
-        for line in f:
+        for line_number, line in enumerate(f, 1):
             stripped = line.strip()
             if not stripped:
                 continue
             if stripped.startswith("["):
                 section = stripped.split("]", 1)[0].strip("[")
+                current_node = None
+                if section == "Node":
+                    match = re.search(r"\[Node\]\s*//\s*(\d+)", stripped)
+                    if match:
+                        current_node = int(match.group(1))
+                    else:
+                        node_counter += 1
+                        current_node = node_counter
                 continue
-            if "=" not in stripped:
+            if section in {"LookupV2", "PatchV1"} or "=" not in stripped:
                 continue
             key, raw_value = stripped.split("=", 1)
             key = key.strip()
-            if key in TGM_PARAM_KEYS.get(section, set()):
-                parsed[section][key].append(clean_tgm_value(raw_value))
+            raw_value = raw_value.split("//", 1)[0].strip()
+            records.append(
+                {
+                    "line_number": line_number,
+                    "section": section,
+                    "node_index": current_node,
+                    "key": key,
+                    "raw_value": raw_value,
+                    "value": parse_tgm_value(raw_value, key),
+                }
+            )
 
+    return records
+
+
+def parse_tgm(path: Path) -> dict[str, dict[str, list]]:
+    parsed: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
+    for record in parse_tgm_records(path):
+        parsed[record["section"]][record["key"]].append(record["value"])
     return {section: dict(values) for section, values in parsed.items()}
 
 
@@ -283,6 +355,86 @@ def init_db(db_path: Path) -> sqlite3.Connection:
             value_json TEXT NOT NULL
         );
 
+        CREATE TABLE tyre_property_values (
+            id INTEGER PRIMARY KEY,
+            tyre_id INTEGER NOT NULL REFERENCES tyres(id) ON DELETE CASCADE,
+            line_number INTEGER NOT NULL,
+            section TEXT NOT NULL,
+            node_index INTEGER,
+            key TEXT NOT NULL,
+            raw_value TEXT NOT NULL,
+            value_json TEXT NOT NULL
+        );
+
+        CREATE INDEX idx_tyre_property_values_tyre_section_key
+            ON tyre_property_values (tyre_id, section, key);
+
+        CREATE INDEX idx_tyre_property_values_tyre_node
+            ON tyre_property_values (tyre_id, node_index);
+
+        CREATE TABLE tyre_construction_summary (
+            tyre_id INTEGER PRIMARY KEY REFERENCES tyres(id) ON DELETE CASCADE,
+            declared_num_layers INTEGER,
+            declared_num_sections INTEGER,
+            declared_num_nodes INTEGER,
+            actual_node_count INTEGER NOT NULL,
+            max_ply_layers INTEGER NOT NULL,
+            ply_layer_count INTEGER NOT NULL,
+            material_row_count INTEGER NOT NULL
+        );
+
+        CREATE TABLE tyre_nodes (
+            id INTEGER PRIMARY KEY,
+            tyre_id INTEGER NOT NULL REFERENCES tyres(id) ON DELETE CASCADE,
+            node_index INTEGER NOT NULL,
+            geometry_x_m REAL,
+            geometry_y_m REAL,
+            thickness_m REAL,
+            tread_depth_m REAL,
+            ring_and_rim_first REAL,
+            ring_and_rim_second REAL,
+            geometry_json TEXT,
+            ring_and_rim_json TEXT,
+            UNIQUE (tyre_id, node_index)
+        );
+
+        CREATE TABLE tyre_ply_layers (
+            id INTEGER PRIMARY KEY,
+            tyre_id INTEGER NOT NULL REFERENCES tyres(id) ON DELETE CASCADE,
+            node_index INTEGER NOT NULL,
+            ply_index INTEGER NOT NULL,
+            angle_deg REAL,
+            thickness_m REAL,
+            connect_flag REAL,
+            source_line_number INTEGER,
+            raw_value TEXT,
+            value_json TEXT,
+            UNIQUE (tyre_id, node_index, ply_index)
+        );
+
+        CREATE TABLE tyre_material_rows (
+            id INTEGER PRIMARY KEY,
+            tyre_id INTEGER NOT NULL REFERENCES tyres(id) ON DELETE CASCADE,
+            node_index INTEGER NOT NULL,
+            material_kind TEXT NOT NULL,
+            material_index INTEGER NOT NULL,
+            ply_index INTEGER,
+            sample_index INTEGER NOT NULL,
+            source_line_number INTEGER,
+            temperature_k REAL,
+            density_kg_m3 REAL,
+            youngs_modulus_pa REAL,
+            poisson_ratio REAL,
+            compression_multiplier REAL,
+            specific_heat_j_kg_k REAL,
+            conductivity_w_m_k REAL,
+            raw_value TEXT,
+            value_json TEXT
+        );
+
+        CREATE INDEX idx_tyre_material_rows_tyre_node_kind
+            ON tyre_material_rows (tyre_id, node_index, material_kind, material_index);
+
         CREATE TABLE archive_candidates (
             id INTEGER PRIMARY KEY,
             archive_path TEXT NOT NULL,
@@ -348,6 +500,201 @@ def init_db(db_path: Path) -> sqlite3.Connection:
     return conn
 
 
+def json_value(value) -> str:
+    return json.dumps(value, ensure_ascii=True)
+
+
+def db_number(value):
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        number = float(value)
+        return None if math.isnan(number) or math.isinf(number) else number
+    return None
+
+
+def value_at(value, index: int):
+    if isinstance(value, list) and index < len(value):
+        return db_number(value[index])
+    return None
+
+
+def first_record_value(records: list[dict], section: str, key: str):
+    for record in records:
+        if record["section"] == section and record["key"] == key:
+            return record["value"]
+    return None
+
+
+def first_numeric_record_value(records: list[dict], section: str, key: str):
+    return db_number(first_record_value(records, section, key))
+
+
+def insert_tgm_property_values(conn: sqlite3.Connection, tyre_id: int, records: list[dict]) -> None:
+    for record in records:
+        if record["section"] == "LookupData" and record["key"] == "Bin":
+            # The aggregate tyre_parameters table retains generated lookup bins.
+            # Duplicating every bin line here bloats the construction-oriented table.
+            continue
+        conn.execute(
+            """
+            INSERT INTO tyre_property_values
+                (tyre_id, line_number, section, node_index, key, raw_value, value_json)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                tyre_id,
+                record["line_number"],
+                record["section"],
+                record["node_index"],
+                record["key"],
+                record["raw_value"],
+                json_value(record["value"]),
+            ),
+        )
+
+
+def insert_tgm_construction(conn: sqlite3.Connection, tyre_id: int, records: list[dict]) -> None:
+    node_records: dict[int, list[dict]] = defaultdict(list)
+    for record in records:
+        if record["section"] == "Node" and record["node_index"] is not None:
+            node_records[int(record["node_index"])].append(record)
+
+    ply_layer_count = 0
+    material_row_count = 0
+    max_ply_layers = 0
+
+    for node_index, rows in sorted(node_records.items()):
+        geometry = next((record["value"] for record in rows if record["key"] == "Geometry"), None)
+        tread_depth = next((record["value"] for record in rows if record["key"] == "TreadDepth"), None)
+        ring_and_rim = next((record["value"] for record in rows if record["key"] == "RingAndRim"), None)
+        conn.execute(
+            """
+            INSERT INTO tyre_nodes (
+                tyre_id, node_index, geometry_x_m, geometry_y_m, thickness_m,
+                tread_depth_m, ring_and_rim_first, ring_and_rim_second,
+                geometry_json, ring_and_rim_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                tyre_id,
+                node_index,
+                value_at(geometry, 0),
+                value_at(geometry, 1),
+                value_at(geometry, 2),
+                db_number(tread_depth),
+                value_at(ring_and_rim, 0),
+                value_at(ring_and_rim, 1),
+                json_value(geometry),
+                json_value(ring_and_rim),
+            ),
+        )
+
+        current_ply_index = 0
+        material_state: dict[str, dict[str, float | int | None]] = defaultdict(
+            lambda: {"material_index": 0, "sample_index": 0, "previous_temperature": None}
+        )
+        ply_sample_counts: dict[int, int] = defaultdict(int)
+
+        for record in rows:
+            key = record["key"]
+            value = record["value"]
+            if key == "PlyParams":
+                current_ply_index += 1
+                ply_layer_count += 1
+                max_ply_layers = max(max_ply_layers, current_ply_index)
+                conn.execute(
+                    """
+                    INSERT INTO tyre_ply_layers (
+                        tyre_id, node_index, ply_index, angle_deg, thickness_m,
+                        connect_flag, source_line_number, raw_value, value_json
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        tyre_id,
+                        node_index,
+                        current_ply_index,
+                        value_at(value, 0),
+                        value_at(value, 1),
+                        value_at(value, 2),
+                        record["line_number"],
+                        record["raw_value"],
+                        json_value(value),
+                    ),
+                )
+                continue
+
+            if key not in MATERIAL_KEYS:
+                continue
+
+            temperature = value_at(value, 0)
+            ply_index = None
+            if key == "PlyMaterial" and current_ply_index > 0:
+                material_index = current_ply_index
+                ply_index = current_ply_index
+                ply_sample_counts[current_ply_index] += 1
+                sample_index = ply_sample_counts[current_ply_index]
+            else:
+                state = material_state[key]
+                previous_temperature = state["previous_temperature"]
+                if state["material_index"] == 0 or (
+                    previous_temperature is not None and temperature is not None and temperature <= previous_temperature
+                ):
+                    state["material_index"] = int(state["material_index"]) + 1
+                    state["sample_index"] = 0
+                state["sample_index"] = int(state["sample_index"]) + 1
+                state["previous_temperature"] = temperature
+                material_index = int(state["material_index"])
+                sample_index = int(state["sample_index"])
+
+            material_row_count += 1
+            conn.execute(
+                """
+                INSERT INTO tyre_material_rows (
+                    tyre_id, node_index, material_kind, material_index, ply_index,
+                    sample_index, source_line_number, temperature_k, density_kg_m3,
+                    youngs_modulus_pa, poisson_ratio, compression_multiplier,
+                    specific_heat_j_kg_k, conductivity_w_m_k, raw_value, value_json
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    tyre_id,
+                    node_index,
+                    key,
+                    material_index,
+                    ply_index,
+                    sample_index,
+                    record["line_number"],
+                    temperature,
+                    value_at(value, 1),
+                    value_at(value, 2),
+                    value_at(value, 3),
+                    value_at(value, 4),
+                    value_at(value, 5),
+                    value_at(value, 6),
+                    record["raw_value"],
+                    json_value(value),
+                ),
+            )
+
+    conn.execute(
+        """
+        INSERT INTO tyre_construction_summary (
+            tyre_id, declared_num_layers, declared_num_sections, declared_num_nodes,
+            actual_node_count, max_ply_layers, ply_layer_count, material_row_count
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        (
+            tyre_id,
+            first_numeric_record_value(records, "QuasiStaticAnalysis", "NumLayers"),
+            first_numeric_record_value(records, "QuasiStaticAnalysis", "NumSections"),
+            first_numeric_record_value(records, "QuasiStaticAnalysis", "NumNodes"),
+            len(node_records),
+            max_ply_layers,
+            ply_layer_count,
+            material_row_count,
+        ),
+    )
+
+
 def insert_tyre_inventory(
     conn: sqlite3.Connection,
     project_root: Path,
@@ -404,12 +751,18 @@ def insert_tyre_inventory(
                 ),
             )
 
-        parsed = parse_tgm(primary)
+        records = parse_tgm_records(primary)
+        insert_tgm_property_values(conn, tyre_id, records)
+        insert_tgm_construction(conn, tyre_id, records)
+
+        parsed: dict[str, dict[str, list]] = defaultdict(lambda: defaultdict(list))
+        for record in records:
+            parsed[record["section"]][record["key"]].append(record["value"])
         for section, values in parsed.items():
             for key, value_list in values.items():
                 conn.execute(
                     "INSERT INTO tyre_parameters (tyre_id, section, key, value_json) VALUES (?, ?, ?, ?)",
-                    (tyre_id, section, key, json.dumps(value_list, ensure_ascii=True)),
+                    (tyre_id, section, key, json_value(value_list)),
                 )
 
     return len(sources_by_hash), sum(len(v) for v in sources_by_hash.values())
