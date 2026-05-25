@@ -1033,6 +1033,22 @@
       width: 100%;
       min-width: 0;
     }
+    .reengineering-db-role-toggle {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 11px;
+      user-select: none;
+    }
+    .reengineering-db-role-toggle input {
+      width: 14px;
+      height: 14px;
+      margin: 0;
+      accent-color: var(--accent);
+    }
     .reengineering-db-list {
       min-height: 0;
       overflow: auto;
@@ -1263,6 +1279,7 @@
               <select id="reengineering-db-category" aria-label="Filter material category">
                 <option value="">All categories</option>
               </select>
+              <label class="reengineering-db-role-toggle"><input id="reengineering-db-role-filter" type="checkbox" checked />Role filter</label>
               <button type="button" data-reengineering-db-action="apply">Set</button>
               <button type="button" data-reengineering-db-action="clear">Clear</button>
               <button type="button" data-reengineering-db-action="save">Save Mix</button>
@@ -1308,7 +1325,7 @@
     const materialHiddenSeries = new Set();
     const materialKindFilters = new Set(["TreadMaterial", "BulkMaterial", "PlyMaterial"]);
     const nodeSelectionDrag = { active: false, dragging: false, plotId: "", start: null, current: null, additive: false, suppressClick: false };
-    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0, materialCandidatePanelKind: "", selectedMaterialCandidateKey: "", materialCandidateDefaults: {}, plyFamilyDefaults: {}, reengineeringFamilyDefaults: {}, reengineeringFamilyKey: "", reengineeringNodeIndex: null, reengineeringPlyIndex: null, reengineeringStackKey: "", reengineeringSelectedCellKeys: [], reengineeringSelectionAnchorKey: "", reengineeringSelectionAnchorType: "cell", reengineeringCellOverrides: {}, reengineeringDbSearch: "", reengineeringDbCategory: "", reengineeringDbMaterialId: null };
+    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0, materialCandidatePanelKind: "", selectedMaterialCandidateKey: "", materialCandidateDefaults: {}, plyFamilyDefaults: {}, reengineeringFamilyDefaults: {}, reengineeringFamilyKey: "", reengineeringNodeIndex: null, reengineeringPlyIndex: null, reengineeringStackKey: "", reengineeringSelectedCellKeys: [], reengineeringSelectionAnchorKey: "", reengineeringSelectionAnchorType: "cell", reengineeringCellOverrides: {}, reengineeringDbSearch: "", reengineeringDbCategory: "", reengineeringDbRoleFilter: true, reengineeringDbMaterialId: null };
     const LAYER_EXPLODE_TARGET_MM = 30;
     const NODE_LAYER_SPREAD_TARGET_MM = 30;
     const NODE_REST_SPREAD_TARGET_MM = 30;
@@ -1408,9 +1425,15 @@
         drawReengineeringDatabasePanel(plyReengineeringModel());
       });
       document.addEventListener("change", event => {
-        if (event.target?.id !== "reengineering-db-category") return;
-        viewState.reengineeringDbCategory = event.target.value || "";
-        drawReengineeringDatabasePanel(plyReengineeringModel());
+        if (event.target?.id === "reengineering-db-category") {
+          viewState.reengineeringDbCategory = event.target.value || "";
+          drawReengineeringDatabasePanel(plyReengineeringModel());
+          return;
+        }
+        if (event.target?.id === "reengineering-db-role-filter") {
+          viewState.reengineeringDbRoleFilter = Boolean(event.target.checked);
+          drawReengineeringDatabasePanel(plyReengineeringModel());
+        }
       });
       document.addEventListener("click", event => {
         const reengineeringDbAction = event.target.closest("[data-reengineering-db-action]")?.dataset?.reengineeringDbAction;
@@ -2309,12 +2332,16 @@
       const meta = document.getElementById("reengineering-db-meta");
       const input = document.getElementById("reengineering-db-search");
       const categorySelect = document.getElementById("reengineering-db-category");
+      const roleToggle = document.getElementById("reengineering-db-role-filter");
       const list = document.getElementById("reengineering-db-list");
       if (!list) return;
       if (input && input.value !== String(viewState.reengineeringDbSearch || "")) {
         input.value = String(viewState.reengineeringDbSearch || "");
       }
-      const categories = reengineeringDatabaseCategories();
+      if (roleToggle && roleToggle.checked !== reengineeringDatabaseRoleFilterEnabled()) {
+        roleToggle.checked = reengineeringDatabaseRoleFilterEnabled();
+      }
+      const categories = reengineeringDatabaseCategories(model);
       const activeCategory = categories.includes(String(viewState.reengineeringDbCategory || "")) ? String(viewState.reengineeringDbCategory || "") : "";
       viewState.reengineeringDbCategory = activeCategory;
       if (categorySelect) {
@@ -2327,7 +2354,8 @@
       const materials = reengineeringDatabaseMaterialsForSelection(model);
       if (meta) {
         const savedCount = asArray(state?.materialMix?.assignments).length;
-        meta.textContent = `${selectedCells.length} cells | ${reengineeringSelectionRoleText(selectedCells)} | ${materials.length}/${materialLibraryMaterials().length} materials | saved ${savedCount}`;
+        const roleText = reengineeringDatabaseRoleFilterText(model);
+        meta.textContent = `${selectedCells.length} cells | ${roleText} | ${materials.length}/${materialLibraryMaterials().length} materials | saved ${savedCount}`;
       }
       list.innerHTML = materials.length ? materials.map((material, index) => {
         const selected = selectedMaterial && Number(selectedMaterial.id) === Number(material.id);
@@ -2345,8 +2373,10 @@
     function reengineeringDatabaseMaterialsForSelection(model) {
       const query = String(viewState.reengineeringDbSearch || "").trim().toLowerCase();
       const category = String(viewState.reengineeringDbCategory || "");
+      const roleFilter = reengineeringDatabaseRoleFilter(model);
       return materialLibraryMaterials()
         .filter(material => {
+          if (roleFilter.enabled && !reengineeringMaterialMatchesRoleScopes(material, roleFilter.scopes)) return false;
           if (category && String(material.category || "") !== category) return false;
           if (!query) return true;
           return `${material.name || ""} ${material.category || ""}`.toLowerCase().includes(query);
@@ -2354,11 +2384,59 @@
         .sort((a, b) => String(a.category || "").localeCompare(String(b.category || "")) || String(a.name || "").localeCompare(String(b.name || "")));
     }
 
-    function reengineeringDatabaseCategories() {
+    function reengineeringDatabaseCategories(model) {
+      const roleFilter = reengineeringDatabaseRoleFilter(model);
       return Array.from(new Set(materialLibraryMaterials()
+        .filter(material => !roleFilter.enabled || reengineeringMaterialMatchesRoleScopes(material, roleFilter.scopes))
         .map(material => String(material.category || "").trim())
         .filter(Boolean)))
         .sort((a, b) => a.localeCompare(b));
+    }
+
+    function reengineeringDatabaseRoleFilterEnabled() {
+      return viewState.reengineeringDbRoleFilter !== false;
+    }
+
+    function reengineeringDatabaseRoleFilter(model) {
+      const scopes = reengineeringSelectedRoleScopes(model);
+      return {
+        enabled: reengineeringDatabaseRoleFilterEnabled() && scopes.length > 0,
+        scopes
+      };
+    }
+
+    function reengineeringSelectedRoleScopes(model) {
+      return Array.from(new Set(reengineeringSelectedCells(model)
+        .map(reengineeringCellRoleScope)
+        .filter(Boolean)))
+        .sort((a, b) => materialDominanceScopeLabel(a).localeCompare(materialDominanceScopeLabel(b)));
+    }
+
+    function reengineeringDatabaseRoleFilterText(model) {
+      if (!reengineeringDatabaseRoleFilterEnabled()) return "all roles";
+      const text = reengineeringSelectionRoleText(reengineeringSelectedCells(model));
+      return text && text !== "-" ? text : "all roles";
+    }
+
+    function reengineeringMaterialMatchesRoleScopes(material, scopes) {
+      const roles = asArray(scopes).filter(Boolean);
+      if (!roles.length) return true;
+      return roles.some(scope => isMaterialCandidateForRoleScope(scope, material));
+    }
+
+    function isMaterialCandidateForRoleScope(scope, material) {
+      const key = String(scope || "");
+      const category = String(material?.category || "").toLowerCase();
+      const text = `${category} ${String(material?.name || "")}`.toLowerCase();
+      if (key === "PlyMaterial") return isMaterialCandidateForKind("PlyMaterial", material);
+      if (key === "TreadMaterial:cap") return category.includes("rubber tread") && !text.includes("inner liner");
+      if (key === "TreadMaterial:tread-sidewall") return category.includes("tread sidewall");
+      if (key === "BulkMaterial:filler") return category.includes("filler") || /(filler|bead|apex)/.test(text);
+      if (key === "BulkMaterial:inner-liner") return category.includes("inner liner") || text.includes("inner liner");
+      if (key === "BulkMaterial:belt") return category.includes("bulk") && text.includes("belt");
+      if (key === "BulkMaterial:sidewall") return category.includes("bulk") && text.includes("sidewall");
+      if (key === "BulkMaterial:bulk") return category.includes("bulk") && !/(filler|bead|apex|inner liner|belt)/.test(text);
+      return true;
     }
 
     function drawReengineeringDecision(model) {
