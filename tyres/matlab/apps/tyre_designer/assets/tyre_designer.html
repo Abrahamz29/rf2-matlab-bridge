@@ -2094,38 +2094,14 @@
         if (!crossByCell.has(key)) crossByCell.set(key, row);
       });
 
-      const familyMap = new Map();
       const cells = [];
       const addCell = cell => {
         const materialRows = sortMaterialRows(cell.materialRows || []);
         const signatureKey = materialFamilySignatureKey(cell.kind, materialRows, cell);
-        const familyKey = signatureKey
-          ? `material-family:${cell.kind}:${signatureKey}`
-          : `material-family:missing:${cell.kind}:${cell.key}`;
-        const fullCell = { ...cell, materialRows, familyKey, signatureKey };
-        if (!familyMap.has(familyKey)) {
-          familyMap.set(familyKey, {
-            key: familyKey,
-            kind: fullCell.kind,
-            signatureKey,
-            cells: [],
-            matches: [],
-            materialRows: [],
-            nodes: [],
-            layers: [],
-            stackKeys: [],
-            stackLabels: [],
-            candidates: [],
-            best: null,
-            color: "#b99cff",
-            flags: []
-          });
-        }
-        const family = familyMap.get(familyKey);
-        family.cells.push(fullCell);
-        family.materialRows.push(...materialRows);
-        if (fullCell.match) family.matches.push(fullCell.match);
-        cells.push(fullCell);
+        const sourceFamilyKey = signatureKey
+          ? `material-source-family:${cell.kind}:${signatureKey}`
+          : `material-source-family:missing:${cell.kind}:${cell.key}`;
+        cells.push({ ...cell, materialRows, sourceFamilyKey, signatureKey });
       };
 
       nodes.forEach(nodeIndex => {
@@ -2183,6 +2159,7 @@
           });
         });
 
+      const familyMap = reengineeringDisplayFamilyMap(cells);
       const families = Array.from(familyMap.values())
         .sort((a, b) => materialKindOrder(a.kind) - materialKindOrder(b.kind)
           || Math.min(...a.cells.map(cell => materialStackSortValue(cell))) - Math.min(...b.cells.map(cell => materialStackSortValue(cell)))
@@ -2197,17 +2174,21 @@
       });
       families.forEach((family, index) => {
         family.color = COLORS[index % COLORS.length];
-        family.defaultBaseKey = reengineeringFamilyDefaultBaseKey(family.key);
+        family.defaultBaseKey = reengineeringFamilyDefaultBaseKey(family.key) || family.displayBaseKey || "";
+        family.displayBest = aggregateReengineeringDisplayCandidates(family.displayCandidates, family.defaultBaseKey);
         family.candidates = aggregateSelectedMaterialCandidateAlternatives(family.matches, family.defaultBaseKey);
-        family.best = family.defaultBaseKey
-          ? family.candidates.find(candidate => candidate.key === family.defaultBaseKey) || family.candidates[0] || null
-          : family.candidates[0] || null;
+        if (family.displayBest && !family.candidates.some(candidate => candidate.key === family.displayBest.key)) {
+          family.candidates.unshift(family.displayBest);
+        }
+        family.best = family.displayBest
+          || (family.defaultBaseKey ? family.candidates.find(candidate => candidate.key === family.defaultBaseKey) : null)
+          || family.candidates[0]
+          || null;
         family.flags = plyFamilyFlags(family, stackFamilyCounts);
       });
       cells.forEach(cell => {
         cell.family = familyMap.get(cell.familyKey) || null;
-        cell.override = reengineeringOverrideCandidateForCell(cell);
-        cell.best = cell.override || cell.family?.best || cell.match?.best || null;
+        cell.best = cell.displayCandidate || cell.family?.best || cell.match?.best || null;
       });
 
       const presentStacks = new Set(cells.map(cell => cell.stackKey));
@@ -2430,6 +2411,103 @@
       return `${Number(nodeIndex)}:${String(stackKey || "")}`;
     }
 
+    function reengineeringDisplayFamilyMap(cells) {
+      const familyMap = new Map();
+      (cells || []).forEach(cell => {
+        cell.override = reengineeringOverrideCandidateForCell(cell);
+        cell.displayCandidate = cell.override || cell.match?.best || null;
+        const familyKey = reengineeringDisplayFamilyKey(cell.kind, cell.displayCandidate, cell.signatureKey, cell.sourceFamilyKey);
+        const displayBaseKey = String(cell.displayCandidate?.baseKey || cell.displayCandidate?.key || "");
+        cell.familyKey = familyKey;
+        if (!familyMap.has(familyKey)) {
+          familyMap.set(familyKey, {
+            key: familyKey,
+            kind: cell.kind,
+            signatureKey: cell.signatureKey,
+            displayBaseKey,
+            cells: [],
+            matches: [],
+            displayCandidates: [],
+            materialRows: [],
+            nodes: [],
+            layers: [],
+            stackKeys: [],
+            stackLabels: [],
+            candidates: [],
+            best: null,
+            displayBest: null,
+            color: "#b99cff",
+            flags: []
+          });
+        }
+        const family = familyMap.get(familyKey);
+        family.cells.push(cell);
+        family.materialRows.push(...(cell.materialRows || []));
+        if (cell.match) family.matches.push(cell.match);
+        if (cell.displayCandidate) family.displayCandidates.push(cell.displayCandidate);
+      });
+      return familyMap;
+    }
+
+    function reengineeringDisplayFamilyKey(kind, candidate, signatureKey, fallbackKey = "") {
+      const baseKey = String(candidate?.baseKey || candidate?.key || "");
+      if (baseKey) return `material-display-family:${String(kind || "Material")}:${baseKey}`;
+      if (signatureKey) return `material-display-family:${String(kind || "Material")}:observed:${signatureKey}`;
+      return `material-display-family:${String(kind || "Material")}:missing:${String(fallbackKey || "")}`;
+    }
+
+    function aggregateReengineeringDisplayCandidates(candidates, preferredKey = "") {
+      const groups = new Map();
+      (candidates || []).forEach(candidate => {
+        const key = String(candidate?.baseKey || candidate?.key || "");
+        if (!key) return;
+        const item = groups.get(key) || {
+          ...candidate,
+          key,
+          baseKey: key,
+          name: candidate.name || candidate.materialName || "Material",
+          materialName: candidate.materialName || candidate.name || "Material",
+          confidenceValues: [],
+          scoreSum: 0,
+          scoreWeight: 0,
+          modulusMultipliers: [],
+          densityMultipliers: [],
+          matchTypes: new Map(),
+          groupCount: 0
+        };
+        const confidence = Number(candidate.confidence) || 0;
+        const weight = Math.max(0.000001, confidence);
+        item.confidenceValues.push(confidence);
+        item.scoreSum += (Number(candidate.score) || 0) * weight;
+        item.scoreWeight += weight;
+        item.groupCount += 1;
+        item.matchTypes.set(candidate.matchType || "manual", (item.matchTypes.get(candidate.matchType || "manual") || 0) + 1);
+        if (Number.isFinite(Number(candidate.modulusMultiplier))) item.modulusMultipliers.push(Number(candidate.modulusMultiplier));
+        asArray(candidate.modulusMultipliers).forEach(value => {
+          if (Number.isFinite(Number(value))) item.modulusMultipliers.push(Number(value));
+        });
+        if (Number.isFinite(Number(candidate.densityMultiplier))) item.densityMultipliers.push(Number(candidate.densityMultiplier));
+        asArray(candidate.densityMultipliers).forEach(value => {
+          if (Number.isFinite(Number(value))) item.densityMultipliers.push(Number(value));
+        });
+        groups.set(key, item);
+      });
+      const ordered = Array.from(groups.values()).map(item => ({
+        ...item,
+        confidence: item.confidenceValues.length
+          ? item.confidenceValues.reduce((sum, value) => sum + value, 0) / item.confidenceValues.length
+          : 0,
+        score: item.scoreWeight > 0 ? item.scoreSum / item.scoreWeight : Infinity,
+        matchType: dominantMatchType(item.matchTypes),
+        preferred: item.key === preferredKey
+      })).sort((a, b) =>
+        Number(b.preferred) - Number(a.preferred)
+        || b.groupCount - a.groupCount
+        || b.confidence - a.confidence
+        || a.score - b.score);
+      return ordered[0] || null;
+    }
+
     function materialStackKey(kind, plyIndex = NaN) {
       const key = String(kind || "");
       if (key === "TreadMaterial") return "tread";
@@ -2497,15 +2575,30 @@
       const family = String(familyKey || "");
       const candidate = String(baseKey || "");
       if (!family || !candidate) return;
+      const model = plyReengineeringModel();
+      const item = model.families.find(candidateFamily => candidateFamily.key === family);
+      const selectedCandidate = item?.candidates?.find(candidateItem => candidateItem.key === candidate) || null;
+      const material = materialLibraryMaterialForCandidate(selectedCandidate);
+      if (item && material) {
+        if (!viewState.reengineeringCellOverrides || typeof viewState.reengineeringCellOverrides !== "object") {
+          viewState.reengineeringCellOverrides = {};
+        }
+        item.cells.forEach(cell => {
+          if (isMaterialCandidateForKind(cell.kind, material)) {
+            viewState.reengineeringCellOverrides[reengineeringCellKey(cell.nodeIndex, cell.stackKey)] = Number(material.id);
+          }
+        });
+        const overrideCandidate = materialCandidateFromLibraryMaterial(item.kind, material);
+        viewState.reengineeringFamilyKey = reengineeringDisplayFamilyKey(item.kind, overrideCandidate, item.signatureKey, item.key);
+      } else {
+        viewState.reengineeringFamilyKey = family;
+      }
       if (!viewState.reengineeringFamilyDefaults || typeof viewState.reengineeringFamilyDefaults !== "object") {
         viewState.reengineeringFamilyDefaults = {};
       }
       if (!viewState.plyFamilyDefaults || typeof viewState.plyFamilyDefaults !== "object") viewState.plyFamilyDefaults = {};
       viewState.reengineeringFamilyDefaults[family] = candidate;
       viewState.plyFamilyDefaults[family] = candidate;
-      viewState.reengineeringFamilyKey = family;
-      const model = plyReengineeringModel();
-      const item = model.families.find(candidateFamily => candidateFamily.key === family);
       viewState.selectedMaterialCandidateKey = materialCandidateKey(item?.kind || "PlyMaterial", candidate);
     }
 
@@ -4036,7 +4129,7 @@
     }
 
     function dominantMatchType(types) {
-      const ordered = ["exact", "scaled", "ambiguous", "unknown"];
+      const ordered = ["manual", "exact", "scaled", "ambiguous", "unknown"];
       let best = "unknown";
       let bestCount = -1;
       ordered.forEach(type => {
