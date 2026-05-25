@@ -2306,12 +2306,10 @@
         categorySelect.innerHTML = options.join("");
       }
       const selectedCells = reengineeringSelectedCells(model);
-      const selectedKinds = Array.from(new Set(selectedCells.map(cell => cell.kind))).sort();
       const selectedMaterial = reengineeringSelectedDatabaseMaterial();
       const materials = reengineeringDatabaseMaterialsForSelection(model);
       if (meta) {
-        const kindText = selectedKinds.length === 1 ? materialKindLabel(selectedKinds[0]) : selectedKinds.length ? "Mixed" : "-";
-        meta.textContent = `${selectedCells.length} cells | ${kindText} | ${materials.length}/${materialLibraryMaterials().length} materials`;
+        meta.textContent = `${selectedCells.length} cells | ${reengineeringSelectionRoleText(selectedCells)} | ${materials.length}/${materialLibraryMaterials().length} materials`;
       }
       list.innerHTML = materials.length ? materials.map((material, index) => {
         const selected = selectedMaterial && Number(selectedMaterial.id) === Number(material.id);
@@ -2366,7 +2364,7 @@
       }
 
       if (title) title.textContent = `${plyFamilyLabel(family)} decision`;
-      if (meta) meta.textContent = `${materialKindLabel(family.kind)} | ${family.stackLabels.join(", ")} | ${nodeRangeText(family.nodes)}`;
+      if (meta) meta.textContent = `${reengineeringFamilyRoleLabel(family)} | ${family.stackLabels.join(", ")} | ${nodeRangeText(family.nodes)}`;
       if (candidates) {
         const rows = family.candidates.slice(0, 10);
         candidates.innerHTML = rows.length ? rows.map(candidate => {
@@ -2955,19 +2953,20 @@
 
     function plyFamilyLabel(family) {
       const best = family?.best;
-      return best ? `${materialKindShort(family?.kind)} ${plyCandidateShortLabel(best)}` : `${materialKindLabel(family?.kind)} ${family?.stackLabels?.join("/") || ""}`;
+      return best ? `${reengineeringFamilyRoleShort(family)} ${plyCandidateShortLabel(best)}` : `${reengineeringFamilyRoleLabel(family)} ${family?.stackLabels?.join("/") || ""}`;
     }
 
     function reengineeringCellTitle(cell) {
       const family = cell.family;
       const best = cell.best;
       const nodeText = `Node ${cell.nodeIndex} ${cell.stackLabel}`;
+      const roleText = reengineeringCellRoleLabel(cell);
       const materialText = best ? plyCandidateShortLabel(best) : materialKindLabel(cell.kind);
       const fitText = best
         ? `${Math.round(clamp(best.confidence, 0, 1) * 100)}% | ${materialMultiplierRangeText([best.modulusMultiplier], "E")} | ${materialMultiplierRangeText([best.densityMultiplier], "rho")}`
         : "";
       const angleText = Number.isFinite(Number(cell.angleDeg)) ? ` | ${fmt(cell.angleDeg)} deg` : "";
-      return `${nodeText} | ${materialText} | ${fmt(cell.thicknessMm)} mm${angleText} | ${fitText} | ${family?.stackLabels?.join(", ") || ""}`;
+      return `${nodeText} | ${roleText} | ${materialText} | ${fmt(cell.thicknessMm)} mm${angleText} | ${fitText} | ${family?.stackLabels?.join(", ") || ""}`;
     }
 
     function reengineeringCellMeta(cell) {
@@ -3927,6 +3926,58 @@
       if (key === "BulkMaterial") return "#78d3ff";
       if (key === "PlyMaterial") return "#b99cff";
       return "#dce6ef";
+    }
+
+    function reengineeringSelectionRoleText(cells) {
+      const roles = Array.from(new Set((cells || []).map(reengineeringCellRoleLabel).filter(Boolean))).sort();
+      if (!roles.length) return "-";
+      if (roles.length <= 2) return roles.join(" + ");
+      return `${roles.length} roles`;
+    }
+
+    function reengineeringCellRoleLabel(cell) {
+      return materialDominanceScopeLabel(reengineeringCellRoleScope(cell));
+    }
+
+    function reengineeringCellRoleScope(cell) {
+      if (cell?.best) return materialDominanceScopeKey(cell.kind, cell.best);
+      return materialStackRoleScope(cell);
+    }
+
+    function materialStackRoleScope(cell) {
+      const kind = String(cell?.kind || "");
+      const stackKey = String(cell?.stackKey || "");
+      if (kind === "PlyMaterial") return "PlyMaterial";
+      if (kind === "TreadMaterial") return stackKey === "tread" ? "TreadMaterial:cap" : "TreadMaterial:tread-sidewall";
+      if (kind === "BulkMaterial") return "BulkMaterial:bulk";
+      return kind || "Material";
+    }
+
+    function reengineeringFamilyRoleLabel(family) {
+      if (family?.best) return materialDominanceScopeLabel(materialDominanceScopeKey(family.kind, family.best));
+      const scopes = Array.from(new Set((family?.cells || []).map(reengineeringCellRoleScope))).filter(Boolean);
+      if (scopes.length === 1) return materialDominanceScopeLabel(scopes[0]);
+      return scopes.length ? `${scopes.length} roles` : materialKindLabel(family?.kind);
+    }
+
+    function reengineeringFamilyRoleShort(family) {
+      if (family?.best) return materialRoleShort(materialDominanceScopeKey(family.kind, family.best));
+      const scopes = Array.from(new Set((family?.cells || []).map(reengineeringCellRoleScope))).filter(Boolean);
+      return scopes.length === 1 ? materialRoleShort(scopes[0]) : materialKindShort(family?.kind);
+    }
+
+    function materialRoleShort(scope) {
+      const labels = {
+        "PlyMaterial": "P",
+        "TreadMaterial:cap": "T",
+        "TreadMaterial:tread-sidewall": "TS",
+        "BulkMaterial:filler": "F",
+        "BulkMaterial:inner-liner": "I",
+        "BulkMaterial:belt": "Bt",
+        "BulkMaterial:sidewall": "S",
+        "BulkMaterial:bulk": "B"
+      };
+      return labels[String(scope || "")] || String(scope || "M").slice(0, 1).toUpperCase();
     }
 
     function materialKindDash(kind) {
