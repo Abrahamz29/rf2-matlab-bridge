@@ -59,7 +59,11 @@ Retrieved and inspected on 2026-05-25:
   Used for: FB is described as a C++ reimplementation from version 7.10x,
   using finite-element formulation with adjustable topology, element choices,
   meshing operations, sidewall nodes, preload, belt kinematics, and sidewall
-  structure.
+  structure. The pre/postprocessor section describes a GUI preprocessor for
+  model parameterization, standard maneuvers, steady-state behaviour, drum
+  cleat tests, and design-of-experiments sensitivity analysis. It also
+  describes a postprocessor for modal/result animation, time-domain structure
+  dynamics, and footprint dynamics with contact point velocities or stresses.
 - Source: rmod-k.com, "Rigid Belt (RB)", URL:
   https://www.rmod-k.com/rigid-belt-rb
   Used for: RB is described as simplifying the tyre belt into a rigid belt body
