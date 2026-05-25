@@ -17,9 +17,23 @@ if options.Menu ~= ""
     startView = options.Menu;
 end
 
+if ~options.Headless
+    localCloseExistingTyreDesignerInstances();
+end
+
 if nargout == 0
     tyre_designer(tyre, "StartView", startView, "Headless", options.Headless);
 else
     [varargout{1:nargout}] = tyre_designer(tyre, "StartView", startView, "Headless", options.Headless);
 end
+end
+
+function localCloseExistingTyreDesignerInstances()
+figures = findall(groot, "Type", "figure", "Name", "tyre_designer");
+if isempty(figures)
+    return;
+end
+
+delete(figures(isvalid(figures)));
+drawnow limitrate;
 end

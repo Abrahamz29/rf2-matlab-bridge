@@ -507,6 +507,9 @@ def run_check() -> dict:
         '"StartView", startView',
         '"reengineering"',
         "tyre_designer(tyre",
+        "localCloseExistingTyreDesignerInstances",
+        'findall(groot, "Type", "figure", "Name", "tyre_designer")',
+        "delete(figures(isvalid(figures)))",
     ]:
         if marker not in wrapper:
             errors.append(f"missing wrapper marker: {marker}")
