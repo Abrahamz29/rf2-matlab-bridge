@@ -22,6 +22,9 @@ KIND_COLUMNS = ["Tread", "Bulk"]
 MATERIAL_RECOGNITION_TOP_N = 12
 GLOBAL_DOMINANT_SCOPES = {"PlyMaterial", "TreadMaterial:cap", "BulkMaterial:filler"}
 GLOBAL_DOMINANCE_MIN = 0.80
+GLOBAL_DOMINANCE_MIN_BY_SCOPE = {"BulkMaterial:filler": 0.50}
+GLOBAL_DOMINANCE_LEAD_MIN_BY_SCOPE = {"BulkMaterial:filler": 0.20}
+GLOBAL_DOMINANCE_RATIO_MIN_BY_SCOPE = {"BulkMaterial:filler": 1.75}
 GLOBAL_OVERRIDE_MAX_SCORE = 0.16
 GLOBAL_OVERRIDE_SCORE_MARGIN = 0.08
 UNKNOWN_SCORE_MAX = 0.28
@@ -300,14 +303,23 @@ def apply_global_material_probability(groups: list[dict[str, Any]]) -> list[dict
         counts[(scope, local["material"])] += 1
         totals[scope] += 1
 
-    dominant_by_scope: dict[str, tuple[str, float, int]] = {}
+    dominant_by_scope: dict[str, dict[str, Any]] = {}
     for scope in totals:
-        material, count = max(
+        ranked = sorted(
             ((material, count) for (candidate_scope, material), count in counts.items() if candidate_scope == scope),
-            key=lambda item: item[1],
+            key=lambda item: (-item[1], item[0]),
         )
+        material, count = ranked[0]
         probability = count / max(totals[scope], 1)
-        dominant_by_scope[scope] = (material, probability, count)
+        second_probability = ranked[1][1] / max(totals[scope], 1) if len(ranked) > 1 else 0.0
+        dominant_by_scope[scope] = {
+            "material": material,
+            "probability": probability,
+            "secondProbability": second_probability,
+            "leadProbability": probability - second_probability,
+            "count": count,
+            "dominant": global_dominance_accepts(scope, probability, second_probability),
+        }
 
     for group in groups:
         kind = group["kind"]
@@ -325,7 +337,9 @@ def apply_global_material_probability(groups: list[dict[str, Any]]) -> list[dict
 
         dominant = dominant_by_scope.get(local_scope)
         if dominant and local_scope in GLOBAL_DOMINANT_SCOPES:
-            dominant_material, dominant_probability, dominant_count = dominant
+            dominant_material = dominant["material"]
+            dominant_probability = dominant["probability"]
+            dominant_count = dominant["count"]
             dominant_candidate = next(
                 (
                     candidate
@@ -337,7 +351,7 @@ def apply_global_material_probability(groups: list[dict[str, Any]]) -> list[dict
             if (
                 dominant_candidate
                 and dominant_material != local["material"]
-                and dominant_probability >= GLOBAL_DOMINANCE_MIN
+                and dominant["dominant"]
                 and dominant_candidate.get("score", math.inf) <= GLOBAL_OVERRIDE_MAX_SCORE
                 and dominant_candidate.get("score", math.inf) <= local.get("score", math.inf) + GLOBAL_OVERRIDE_SCORE_MARGIN
             ):
@@ -355,6 +369,8 @@ def apply_global_material_probability(groups: list[dict[str, Any]]) -> list[dict
     for (scope, material), count in sorted(counts.items(), key=lambda item: (scope_meta[item[0][0]][0], item[0][0], -item[1], item[0][1])):
         kind, label = scope_meta[scope]
         probability = count / max(totals[scope], 1)
+        dominant = dominant_by_scope[scope]
+        is_dominant = dominant["material"] == material and dominant["dominant"]
         rows.append(
             {
                 "kind": kind,
@@ -364,11 +380,26 @@ def apply_global_material_probability(groups: list[dict[str, Any]]) -> list[dict
                 "localWinnerCount": count,
                 "total": totals[scope],
                 "probability": probability,
-                "dominant": probability >= GLOBAL_DOMINANCE_MIN,
-                "stabilized": scope in GLOBAL_DOMINANT_SCOPES and probability >= GLOBAL_DOMINANCE_MIN,
+                "secondProbability": dominant["secondProbability"] if dominant["material"] == material else None,
+                "leadProbability": dominant["leadProbability"] if dominant["material"] == material else None,
+                "dominant": is_dominant,
+                "stabilized": scope in GLOBAL_DOMINANT_SCOPES and is_dominant,
             }
         )
     return rows
+
+
+def global_dominance_accepts(scope: str, probability: float, second_probability: float) -> bool:
+    minimum = GLOBAL_DOMINANCE_MIN_BY_SCOPE.get(scope, GLOBAL_DOMINANCE_MIN)
+    if probability < minimum:
+        return False
+    lead_minimum = GLOBAL_DOMINANCE_LEAD_MIN_BY_SCOPE.get(scope, 0.0)
+    ratio_minimum = GLOBAL_DOMINANCE_RATIO_MIN_BY_SCOPE.get(scope, 0.0)
+    if lead_minimum and probability - second_probability < lead_minimum:
+        return False
+    if ratio_minimum and second_probability > 0 and probability / second_probability < ratio_minimum:
+        return False
+    return True
 
 
 def material_global_scope(kind: str, candidate: dict[str, Any]) -> str:
@@ -927,12 +958,14 @@ def render_global_probability_table(rows: list[dict[str, Any]]) -> str:
         f"<td>{row['localWinnerCount']}</td>"
         f"<td>{row['total']}</td>"
         f"<td>{fmt_percent(row['probability'])}</td>"
+        f"<td>{fmt_percent(row.get('secondProbability'))}</td>"
+        f"<td>{fmt_percent(row.get('leadProbability'))}</td>"
         f"<td>{'ja' if row.get('dominant') else ''}</td>"
         f"<td>{'ja' if row.get('stabilized') else ''}</td>"
         "</tr>"
         for row in rows
     )
-    return f"<table><thead><tr><th>TGM-Art</th><th>Scope</th><th>Lokaler Gewinner</th><th>Gruppen</th><th>Gesamt</th><th>Global</th><th>Dominant</th><th>Korrektur aktiv</th></tr></thead><tbody>{body}</tbody></table>"
+    return f"<table><thead><tr><th>TGM-Art</th><th>Scope</th><th>Lokaler Gewinner</th><th>Gruppen</th><th>Gesamt</th><th>Global</th><th>Zweiter</th><th>Abstand</th><th>Dominant</th><th>Korrektur aktiv</th></tr></thead><tbody>{body}</tbody></table>"
 
 
 def render_summary_table(rows: list[dict[str, Any]], include_scores: bool) -> str:

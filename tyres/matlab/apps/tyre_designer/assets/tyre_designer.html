@@ -1209,6 +1209,9 @@
     const MATERIAL_RECOGNITION_TOP_N = 8;
     const MATERIAL_GLOBAL_DOMINANCE_SCOPES = new Set(["PlyMaterial", "TreadMaterial:cap", "BulkMaterial:filler"]);
     const MATERIAL_GLOBAL_DOMINANCE_MIN = 0.8;
+    const MATERIAL_GLOBAL_DOMINANCE_MIN_BY_SCOPE = { "BulkMaterial:filler": 0.5 };
+    const MATERIAL_GLOBAL_DOMINANCE_LEAD_MIN_BY_SCOPE = { "BulkMaterial:filler": 0.2 };
+    const MATERIAL_GLOBAL_DOMINANCE_RATIO_MIN_BY_SCOPE = { "BulkMaterial:filler": 1.75 };
     const MATERIAL_GLOBAL_OVERRIDE_MAX_SCORE = 0.16;
     const MATERIAL_GLOBAL_OVERRIDE_SCORE_MARGIN = 0.08;
     const COLORS = ["#e7eef5", "#72b7ff", "#6be675", "#f07d9d", "#b99cff", "#8ce3df", "#f0b85a", "#ff7a45"];
@@ -3961,6 +3964,7 @@
         probability: item.likelihood / Math.max(totalsByDominanceScope.get(item.dominanceScope) || 0, 1e-12),
         winnerCount: localBestCountsByScope.get(item.key) || 0,
         winnerShare: (localBestCountsByScope.get(item.key) || 0) / Math.max(localBestTotalsByScope.get(item.dominanceScope) || 0, 1),
+        secondWinnerShare: materialSecondWinnerShare(item.dominanceScope, item.key, localBestCountsByScope, localBestTotalsByScope),
         nodes: Array.from(item.nodes).sort((a, b) => a - b),
         scopes: Array.from(item.scopes).sort()
       }]));
@@ -4005,13 +4009,38 @@
       if (!match || !candidate || !localBest || !broad) return 1;
       if (!MATERIAL_GLOBAL_DOMINANCE_SCOPES.has(String(broad.dominanceScope || ""))) return 1;
       const winnerShare = Number(broad.winnerShare) || 0;
-      if (winnerShare < MATERIAL_GLOBAL_DOMINANCE_MIN) return 1;
+      const secondShare = Number(broad.secondWinnerShare) || 0;
+      if (!materialGlobalDominanceAccepts(broad.dominanceScope, winnerShare, secondShare)) return 1;
       const candidateScore = Number(candidate.score);
       const localScore = Number(localBest.score);
       if (!Number.isFinite(candidateScore) || !Number.isFinite(localScore)) return 1;
       if (candidateScore > MATERIAL_GLOBAL_OVERRIDE_MAX_SCORE) return 1;
       if (candidateScore > localScore + MATERIAL_GLOBAL_OVERRIDE_SCORE_MARGIN) return 1;
       return 1 + winnerShare * 4;
+    }
+
+    function materialGlobalDominanceAccepts(scope, winnerShare, secondShare) {
+      const key = String(scope || "");
+      const probability = Number(winnerShare) || 0;
+      const second = Number(secondShare) || 0;
+      const minimum = Number(MATERIAL_GLOBAL_DOMINANCE_MIN_BY_SCOPE[key] ?? MATERIAL_GLOBAL_DOMINANCE_MIN);
+      if (probability < minimum) return false;
+      const leadMinimum = Number(MATERIAL_GLOBAL_DOMINANCE_LEAD_MIN_BY_SCOPE[key] || 0);
+      if (leadMinimum && probability - second < leadMinimum) return false;
+      const ratioMinimum = Number(MATERIAL_GLOBAL_DOMINANCE_RATIO_MIN_BY_SCOPE[key] || 0);
+      if (ratioMinimum && second > 0 && probability / second < ratioMinimum) return false;
+      return true;
+    }
+
+    function materialSecondWinnerShare(scope, activeKey, countsByScope, totalsByScope) {
+      const prefix = `${String(scope || "")}:`;
+      const total = Math.max(Number(totalsByScope.get(scope)) || 0, 1);
+      let second = 0;
+      countsByScope.forEach((count, key) => {
+        if (key === activeKey || !String(key).startsWith(prefix)) return;
+        second = Math.max(second, (Number(count) || 0) / total);
+      });
+      return second;
     }
 
     function materialDominanceScopeKey(kind, candidate) {
