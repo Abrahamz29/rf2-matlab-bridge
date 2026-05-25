@@ -21,10 +21,6 @@ DEFAULT_OUT = REPO_ROOT / "tyres" / "analysis" / "tgm_gen_material_recognition_c
 KIND_COLUMNS = ["Tread", "Bulk"]
 MATERIAL_RECOGNITION_TOP_N = 12
 GLOBAL_DOMINANT_SCOPES = {"PlyMaterial", "TreadMaterial:cap", "BulkMaterial:filler"}
-GLOBAL_DOMINANCE_MIN = 0.80
-GLOBAL_DOMINANCE_MIN_BY_SCOPE = {"BulkMaterial:filler": 0.50}
-GLOBAL_DOMINANCE_LEAD_MIN_BY_SCOPE = {"BulkMaterial:filler": 0.20}
-GLOBAL_DOMINANCE_RATIO_MIN_BY_SCOPE = {"BulkMaterial:filler": 1.75}
 GLOBAL_OVERRIDE_MAX_SCORE = 0.16
 GLOBAL_OVERRIDE_SCORE_MARGIN = 0.08
 UNKNOWN_SCORE_MAX = 0.28
@@ -318,7 +314,7 @@ def apply_global_material_probability(groups: list[dict[str, Any]]) -> list[dict
             "secondProbability": second_probability,
             "leadProbability": probability - second_probability,
             "count": count,
-            "dominant": global_dominance_accepts(scope, probability, second_probability),
+            "dominant": True,
         }
 
     for group in groups:
@@ -387,19 +383,6 @@ def apply_global_material_probability(groups: list[dict[str, Any]]) -> list[dict
             }
         )
     return rows
-
-
-def global_dominance_accepts(scope: str, probability: float, second_probability: float) -> bool:
-    minimum = GLOBAL_DOMINANCE_MIN_BY_SCOPE.get(scope, GLOBAL_DOMINANCE_MIN)
-    if probability < minimum:
-        return False
-    lead_minimum = GLOBAL_DOMINANCE_LEAD_MIN_BY_SCOPE.get(scope, 0.0)
-    ratio_minimum = GLOBAL_DOMINANCE_RATIO_MIN_BY_SCOPE.get(scope, 0.0)
-    if lead_minimum and probability - second_probability < lead_minimum:
-        return False
-    if ratio_minimum and second_probability > 0 and probability / second_probability < ratio_minimum:
-        return False
-    return True
 
 
 def material_global_scope(kind: str, candidate: dict[str, Any]) -> str:
