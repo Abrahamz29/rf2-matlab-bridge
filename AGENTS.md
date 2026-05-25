@@ -26,6 +26,8 @@ live plotting, and automated driving experiments.
   `references/` in addition to citing them in the conversation. Keep entries
   concise but include title/source, URL or local path, retrieval date when
   applicable, and what the source was used for.
+- Create presentation deliverables as HTML first. Generate PowerPoint/PPTX only
+  when the user explicitly asks for PowerPoint output.
 
 ## Git Workflow
 
