@@ -5,14 +5,15 @@ conversion, analysis, plotting, validation, and supporting tooling. rFactor 2
 TGM/TBC/tTool work remains one supported target, but the project is broader
 than rFactor 2 and is meant to cover useful market and research tyre models.
 
-Track authoring, vehicle automation, proving-ground generation, and car-control
-tooling are outside the current scope.
+Track authoring, vehicle automation, vehicle data capture, proving-ground
+generation, and car-control tooling are outside the current scope.
 
 ## Repository Workflow
 
 - Working rules for Codex and contributors live in `AGENTS.md`.
 - GitHub initialization and remote setup notes live in `docs/github_bootstrap.md`.
-- Vendor dependencies are included as Git submodules.
+- Vendor dependencies are included as Git submodules where they support tyre
+  model work directly.
 - Commit only coherent, verified checkpoints.
 - Push to `origin` after stable checkpoints, before longer pauses, or on
   explicit request.
@@ -33,11 +34,8 @@ git clone --recurse-submodules <repo-url>
 - `tyres/tools/`: tyre parsers, DB builders, TGM generator checks, tTool
   helpers, and analysis scripts.
 - `tyres/scenarios/`: tyre-only test matrices and validation inputs.
-- `bridge/`: optional rFactor 2 shared-memory telemetry bridge for tyre
-  validation and live plotting. It no longer contains track, vehicle, or
-  actuator automation.
-- `docs/tyre/`: operational notes for tyre generation, tTool, plots, MoTeC,
-  lookup data, and validation.
+- `docs/tyre/`: operational notes for tyre generation, tTool, lookup data,
+  model analysis, and validation.
 - `references/`: external model documentation, papers, formula references,
   public tool crawls, downloaded documentation, and concise source notes.
 - `tools/`: general developer utilities, such as the VS Code MATLAB runner.
@@ -46,11 +44,7 @@ git clone --recurse-submodules <repo-url>
 
 ## Embedded Reference Projects
 
-- `vendor/rF2SharedMemoryMapPlugin`: source reference for rFactor 2
-  shared-memory structs.
-- `vendor/pyRfactor2SharedMemory`: Python ctypes mapping for rF2 structs.
-- `vendor/rF2SharedMemoryNet`: .NET reference implementation for rFactor 2 and
-  Le Mans Ultimate shared-memory buffers.
+- `vendor/TGM-Utils`: local submodule for TGM-related helper code.
 
 ## MATLAB Setup
 
@@ -61,8 +55,7 @@ cd("C:\Users\Victor\Documents\PYTHON\rf2-tyre")
 status = setup_rf2_matlab()
 ```
 
-This adds the MATLAB tyre functions, tyre apps, and optional rF2 telemetry
-bridge to the path.
+This adds the MATLAB tyre functions and tyre apps to the path.
 
 TGM Generator:
 
@@ -101,39 +94,6 @@ py .\tyres\tools\build_tyre_database.py
 py .\tyres\tools\tgm_lookup_extract.py .\tyres\input\tgm\example.tgm --include-patch
 .\tyres\tools\Invoke-TgmGenAcceptance.ps1
 ```
-
-## Optional rFactor 2 Telemetry
-
-The rF2 shared-memory bridge is retained only because live tyre telemetry can
-help validate TGM/tTool behaviour in-game.
-
-Install or refresh the plugin:
-
-```powershell
-.\bridge\tools\Install-RF2SharedMemoryPlugin.ps1 -Download
-```
-
-MATLAB examples:
-
-```matlab
-client = RF2Client();
-data = client.snapshot();
-wheels = client.wheelTable(data);
-
-run = rf2CollectTelemetry(120, 20);
-rf2PlotTelemetry(run);
-```
-
-Mock plotting without a running rF2 session:
-
-```matlab
-rf2RollingLivePlot(15, 20, "mock")
-run = rf2PlotLatest(60, 20, "mock");
-```
-
-The bridge exposes public shared-memory data only. Proprietary solver state and
-full tyre-model parameters are not published by rFactor 2 and must be handled
-through file/model tooling where available.
 
 ## External Sources
 

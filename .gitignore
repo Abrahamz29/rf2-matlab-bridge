@@ -23,7 +23,6 @@ Thumbs.db
 ~$*.pptx
 
 # Local downloads and extracted archives
-bridge/downloads/
 tyres/downloads/
 tyres/cache/
 tyres/output/

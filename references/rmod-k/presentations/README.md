@@ -21,7 +21,7 @@ Formula archives, and local `rf2-tyre` tooling.
 - Local RMOD-K crawl inventory under `references/rmod-k/`.
 - Downloaded RMOD-K Formula VS2017/VS2013 archives and extracted source
   inventory.
-- Local project documentation in `tyres/`, `bridge/`, and `docs/tyre/`.
+- Local project documentation in `tyres/` and `docs/tyre/`.
 
 The decks distinguish clearly between the public RMOD-K Formula source package
 and the commercially described RB/FB/FlexView toolchain, which was not present

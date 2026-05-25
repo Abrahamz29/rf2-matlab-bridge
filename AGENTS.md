@@ -10,14 +10,11 @@ and research tyre models wherever useful.
 
 ## Working Rules
 
-- Keep changes scoped to tyre models, tyre data, telemetry needed for tyre
-  validation, plotting, automation for tyre experiments, documentation, and
-  supporting tooling for this project.
+- Keep changes scoped to tyre models, tyre data, plotting, tyre experiment
+  inputs, documentation, and supporting tooling for this project.
 - Do not expand track, car, or general vehicle-authoring features unless the
   user explicitly asks or they are directly needed to validate a tyre model.
 - Prefer domain-first folders over language-first folders:
-  - `bridge/` for rFactor 2 shared-memory telemetry used by tyre validation
-    workflows
   - `docs/` for operational notes and workflow documentation
   - `tyres/scenarios/` for tyre-model experiment batches, sweeps, validation
     cases, and reproducible test inputs
@@ -61,15 +58,11 @@ and research tyre models wherever useful.
   RMOD-K, Pacejka/Magic Formula, MF-Tyre/MF-Swift, FTire, CDTire, TMeasy,
   brush models, finite-element belt/carcass models, and other commercial or
   research models as comparable members of the broader tyre-model landscape.
-- rFactor 2 shared-memory telemetry and the existing rF toolchain remain
-  supported data paths, but they are no longer the only project center.
-- Live rFactor 2 telemetry still requires the rFactor 2 client, not only the
-  dedicated server.
 - Mock and offline data modes are acceptable for plot, parser, and model
   comparison development when a simulator or solver is not running.
-- Automation should focus on repeatable tyre experiments, data extraction, and
-  validation workflows. Avoid new track/car automation unless explicitly
-  requested.
+- Automation should focus on repeatable tyre model file generation, data
+  extraction, and validation workflows. Avoid vehicle data capture, track, car,
+  or driving automation unless explicitly requested.
 
 ## General Tyre Model Working Memory
 
@@ -92,7 +85,7 @@ file inspection.
   presenting fitted parameters as physical truth.
 - Separate model generation from validation. A model parser or converter is not
   validated until force/moment curves, pressure/temperature behavior, and at
-  least one relevant transient or simulator workflow have been checked.
+  least one relevant transient or solver workflow have been checked.
 - Document external sources under `references/` and keep local notes concise:
   what was retrieved, when, which model/tool it describes, and how it informed
   the analysis.
@@ -234,18 +227,19 @@ Source reference: https://motorlaps.com/tire-development-rfactor2.php
 - Save the file in tTool after the automated run. The saved TGM receives the
   generated lookup data; `.tgm.bak` backups are temporary and overwritten, so
   keep project-side version control with descriptive filenames.
-- Move the calculated TGM to the mod tire directory and reference it from TBC.
-  Validate in-game with MoTeC telemetry and repeat. Ten or more tTool cycles
-  can be normal for serious tire work.
+- Move the calculated TGM to the mod tire directory and reference it from TBC
+  when packaging is needed. Validate with tTool outputs, generated lookup data,
+  controlled tests, and documented driver feedback where available. Ten or more
+  tTool cycles can be normal for serious tire work.
 
 ### Data, validation, and pitfalls
 
 - Collect real tire dimensions, construction type, load rating, compound data,
   tread depth, internal construction hints, temperature ranges, pressure ranges,
   skidpad/braking/slalom data, lap times, and driver feedback where available.
-- Validate against real lap time within about 0.5 s where data quality allows,
-  plus telemetry for warmup, pressure rise, temperature spread, wear, and
-  degradation. Cross-check the same tire on multiple vehicles when relevant.
+- Validate against measured tyre behavior where data quality allows, including
+  force/moment curves, warmup, pressure rise, temperature spread, wear, and
+  degradation. Cross-check the same tyre model across use cases when relevant.
 - Avoid common mistakes: wrong slip-curve step values, focusing on TBC instead
   of TGM for driver feel, unrealistic load sensitivity, ignoring cold/overheat
   behavior, exaggerated wear, and copy-paste parameter sets without

@@ -1,7 +1,7 @@
 ﻿# Tyres
 
 Alles zum Reifenmodell liegt hier. Damit bleibt TGM/tTool-Arbeit getrennt von
-Strecken-, Fahrzeug- und Telemetrie-Automation.
+Strecken-, Fahrzeug- und Fahrzeugdaten-Automation.
 
 ## Struktur
 

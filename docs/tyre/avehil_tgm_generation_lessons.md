@@ -83,7 +83,8 @@ Minimum input groups:
 
 - Real target data:
   lateral force, longitudinal force and aligning moment curves if available;
-  surface temperature/pressure telemetry if thermal tuning is required.
+  measured surface temperature and pressure traces if thermal tuning is
+  required.
 
 ## Authoring Workflow To Implement
 
@@ -232,12 +233,12 @@ Useful UI plots:
 - `StaticCurve`: temperature `[K]` vs grip multiplier.
 - `GroundConductance`: contact pressure vs conductance.
 - `ExternalGasHeatTransfer`: speed vs cooling coefficient.
-- Telemetry comparison: real surface temperature vs simulated temperature over
-  lap distance/time.
+- Thermal comparison: measured surface temperature vs simulated temperature
+  over test distance/time.
 
 Thermal tuning is less directly supported by offline tTool curves, so the thesis
-uses telemetry and driver feedback. Our tool should mark this as lower-confidence
-than force-curve optimisation.
+uses measured traces and driver feedback. Our tool should mark this as
+lower-confidence than force-curve optimisation.
 
 ## Important Limitation
 
@@ -279,7 +280,7 @@ a coefficient problem.
 - Plot pack:
   cross-section, all plies, material properties, `StaticCurve`,
   spring/stiffness parameters, QSA stiffness, Realtime sweep, longitudinal,
-  aligning moment, rolling resistance, thermal telemetry.
+  aligning moment, rolling resistance, thermal traces.
 
 - Database schema extension:
   store candidate parameter sets, source `.tgm`, generated `.tgm`, tTool run,
