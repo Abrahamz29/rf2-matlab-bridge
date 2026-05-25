@@ -1024,7 +1024,7 @@
     }
     .reengineering-db-tools {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 5px;
     }
     .reengineering-db-tools input,
@@ -1265,6 +1265,7 @@
               </select>
               <button type="button" data-reengineering-db-action="apply">Set</button>
               <button type="button" data-reengineering-db-action="clear">Clear</button>
+              <button type="button" data-reengineering-db-action="save">Save Mix</button>
             </div>
             <div id="reengineering-db-list" class="reengineering-db-list"></div>
           </section>
@@ -1322,6 +1323,7 @@
       matlabComponent = htmlComponent;
       state = htmlComponent.Data;
       viewState.currentView = normalizeViewName(state?.startView || viewState.currentView);
+      applyStateMaterialMix();
       bindControls();
       bindResponsivePlotSizing();
       render();
@@ -1329,6 +1331,17 @@
         const incoming = htmlComponent.Data;
         if (incoming?.kind === "pong") {
           setMessage(incoming.message || "MATLAB backend ready");
+          return;
+        }
+        if (incoming?.kind === "materialMixSaved") {
+          if (state) state.materialMix = incoming.materialMix || state.materialMix || {};
+          applyStateMaterialMix();
+          setMessage(incoming.message || "material mix saved");
+          drawReengineering();
+          return;
+        }
+        if (incoming?.kind === "error") {
+          setMessage(incoming.message || "MATLAB error");
           return;
         }
         state = incoming;
@@ -1344,7 +1357,7 @@
         viewState.reengineeringStackKey = "";
         viewState.reengineeringSelectedCellKeys = [];
         viewState.reengineeringSelectionAnchorKey = "";
-        viewState.reengineeringCellOverrides = {};
+        viewState.reengineeringCellOverrides = materialMixOverridesFromState();
         viewState.reengineeringDbMaterialId = null;
         viewState.currentView = normalizeViewName(state?.startView || viewState.currentView);
         render();
@@ -1407,6 +1420,10 @@
         }
         if (reengineeringDbAction === "clear") {
           clearReengineeringCellOverrides();
+          return;
+        }
+        if (reengineeringDbAction === "save") {
+          saveReengineeringMaterialMix();
           return;
         }
         const reengineeringDbMaterial = event.target.closest("[data-reengineering-db-material-id]");
@@ -2309,7 +2326,8 @@
       const selectedMaterial = reengineeringSelectedDatabaseMaterial();
       const materials = reengineeringDatabaseMaterialsForSelection(model);
       if (meta) {
-        meta.textContent = `${selectedCells.length} cells | ${reengineeringSelectionRoleText(selectedCells)} | ${materials.length}/${materialLibraryMaterials().length} materials`;
+        const savedCount = asArray(state?.materialMix?.assignments).length;
+        meta.textContent = `${selectedCells.length} cells | ${reengineeringSelectionRoleText(selectedCells)} | ${materials.length}/${materialLibraryMaterials().length} materials | saved ${savedCount}`;
       }
       list.innerHTML = materials.length ? materials.map((material, index) => {
         const selected = selectedMaterial && Number(selectedMaterial.id) === Number(material.id);
@@ -2816,6 +2834,63 @@
     function reengineeringSelectedDatabaseMaterial() {
       const id = Number(viewState.reengineeringDbMaterialId);
       return materialLibraryMaterials().find(material => Number(material.id) === id) || null;
+    }
+
+    function materialMixOverridesFromState() {
+      const overrides = {};
+      asArray(state?.materialMix?.assignments).forEach(item => {
+        const key = String(item?.cellKey || reengineeringCellKey(item?.nodeIndex, item?.stackKey));
+        const materialId = Number(item?.materialId);
+        if (key && Number.isFinite(materialId)) overrides[key] = materialId;
+      });
+      return overrides;
+    }
+
+    function applyStateMaterialMix() {
+      viewState.reengineeringCellOverrides = materialMixOverridesFromState();
+      viewState.reengineeringFamilyKey = "";
+      viewState.reengineeringSelectedCellKeys = [];
+      viewState.reengineeringSelectionAnchorKey = "";
+      materialRecognitionCache = null;
+    }
+
+    function saveReengineeringMaterialMix() {
+      if (!matlabComponent || !state?.loaded) {
+        setMessage("load a tyre before saving material mix");
+        return;
+      }
+      const assignments = reengineeringMaterialMixAssignments();
+      matlabComponent.Data = {
+        command: "saveMaterialMix",
+        inputPath: state.inputPath || "",
+        tyreDisplayName: currentTyreDisplayName(),
+        assignments
+      };
+      setMessage(`saving material mix (${assignments.length} cells)`);
+    }
+
+    function reengineeringMaterialMixAssignments() {
+      const model = plyReengineeringModel();
+      return model.cells.map(cell => {
+        const candidate = cell.override || cell.best || null;
+        const material = materialLibraryMaterialForCandidate(candidate)
+          || materialLibraryMaterials().find(item => Number(item.id) === Number(candidate?.materialId))
+          || {};
+        const materialId = Number(candidate?.materialId ?? material.id);
+        return {
+          cellKey: reengineeringCellKey(cell.nodeIndex, cell.stackKey),
+          nodeIndex: Number(cell.nodeIndex),
+          stackKey: String(cell.stackKey || ""),
+          materialId,
+          materialName: String(material.name || candidate?.name || candidate?.materialName || ""),
+          materialCategory: String(material.category || candidate?.category || "")
+        };
+      }).filter(item => item.cellKey && Number.isFinite(item.nodeIndex) && item.stackKey && Number.isFinite(item.materialId));
+    }
+
+    function currentTyreDisplayName() {
+      const selected = asArray(state?.tyres).find(item => item.selected);
+      return String(selected?.displayName || state?.summary?.fileName || state?.inputPath || "Tyre");
     }
 
     function applyReengineeringDatabaseMaterial() {

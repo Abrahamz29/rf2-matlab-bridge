@@ -47,6 +47,7 @@ state.database = localDatabaseInfo();
 state.tyres = localListKnownTyres(inputPath);
 state.materialDatabase = localMaterialDatabaseInfo();
 state.materialLibrary = localLoadMaterialLibraryDatabase(state.materialDatabase.path);
+state.materialMix = localLoadMaterialMix(inputPath, "");
 
 if inputPath ~= "" && isfile(inputPath)
     model = tyre_designer_read_tgm(inputPath);
@@ -57,6 +58,7 @@ if inputPath ~= "" && isfile(inputPath)
     state.summary = model.summary;
     state.inputPath = string(model.path);
     state.plotData = localEncodePlotData(plotData);
+    state.materialMix = localLoadMaterialMix(state.inputPath, string(model.fileName));
 elseif requestedPath ~= ""
     state.status = "not found";
     state.inputPath = requestedPath;
@@ -80,6 +82,20 @@ try
                 startView = string(data.startView);
             end
             html.Data = localBuildState(string(data.path), startView);
+        case "saveMaterialMix"
+            displayName = "";
+            if isfield(data, "tyreDisplayName")
+                displayName = string(data.tyreDisplayName);
+            end
+            assignments = struct([]);
+            if isfield(data, "assignments")
+                assignments = data.assignments;
+            end
+            materialMix = localSaveMaterialMix(string(data.inputPath), displayName, assignments);
+            html.Data = struct( ...
+                "kind", "materialMixSaved", ...
+                "message", "Saved material mix: " + string(materialMix.assignmentCount) + " cells", ...
+                "materialMix", materialMix);
         otherwise
             html.Data = struct("kind", "error", "message", "Unknown command: " + string(data.command));
     end
@@ -116,13 +132,13 @@ end
 end
 
 function info = localMaterialDatabaseInfo()
-dbPath = fullfile(tyre_designer_project_root(), "tyres", "database", "rf2_material_database.sqlite");
+dbPath = fullfile(tyre_designer_project_root(), "tyres", "database", "rf2_tyre_database.sqlite");
 info = struct();
 info.path = string(dbPath);
 info.available = isfile(dbPath) && exist("sqlite", "file") == 6;
-info.message = "Material database ready.";
+info.message = "Material tables ready.";
 if ~info.available
-    info.message = "Material database unavailable.";
+    info.message = "Tyre database material tables unavailable.";
 end
 end
 
@@ -135,7 +151,7 @@ end
 try
     conn = sqlite(dbPath, "readonly");
     cleanup = onCleanup(@() close(conn)); %#ok<NASGU>
-    categoryRows = fetch(conn, "select id, name, material_count, point_count from categories order by id");
+    categoryRows = fetch(conn, "select id, name, material_count, point_count from material_categories order by id");
     materialRows = fetch(conn, [
         "select id, category_id, category, name, coalesce(title, '') as title, " + ...
         "coalesce(name_cell, '') as name_cell, coalesce(start_col, -1.0e308) as start_col, " + ...
@@ -297,6 +313,247 @@ function number = localDbNumber(value)
 number = double(value);
 if ~isfinite(number) || number <= -1.0e307
     number = NaN;
+end
+end
+
+function mix = localLoadMaterialMix(inputPath, displayName)
+dbPath = localMaterialMixDatabasePath();
+mix = localEmptyMaterialMix(inputPath, displayName);
+mix.path = string(dbPath);
+if ~isfile(dbPath) || exist("sqlite", "file") ~= 6
+    return;
+end
+
+key = localMaterialMixKey(inputPath);
+mix.key = key;
+try
+    conn = sqlite(dbPath, "readonly");
+    cleanup = onCleanup(@() close(conn)); %#ok<NASGU>
+    if ~localSqliteTableExists(conn, "tyre_material_mix_assignments")
+        mix.available = true;
+        return;
+    end
+    rows = fetch(conn, "select cell_key, node_index, stack_key, material_id, material_name, material_category from tyre_material_mix_assignments where tyre_key = " + localSqlString(key) + " order by node_index, stack_key");
+    mix.available = true;
+    mix.saved = height(rows) > 0;
+    mix.assignmentCount = height(rows);
+    mix.assignments = localMaterialMixAssignmentRecords(rows);
+catch exception
+    mix.available = false;
+    mix.message = "Material mix load failed: " + string(exception.message);
+end
+end
+
+function mix = localSaveMaterialMix(inputPath, displayName, assignments)
+if exist("sqlite", "file") ~= 6
+    error("tyre_designer_app:SqliteUnavailable", "MATLAB sqlite support is required to save material mixes.");
+end
+
+dbPath = localMaterialMixDatabasePath();
+localEnsureParentFolder(dbPath);
+created = ~isfile(dbPath);
+if created
+    conn = sqlite(dbPath, "create");
+else
+    conn = sqlite(dbPath, "connect");
+end
+cleanup = onCleanup(@() close(conn)); %#ok<NASGU>
+localEnsureMaterialMixSchema(conn);
+
+key = localMaterialMixKey(inputPath);
+name = strtrim(string(displayName));
+if name == ""
+    [~, stem] = fileparts(char(inputPath));
+    name = string(stem);
+end
+stamp = string(datetime("now", "TimeZone", "UTC", "Format", "yyyy-MM-dd HH:mm:ss"));
+items = localNormalizeMaterialMixAssignments(assignments);
+
+execute(conn, "insert or replace into tyre_material_mixes (tyre_key, tyre_name, source_path, assignment_count, updated_utc) values (" ...
+    + localSqlString(key) + ", " + localSqlString(name) + ", " + localSqlString(inputPath) + ", " + string(numel(items)) + ", " + localSqlString(stamp) + ")");
+execute(conn, "delete from tyre_material_mix_assignments where tyre_key = " + localSqlString(key));
+
+for index = 1:numel(items)
+    item = items(index);
+    execute(conn, "insert into tyre_material_mix_assignments (tyre_key, cell_key, node_index, stack_key, material_id, material_name, material_category, updated_utc) values (" ...
+        + localSqlString(key) + ", " ...
+        + localSqlString(item.cellKey) + ", " ...
+        + localSqlNumber(item.nodeIndex) + ", " ...
+        + localSqlString(item.stackKey) + ", " ...
+        + localSqlNumber(item.materialId) + ", " ...
+        + localSqlString(item.materialName) + ", " ...
+        + localSqlString(item.materialCategory) + ", " ...
+        + localSqlString(stamp) + ")");
+end
+
+mix = localLoadMaterialMix(inputPath, name);
+mix.available = true;
+mix.saved = true;
+mix.assignmentCount = numel(items);
+mix.message = "Saved material mix.";
+end
+
+function dbPath = localMaterialMixDatabasePath()
+dbPath = fullfile(tyre_designer_project_root(), "tyres", "database", "rf2_tyre_database.sqlite");
+end
+
+function localEnsureMaterialMixSchema(conn)
+execute(conn, [
+    "create table if not exists tyre_material_mixes (" + ...
+    "tyre_key text primary key, " + ...
+    "tyre_name text, " + ...
+    "source_path text, " + ...
+    "assignment_count integer not null default 0, " + ...
+    "updated_utc text not null)" ]);
+execute(conn, [
+    "create table if not exists tyre_material_mix_assignments (" + ...
+    "tyre_key text not null, " + ...
+    "cell_key text not null, " + ...
+    "node_index real, " + ...
+    "stack_key text, " + ...
+    "material_id real, " + ...
+    "material_name text, " + ...
+    "material_category text, " + ...
+    "updated_utc text not null, " + ...
+    "primary key (tyre_key, cell_key))" ]);
+execute(conn, "create index if not exists idx_tyre_material_mix_assignments_tyre on tyre_material_mix_assignments (tyre_key, node_index, stack_key)");
+end
+
+function exists = localSqliteTableExists(conn, tableName)
+rows = fetch(conn, "select name from sqlite_master where type = 'table' and name = " + localSqlString(tableName));
+exists = height(rows) > 0;
+end
+
+function mix = localEmptyMaterialMix(inputPath, displayName)
+mix = struct();
+mix.available = isfile(localMaterialMixDatabasePath()) && exist("sqlite", "file") == 6;
+mix.saved = false;
+mix.path = string(localMaterialMixDatabasePath());
+mix.key = localMaterialMixKey(inputPath);
+mix.tyreName = string(displayName);
+mix.assignmentCount = 0;
+mix.assignments = localEmptyMaterialMixAssignments();
+mix.message = "";
+end
+
+function assignments = localMaterialMixAssignmentRecords(rows)
+assignments = localEmptyMaterialMixAssignments();
+for index = 1:height(rows)
+    item = struct();
+    item.cellKey = string(rows.cell_key(index));
+    item.nodeIndex = localDbNumber(rows.node_index(index));
+    item.stackKey = string(rows.stack_key(index));
+    item.materialId = localDbNumber(rows.material_id(index));
+    item.materialName = string(rows.material_name(index));
+    item.materialCategory = string(rows.material_category(index));
+    assignments(end + 1, 1) = item; %#ok<AGROW>
+end
+end
+
+function assignments = localEmptyMaterialMixAssignments()
+assignments = repmat(struct( ...
+    "cellKey", "", ...
+    "nodeIndex", NaN, ...
+    "stackKey", "", ...
+    "materialId", NaN, ...
+    "materialName", "", ...
+    "materialCategory", ""), 0, 1);
+end
+
+function items = localNormalizeMaterialMixAssignments(assignments)
+items = localEmptyMaterialMixAssignments();
+if isempty(assignments)
+    return;
+end
+for index = 1:numel(assignments)
+    raw = assignments(index);
+    item = struct();
+    item.cellKey = localStructString(raw, "cellKey");
+    item.nodeIndex = localStructNumber(raw, "nodeIndex");
+    item.stackKey = localStructString(raw, "stackKey");
+    item.materialId = localStructNumber(raw, "materialId");
+    item.materialName = localStructString(raw, "materialName");
+    item.materialCategory = localStructString(raw, "materialCategory");
+    if item.cellKey == "" && isfinite(item.nodeIndex) && item.stackKey ~= ""
+        item.cellKey = string(item.nodeIndex) + ":" + item.stackKey;
+    end
+    if item.cellKey ~= "" && isfinite(item.nodeIndex) && item.stackKey ~= "" && isfinite(item.materialId)
+        items(end + 1, 1) = item; %#ok<AGROW>
+    end
+end
+end
+
+function value = localStructString(item, fieldName)
+if isstruct(item) && isfield(item, fieldName)
+    value = string(item.(fieldName));
+else
+    value = "";
+end
+end
+
+function value = localStructNumber(item, fieldName)
+if isstruct(item) && isfield(item, fieldName)
+    value = double(item.(fieldName));
+else
+    value = NaN;
+end
+if ~isfinite(value)
+    value = NaN;
+end
+end
+
+function key = localMaterialMixKey(inputPath)
+inputPath = string(inputPath);
+key = "";
+try
+    key = localDatabaseTyreKey(inputPath);
+catch
+end
+if key == ""
+    key = "path:" + localNormalizePath(inputPath);
+end
+end
+
+function key = localDatabaseTyreKey(inputPath)
+key = "";
+dbPath = fullfile(tyre_designer_project_root(), "tyres", "database", "rf2_tyre_database.sqlite");
+if inputPath == "" || ~isfile(dbPath) || exist("sqlite", "file") ~= 6
+    return;
+end
+
+conn = sqlite(dbPath, "readonly");
+cleanup = onCleanup(@() close(conn)); %#ok<NASGU>
+rows = fetch(conn, [
+    "select t.id, t.sha256, t.local_copy_path, coalesce(s.source_path, '') as source_path " + ...
+    "from tyres t left join tyre_sources s on s.tyre_id = t.id order by t.id"]);
+normalizedInput = localNormalizePath(inputPath);
+for index = 1:height(rows)
+    localCopyPath = localResolveProjectPath(string(rows.local_copy_path(index)));
+    sourcePath = localResolveProjectPath(string(rows.source_path(index)));
+    if localNormalizePath(localCopyPath) == normalizedInput || localNormalizePath(sourcePath) == normalizedInput
+        key = "sha256:" + string(rows.sha256(index));
+        return;
+    end
+end
+end
+
+function localEnsureParentFolder(path)
+folder = fileparts(char(path));
+if ~isfolder(folder)
+    mkdir(folder);
+end
+end
+
+function text = localSqlString(value)
+text = "'" + replace(string(value), "'", "''") + "'";
+end
+
+function text = localSqlNumber(value)
+number = double(value);
+if isfinite(number)
+    text = string(number);
+else
+    text = "null";
 end
 end
 

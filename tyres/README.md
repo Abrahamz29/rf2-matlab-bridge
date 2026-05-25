@@ -22,6 +22,8 @@ Strecken-, Fahrzeug- und Fahrzeugdaten-Automation.
 - Neuer Reifenplot: `tyres/matlab/apps/tyre_designer/`
 - Reifen-DB: `tyres/database/rf2_tyre_database.sqlite`
 - Reifen-DB neu bauen: `py .\tyres\tools\build_tyre_database.py`
+- Materialtabellen in derselben DB aktualisieren:
+  `py .\tyres\tools\build_material_database.py`
 - Lookup zerlegen:
 
 ```powershell

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the tyre material SQLite database from the TGM Gen Materials sheet."""
+"""Build the tyre material tables from the TGM Gen Materials sheet."""
 
 from __future__ import annotations
 
@@ -16,13 +16,13 @@ DEFAULT_ODS_CANDIDATES = [
     REPO_ROOT / "input" / "TGM Gen V0.33 - GY F1 1975 Front.ods",
     REPO_ROOT / "tyres" / "downloads" / "studio397" / "TGM Gen V0.33 - GY F1 1975 Front.ods",
 ]
-DEFAULT_DB = REPO_ROOT / "tyres" / "database" / "rf2_material_database.sqlite"
+DEFAULT_DB = REPO_ROOT / "tyres" / "database" / "rf2_tyre_database.sqlite"
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ods", type=Path, default=None, help="TGM Gen ODS file to read")
-    parser.add_argument("--db", type=Path, default=DEFAULT_DB, help="SQLite database to write")
+    parser.add_argument("--db", type=Path, default=DEFAULT_DB, help="SQLite database whose material tables are refreshed")
     args = parser.parse_args()
 
     ods = args.ods or first_existing(DEFAULT_ODS_CANDIDATES)
@@ -35,7 +35,7 @@ def main() -> int:
 
     library = extract_material_library(ods)
     write_database(db_path, ods, library)
-    print(f"wrote {db_path}")
+    print(f"updated material tables in {db_path}")
     print(f"materials: {library['material_count']}, points: {library['point_count']}")
     return 0
 
@@ -48,15 +48,13 @@ def first_existing(paths: list[Path]) -> Path | None:
 
 
 def write_database(db_path: Path, ods: Path, library: dict[str, Any]) -> None:
-    if db_path.exists():
-        db_path.unlink()
-
     conn = sqlite3.connect(db_path)
     try:
         conn.execute("pragma foreign_keys = on")
+        drop_material_schema(conn)
         create_schema(conn)
         conn.executemany(
-            "insert into metadata(key, value) values (?, ?)",
+            "insert into material_metadata(key, value) values (?, ?)",
             [
                 ("source_ods", str(ods)),
                 ("sheet", str(library.get("sheet", "Materials"))),
@@ -70,7 +68,7 @@ def write_database(db_path: Path, ods: Path, library: dict[str, Any]) -> None:
             point_count = int((library.get("category_point_counts") or {}).get(category, 0))
             cursor = conn.execute(
                 """
-                insert into categories(name, material_count, point_count)
+                insert into material_categories(name, material_count, point_count)
                 values (?, ?, ?)
                 """,
                 (category, int(count), point_count),
@@ -82,7 +80,7 @@ def write_database(db_path: Path, ods: Path, library: dict[str, Any]) -> None:
             category_id = category_ids.get(category)
             if category_id is None:
                 cursor = conn.execute(
-                    "insert into categories(name, material_count, point_count) values (?, 0, 0)",
+                    "insert into material_categories(name, material_count, point_count) values (?, 0, 0)",
                     (category,),
                 )
                 category_id = int(cursor.lastrowid)
@@ -152,12 +150,12 @@ def write_database(db_path: Path, ods: Path, library: dict[str, Any]) -> None:
 def create_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(
         """
-        create table metadata (
+        create table material_metadata (
             key text primary key,
             value text not null
         );
 
-        create table categories (
+        create table material_categories (
             id integer primary key,
             name text not null unique,
             material_count integer not null default 0,
@@ -166,7 +164,7 @@ def create_schema(conn: sqlite3.Connection) -> None:
 
         create table materials (
             id integer primary key,
-            category_id integer not null references categories(id),
+            category_id integer not null references material_categories(id),
             category text not null,
             name text not null,
             title text,
@@ -203,6 +201,17 @@ def create_schema(conn: sqlite3.Connection) -> None:
         create index idx_materials_name on materials(name);
         create index idx_material_points_material_id on material_points(material_id);
         create index idx_material_points_temperature on material_points(temperature_k);
+        """
+    )
+
+
+def drop_material_schema(conn: sqlite3.Connection) -> None:
+    conn.executescript(
+        """
+        drop table if exists material_points;
+        drop table if exists materials;
+        drop table if exists material_categories;
+        drop table if exists material_metadata;
         """
     )
 

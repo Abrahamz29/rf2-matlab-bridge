@@ -54,7 +54,7 @@ Young's modulus correlation plot:
 
 ## Local Data Source
 
-- `tyres/database/rf2_material_database.sqlite`
+- `tyres/database/rf2_tyre_database.sqlite`
   Used for the TGM Gen material-temperature points plotted against the
   approximation curves.
 

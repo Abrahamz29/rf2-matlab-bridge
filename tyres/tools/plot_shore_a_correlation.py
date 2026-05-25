@@ -14,7 +14,7 @@ from typing import Callable
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_DB = REPO_ROOT / "tyres" / "database" / "rf2_material_database.sqlite"
+DEFAULT_DB = REPO_ROOT / "tyres" / "database" / "rf2_tyre_database.sqlite"
 DEFAULT_OUTPUT = REPO_ROOT / "tyres" / "analysis" / "young_modulus_vs_shore_a.svg"
 DEFAULT_HTML_OUTPUT = REPO_ROOT / "tyres" / "analysis" / "young_modulus_vs_shore_a.html"
 

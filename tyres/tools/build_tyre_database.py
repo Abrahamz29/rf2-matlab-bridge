@@ -435,6 +435,81 @@ def init_db(db_path: Path) -> sqlite3.Connection:
         CREATE INDEX idx_tyre_material_rows_tyre_node_kind
             ON tyre_material_rows (tyre_id, node_index, material_kind, material_index);
 
+        CREATE TABLE material_metadata (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
+        );
+
+        CREATE TABLE material_categories (
+            id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE,
+            material_count INTEGER NOT NULL DEFAULT 0,
+            point_count INTEGER NOT NULL DEFAULT 0
+        );
+
+        CREATE TABLE materials (
+            id INTEGER PRIMARY KEY,
+            category_id INTEGER NOT NULL REFERENCES material_categories(id),
+            category TEXT NOT NULL,
+            name TEXT NOT NULL,
+            title TEXT,
+            name_cell TEXT,
+            start_col INTEGER,
+            end_col INTEGER,
+            point_count INTEGER NOT NULL DEFAULT 0,
+            temperature_min_k REAL,
+            temperature_max_k REAL,
+            youngs_modulus_min_pa REAL,
+            youngs_modulus_max_pa REAL
+        );
+
+        CREATE TABLE material_points (
+            id INTEGER PRIMARY KEY,
+            material_id INTEGER NOT NULL REFERENCES materials(id) ON DELETE CASCADE,
+            category TEXT NOT NULL,
+            material TEXT NOT NULL,
+            sample_index INTEGER,
+            col_index INTEGER,
+            address TEXT,
+            temperature_k REAL,
+            density_kg_m3 REAL,
+            youngs_modulus_pa REAL,
+            poissons_ratio REAL,
+            compression_tension_ratio REAL,
+            specific_heat REAL,
+            thermal_conductivity REAL,
+            longitudinal_conductivity REAL,
+            shore_a REAL
+        );
+
+        CREATE INDEX idx_materials_category ON materials(category);
+        CREATE INDEX idx_materials_name ON materials(name);
+        CREATE INDEX idx_material_points_material_id ON material_points(material_id);
+        CREATE INDEX idx_material_points_temperature ON material_points(temperature_k);
+
+        CREATE TABLE tyre_material_mixes (
+            tyre_key TEXT PRIMARY KEY,
+            tyre_name TEXT,
+            source_path TEXT,
+            assignment_count INTEGER NOT NULL DEFAULT 0,
+            updated_utc TEXT NOT NULL
+        );
+
+        CREATE TABLE tyre_material_mix_assignments (
+            tyre_key TEXT NOT NULL,
+            cell_key TEXT NOT NULL,
+            node_index REAL,
+            stack_key TEXT,
+            material_id REAL,
+            material_name TEXT,
+            material_category TEXT,
+            updated_utc TEXT NOT NULL,
+            PRIMARY KEY (tyre_key, cell_key)
+        );
+
+        CREATE INDEX idx_tyre_material_mix_assignments_tyre
+            ON tyre_material_mix_assignments (tyre_key, node_index, stack_key);
+
         CREATE TABLE archive_candidates (
             id INTEGER PRIMARY KEY,
             archive_path TEXT NOT NULL,

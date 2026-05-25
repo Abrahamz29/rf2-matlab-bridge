@@ -19,7 +19,7 @@ WRAPPER_PATH = APP_DIR / "tyre_designer_open.m"
 LEGACY_ENTRY_PATH = REPO_ROOT / "tyres" / "matlab" / "functions" / "tyre_designer.m"
 LEGACY_WRAPPER_PATH = REPO_ROOT / "tyres" / "matlab" / "functions" / "tyre_designer_open.m"
 MATERIAL_DB_BUILDER_PATH = REPO_ROOT / "tyres" / "tools" / "build_material_database.py"
-MATERIAL_DB_PATH = REPO_ROOT / "tyres" / "database" / "rf2_material_database.sqlite"
+MATERIAL_DB_PATH = REPO_ROOT / "tyres" / "database" / "rf2_tyre_database.sqlite"
 
 
 def run_check() -> dict:
@@ -96,6 +96,9 @@ def run_check() -> dict:
         "reengineeringCellOverrides",
         "reengineeringDbMaterialId",
         "reengineeringDbCategory",
+        "materialMixSaved",
+        "saveMaterialMix",
+        "Save Mix",
         "reengineeringFamilyKey",
         "data-reengineering-cell",
         "data-reengineering-row-node-index",
@@ -347,6 +350,11 @@ def run_check() -> dict:
         "reengineeringSelectedCells",
         "reengineeringDatabaseMaterialsForSelection",
         "reengineeringSelectedDatabaseMaterial",
+        "materialMixOverridesFromState",
+        "applyStateMaterialMix",
+        "saveReengineeringMaterialMix",
+        "reengineeringMaterialMixAssignments",
+        "currentTyreDisplayName",
         "reengineeringDatabaseCategories",
         "plyFamilyObservedPropertySeries",
         "plyFamilyObservedDimensionlessSeries",
@@ -518,9 +526,14 @@ def run_check() -> dict:
         "uigridlayout(fig, [1 1]",
         "fig.WindowState = \"maximized\"",
         "from tyres order by display_name",
-        "rf2_material_database.sqlite",
+        "rf2_tyre_database.sqlite",
         "state.materialDatabase",
         "state.materialLibrary",
+        "state.materialMix",
+        "localSaveMaterialMix",
+        "localLoadMaterialMix",
+        "tyre_material_mixes",
+        "tyre_material_mix_assignments",
         "localMaterialDatabaseInfo",
         "localLoadMaterialLibraryDatabase",
         "from material_points order by material_id",
@@ -576,8 +589,8 @@ def run_check() -> dict:
             errors.append(f"missing wrapper marker: {marker}")
     for marker in [
         "extract_material_library",
-        "rf2_material_database.sqlite",
-        "create table categories",
+        "rf2_tyre_database.sqlite",
+        "create table material_categories",
         "create table materials",
         "create table material_points",
         "youngs_modulus_pa",

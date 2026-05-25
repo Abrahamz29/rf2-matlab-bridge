@@ -88,6 +88,26 @@ def main() -> int:
             expected_ply_material = (1, 1, 1, 273.15, 7907.0, 34_000_000_000.0, 0.3, 0.4, 465.0, 26.0)
             for actual, expected in zip(first_ply_material, expected_ply_material):
                 assert_close(actual, expected)
+
+            schema_tables = {
+                row[0]
+                for row in conn.execute(
+                    """
+                    SELECT name
+                    FROM sqlite_master
+                    WHERE type = 'table'
+                    """
+                )
+            }
+            for table_name in {
+                "material_categories",
+                "materials",
+                "material_points",
+                "tyre_material_mixes",
+                "tyre_material_mix_assignments",
+            }:
+                if table_name not in schema_tables:
+                    raise AssertionError(f"missing schema table: {table_name}")
         finally:
             conn.close()
 

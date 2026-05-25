@@ -16,7 +16,8 @@ plot-data helpers, and the HTML assets.
 
 This app reads the tyre database at
 `tyres/database/rf2_tyre_database.sqlite` and only loads the selected
-`.tgm` file when a tyre is selected. It does not load the old TGM Generator ODS
-inputs, material library, chart reports, acceptance checks, or tTool setup.
+`.tgm` file when a tyre is selected. Material library tables and saved material
+mix assignments also live in that database. It does not load the old TGM
+Generator ODS inputs, chart reports, acceptance checks, or tTool setup.
 
 
