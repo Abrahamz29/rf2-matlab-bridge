@@ -2115,16 +2115,17 @@
           }
           const family = cell.family;
           const best = cell.best;
+          const mixedBulk = isMixedBulkCell(cell);
           const color = family?.color || materialKindColor(cell.kind);
-          const confidence = best ? `${Math.round(clamp(best.confidence, 0, 1) * 100)}%` : "-";
-          const eText = best ? materialMultiplierRangeText([best.modulusMultiplier], "E") : "Ex-";
-          const dText = best ? materialMultiplierRangeText([best.densityMultiplier], "rho") : "rhox-";
+          const confidence = mixedBulk ? "mix" : (best ? `${Math.round(clamp(best.confidence, 0, 1) * 100)}%` : "-");
+          const eText = mixedBulk || !best ? "Ex-" : materialMultiplierRangeText([best.modulusMultiplier], "E");
+          const dText = mixedBulk || !best ? "rhox-" : materialMultiplierRangeText([best.densityMultiplier], "rho");
           const active = viewState.reengineeringFamilyKey === cell.familyKey
             && Number(viewState.reengineeringNodeIndex) === node
             && viewState.reengineeringStackKey === cell.stackKey;
           html.push(`
             <button type="button" class="reengineering-cell ${active ? "selected" : ""}" data-reengineering-cell="1" data-node-index="${escapeAttr(node)}" data-stack-key="${escapeAttr(cell.stackKey)}" data-ply-index="${escapeAttr(cell.plyIndex)}" style="--family-color:${escapeAttr(color)}" title="${escapeAttr(reengineeringCellTitle(cell))}">
-              <span class="mat">${escapeHtml(reengineeringMaterialLabel(best || family || cell))}</span>
+              <span class="mat">${escapeHtml(reengineeringCellMaterialLabel(cell))}</span>
               <span class="meta">${escapeHtml(reengineeringCellMeta(cell))}</span>
               <span class="fit">${escapeHtml(confidence)} | ${escapeHtml(eText)} | ${escapeHtml(dText)}</span>
             </button>`);
@@ -2266,6 +2267,7 @@
     }
 
     function materialFamilySignatureKey(kind, rows, cell = null) {
+      if (String(kind || "") === "BulkMaterial" && rows.length) return "mixed:BulkMaterial";
       const recognizedKey = recognizedMaterialFamilyKey(kind, cell);
       if (recognizedKey) return recognizedKey;
       const signature = plyMaterialSignatureKey(rows);
@@ -2392,19 +2394,34 @@
       return "Material";
     }
 
+    function reengineeringCellMaterialLabel(cell) {
+      if (isMixedBulkCell(cell)) return "Bulk mix";
+      return reengineeringMaterialLabel(cell?.best || cell?.family || cell);
+    }
+
     function plyFamilyLabel(family) {
+      if (isMixedBulkFamily(family)) return "Bulk mix";
       const best = family?.best;
       return best ? `${materialKindShort(family?.kind)} ${plyCandidateShortLabel(best)}` : `${materialKindLabel(family?.kind)} ${family?.stackLabels?.join("/") || ""}`;
+    }
+
+    function isMixedBulkCell(cell) {
+      return isMixedBulkFamily(cell?.family);
+    }
+
+    function isMixedBulkFamily(family) {
+      return String(family?.kind || "") === "BulkMaterial" && String(family?.signatureKey || "").startsWith("mixed:");
     }
 
     function reengineeringCellTitle(cell) {
       const family = cell.family;
       const best = cell.best;
       const nodeText = `Node ${cell.nodeIndex} ${cell.stackLabel}`;
-      const materialText = best ? plyCandidateShortLabel(best) : materialKindLabel(cell.kind);
-      const fitText = best
+      const mixedBulk = isMixedBulkCell(cell);
+      const materialText = mixedBulk ? "Bulk mix" : (best ? plyCandidateShortLabel(best) : materialKindLabel(cell.kind));
+      const fitText = !mixedBulk && best
         ? `${Math.round(clamp(best.confidence, 0, 1) * 100)}% | ${materialMultiplierRangeText([best.modulusMultiplier], "E")} | ${materialMultiplierRangeText([best.densityMultiplier], "rho")}`
-        : "";
+        : mixedBulk ? "mixed material row; single-candidate labels are diagnostic only" : "";
       const angleText = Number.isFinite(Number(cell.angleDeg)) ? ` | ${fmt(cell.angleDeg)} deg` : "";
       return `${nodeText} | ${materialText} | ${fmt(cell.thicknessMm)} mm${angleText} | ${fitText} | ${family?.stackLabels?.join(", ") || ""}`;
     }
