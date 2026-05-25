@@ -868,6 +868,15 @@
       font-size: 10px;
       font-weight: 700;
       white-space: nowrap;
+      cursor: pointer;
+      appearance: none;
+      font-family: inherit;
+      text-align: left;
+    }
+    .reengineering-matrix-header:hover,
+    .reengineering-node-label:hover {
+      border-color: var(--accent);
+      color: var(--text);
     }
     .reengineering-node-label.selected {
       border-color: var(--accent);
@@ -1289,7 +1298,7 @@
     const materialHiddenSeries = new Set();
     const materialKindFilters = new Set(["TreadMaterial", "BulkMaterial", "PlyMaterial"]);
     const nodeSelectionDrag = { active: false, dragging: false, plotId: "", start: null, current: null, additive: false, suppressClick: false };
-    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0, materialCandidatePanelKind: "", selectedMaterialCandidateKey: "", materialCandidateDefaults: {}, plyFamilyDefaults: {}, reengineeringFamilyDefaults: {}, reengineeringFamilyKey: "", reengineeringNodeIndex: null, reengineeringPlyIndex: null, reengineeringStackKey: "", reengineeringSelectedCellKeys: [], reengineeringSelectionAnchorKey: "", reengineeringCellOverrides: {}, reengineeringDbSearch: "", reengineeringDbMaterialId: null };
+    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0, materialCandidatePanelKind: "", selectedMaterialCandidateKey: "", materialCandidateDefaults: {}, plyFamilyDefaults: {}, reengineeringFamilyDefaults: {}, reengineeringFamilyKey: "", reengineeringNodeIndex: null, reengineeringPlyIndex: null, reengineeringStackKey: "", reengineeringSelectedCellKeys: [], reengineeringSelectionAnchorKey: "", reengineeringSelectionAnchorType: "cell", reengineeringCellOverrides: {}, reengineeringDbSearch: "", reengineeringDbMaterialId: null };
     const LAYER_EXPLODE_TARGET_MM = 30;
     const NODE_LAYER_SPREAD_TARGET_MM = 30;
     const NODE_REST_SPREAD_TARGET_MM = 30;
@@ -1389,6 +1398,27 @@
         const reengineeringDbMaterial = event.target.closest("[data-reengineering-db-material-id]");
         if (reengineeringDbMaterial) {
           selectReengineeringDatabaseMaterial(Number(reengineeringDbMaterial.dataset.reengineeringDbMaterialId));
+          return;
+        }
+        const reengineeringSelectAll = event.target.closest("[data-reengineering-select-all]");
+        if (reengineeringSelectAll) {
+          selectAllReengineeringCells({ toggle: event.ctrlKey || event.metaKey });
+          return;
+        }
+        const reengineeringColumn = event.target.closest("[data-reengineering-column-key]");
+        if (reengineeringColumn) {
+          selectReengineeringColumn(
+            reengineeringColumn.dataset.reengineeringColumnKey || "",
+            { shift: event.shiftKey, toggle: event.ctrlKey || event.metaKey }
+          );
+          return;
+        }
+        const reengineeringRow = event.target.closest("[data-reengineering-row-node-index]");
+        if (reengineeringRow) {
+          selectReengineeringRow(
+            Number(reengineeringRow.dataset.reengineeringRowNodeIndex),
+            { shift: event.shiftKey, toggle: event.ctrlKey || event.metaKey }
+          );
           return;
         }
         const plyCandidateTarget = event.target.closest("[data-ply-family-candidate-key]");
@@ -2228,12 +2258,12 @@
       const selectedCellKeys = new Set(asArray(viewState.reengineeringSelectedCellKeys).map(String));
       const html = [
         `<div class="reengineering-matrix-grid" style="grid-template-columns:${escapeAttr(columns)}">`,
-        `<div class="reengineering-matrix-header">Node</div>`,
-        ...model.columns.map(column => `<div class="reengineering-matrix-header">${escapeHtml(column.label)}</div>`)
+        `<button type="button" class="reengineering-matrix-header" data-reengineering-select-all="1" title="Select all matrix cells">Node</button>`,
+        ...model.columns.map(column => `<button type="button" class="reengineering-matrix-header" data-reengineering-column-key="${escapeAttr(column.key)}" title="Select ${escapeAttr(column.label)} column">${escapeHtml(column.label)}</button>`)
       ];
       model.nodes.forEach(node => {
         const selected = model.selectedNodes.has(node);
-        html.push(`<div class="reengineering-node-label ${selected ? "selected" : ""}">N${escapeHtml(node)}</div>`);
+        html.push(`<button type="button" class="reengineering-node-label ${selected ? "selected" : ""}" data-reengineering-row-node-index="${escapeAttr(node)}" title="Select node ${escapeAttr(node)} row">N${escapeHtml(node)}</button>`);
         model.columns.forEach(column => {
           const cell = byCell.get(reengineeringCellKey(node, column.key));
           if (!cell) {
@@ -2486,40 +2516,172 @@
       const cell = model.cells.find(item => item.nodeIndex === node && item.stackKey === stack);
       if (!cell) return;
       const key = reengineeringCellKey(node, stack);
-      const selected = new Set(asArray(viewState.reengineeringSelectedCellKeys).map(String));
+      const anchorKey = String(viewState.reengineeringSelectionAnchorKey || "");
+      let keys = [key];
       if (options.shift && viewState.reengineeringSelectionAnchorKey) {
-        reengineeringCellRangeKeys(model, viewState.reengineeringSelectionAnchorKey, key)
-          .forEach(item => selected.add(item));
-      } else if (options.toggle) {
-        if (selected.has(key)) selected.delete(key);
-        else selected.add(key);
+        keys = reengineeringCellRangeKeys(model, anchorKey, key);
+      }
+      reengineeringApplySelectionKeys(keys, options);
+      if (!options.shift || !anchorKey) {
         viewState.reengineeringSelectionAnchorKey = key;
+        viewState.reengineeringSelectionAnchorType = "cell";
+      } else if (!viewState.reengineeringSelectionAnchorType) {
+        viewState.reengineeringSelectionAnchorType = "cell";
+      }
+      commitReengineeringSelection(model, cell);
+    }
+
+    function selectReengineeringRow(nodeIndex, options = {}) {
+      const node = Number(nodeIndex);
+      const model = plyReengineeringModel();
+      let keys = reengineeringRowKeys(model, node);
+      const anchor = reengineeringCellKeyParts(viewState.reengineeringSelectionAnchorKey);
+      if (options.shift && Number.isFinite(anchor.nodeIndex)) {
+        keys = reengineeringRowRangeKeys(model, anchor.nodeIndex, node);
+      }
+      reengineeringApplySelectionKeys(keys, options);
+      if (!options.shift || !Number.isFinite(anchor.nodeIndex)) {
+        viewState.reengineeringSelectionAnchorKey = keys[0] || "";
+        viewState.reengineeringSelectionAnchorType = "row";
+      }
+      const focusCell = model.cells.find(cell => cell.nodeIndex === node) || reengineeringSelectedCells(model)[0] || null;
+      commitReengineeringSelection(model, focusCell);
+    }
+
+    function selectReengineeringColumn(stackKey, options = {}) {
+      const stack = String(stackKey || "");
+      const model = plyReengineeringModel();
+      let keys = reengineeringColumnKeys(model, stack);
+      const anchor = reengineeringCellKeyParts(viewState.reengineeringSelectionAnchorKey);
+      if (options.shift && anchor.stackKey) {
+        keys = reengineeringColumnRangeKeys(model, anchor.stackKey, stack);
+      }
+      reengineeringApplySelectionKeys(keys, options);
+      if (!options.shift || !anchor.stackKey) {
+        viewState.reengineeringSelectionAnchorKey = keys[0] || "";
+        viewState.reengineeringSelectionAnchorType = "column";
+      }
+      const focusCell = model.cells.find(cell => cell.stackKey === stack) || reengineeringSelectedCells(model)[0] || null;
+      commitReengineeringSelection(model, focusCell);
+    }
+
+    function selectAllReengineeringCells(options = {}) {
+      const model = plyReengineeringModel();
+      const keys = reengineeringSortedCells(model, model.cells).map(cell => reengineeringCellKey(cell.nodeIndex, cell.stackKey));
+      reengineeringApplySelectionKeys(keys, options);
+      viewState.reengineeringSelectionAnchorKey = keys[0] || "";
+      viewState.reengineeringSelectionAnchorType = "all";
+      commitReengineeringSelection(model, model.cells[0] || null);
+    }
+
+    function reengineeringApplySelectionKeys(keys, options = {}) {
+      const cleanKeys = Array.from(new Set(asArray(keys).map(String).filter(Boolean)));
+      let selected = new Set(asArray(viewState.reengineeringSelectedCellKeys).map(String));
+      if (options.toggle) {
+        const allSelected = cleanKeys.length > 0 && cleanKeys.every(key => selected.has(key));
+        if (allSelected && !options.shift) cleanKeys.forEach(key => selected.delete(key));
+        else cleanKeys.forEach(key => selected.add(key));
       } else {
-        selected.clear();
-        selected.add(key);
-        viewState.reengineeringSelectionAnchorKey = key;
+        selected = new Set(cleanKeys);
       }
       viewState.reengineeringSelectedCellKeys = Array.from(selected);
-      viewState.reengineeringFamilyKey = cell.familyKey;
-      viewState.reengineeringNodeIndex = node;
-      viewState.reengineeringPlyIndex = cell.plyIndex;
-      viewState.reengineeringStackKey = cell.stackKey;
-      viewState.selectedNodeIndices = Array.from(new Set(reengineeringSelectedCells(model).map(item => item.nodeIndex)));
-      viewState.selectedNodeIndex = node;
+    }
+
+    function commitReengineeringSelection(model, focusCell = null) {
+      const selectedCells = reengineeringSelectedCells(model);
+      const focus = focusCell || selectedCells[0] || null;
+      if (focus) {
+        viewState.reengineeringFamilyKey = focus.familyKey;
+        viewState.reengineeringNodeIndex = focus.nodeIndex;
+        viewState.reengineeringPlyIndex = focus.plyIndex;
+        viewState.reengineeringStackKey = focus.stackKey;
+      }
+      const nodes = Array.from(new Set(selectedCells.map(item => Number(item.nodeIndex)).filter(Number.isFinite))).sort((a, b) => a - b);
+      viewState.selectedNodeIndices = nodes.length ? nodes : (focus ? [focus.nodeIndex] : []);
+      viewState.selectedNodeIndex = focus ? focus.nodeIndex : (nodes[0] ?? null);
       renderCurrentView();
     }
 
     function reengineeringCellRangeKeys(model, fromKey, toKey) {
-      const order = model.cells
-        .slice()
-        .sort((a, b) => a.nodeIndex - b.nodeIndex || materialStackSortValue(a) - materialStackSortValue(b))
+      const from = reengineeringCellKeyParts(fromKey);
+      const to = reengineeringCellKeyParts(toKey);
+      if (!Number.isFinite(from.nodeIndex) || !Number.isFinite(to.nodeIndex) || !from.stackKey || !to.stackKey) {
+        return [String(toKey || "")].filter(Boolean);
+      }
+      return reengineeringRectangleKeys(model, from.nodeIndex, from.stackKey, to.nodeIndex, to.stackKey);
+    }
+
+    function reengineeringCellKeyParts(key) {
+      const text = String(key || "");
+      const splitIndex = text.indexOf(":");
+      if (splitIndex < 0) return { nodeIndex: NaN, stackKey: "" };
+      return {
+        nodeIndex: Number(text.slice(0, splitIndex)),
+        stackKey: text.slice(splitIndex + 1)
+      };
+    }
+
+    function reengineeringRectangleKeys(model, fromNode, fromStackKey, toNode, toStackKey) {
+      const nodeSet = reengineeringNodeRangeSet(model, fromNode, toNode);
+      const columnSet = reengineeringColumnRangeSet(model, fromStackKey, toStackKey);
+      if (!nodeSet.size || !columnSet.size) return [];
+      return reengineeringSortedCells(model, model.cells)
+        .filter(cell => nodeSet.has(Number(cell.nodeIndex)) && columnSet.has(String(cell.stackKey)))
         .map(cell => reengineeringCellKey(cell.nodeIndex, cell.stackKey));
-      const from = order.indexOf(String(fromKey || ""));
-      const to = order.indexOf(String(toKey || ""));
-      if (from < 0 || to < 0) return [String(toKey || "")].filter(Boolean);
-      const start = Math.min(from, to);
-      const end = Math.max(from, to);
-      return order.slice(start, end + 1);
+    }
+
+    function reengineeringRowKeys(model, nodeIndex) {
+      const node = Number(nodeIndex);
+      return reengineeringSortedCells(model, model.cells)
+        .filter(cell => cell.nodeIndex === node)
+        .map(cell => reengineeringCellKey(cell.nodeIndex, cell.stackKey));
+    }
+
+    function reengineeringRowRangeKeys(model, fromNode, toNode) {
+      const nodeSet = reengineeringNodeRangeSet(model, fromNode, toNode);
+      if (!nodeSet.size) return [];
+      return reengineeringSortedCells(model, model.cells)
+        .filter(cell => nodeSet.has(Number(cell.nodeIndex)))
+        .map(cell => reengineeringCellKey(cell.nodeIndex, cell.stackKey));
+    }
+
+    function reengineeringColumnKeys(model, stackKey) {
+      const stack = String(stackKey || "");
+      return reengineeringSortedCells(model, model.cells)
+        .filter(cell => cell.stackKey === stack)
+        .map(cell => reengineeringCellKey(cell.nodeIndex, cell.stackKey));
+    }
+
+    function reengineeringColumnRangeKeys(model, fromStackKey, toStackKey) {
+      const columnSet = reengineeringColumnRangeSet(model, fromStackKey, toStackKey);
+      if (!columnSet.size) return [];
+      return reengineeringSortedCells(model, model.cells)
+        .filter(cell => columnSet.has(String(cell.stackKey)))
+        .map(cell => reengineeringCellKey(cell.nodeIndex, cell.stackKey));
+    }
+
+    function reengineeringNodeRangeSet(model, fromNode, toNode) {
+      const nodes = (model.nodes || []).map(Number).filter(Number.isFinite).sort((a, b) => a - b);
+      const from = nodes.indexOf(Number(fromNode));
+      const to = nodes.indexOf(Number(toNode));
+      if (from < 0 || to < 0) return new Set();
+      return new Set(nodes.slice(Math.min(from, to), Math.max(from, to) + 1));
+    }
+
+    function reengineeringColumnRangeSet(model, fromStackKey, toStackKey) {
+      const columns = (model.columns || []).map(column => String(column.key || ""));
+      const from = columns.indexOf(String(fromStackKey || ""));
+      const to = columns.indexOf(String(toStackKey || ""));
+      if (from < 0 || to < 0) return new Set();
+      return new Set(columns.slice(Math.min(from, to), Math.max(from, to) + 1));
+    }
+
+    function reengineeringSortedCells(model, cells) {
+      const columnOrder = new Map((model.columns || []).map((column, index) => [String(column.key || ""), index]));
+      return (cells || []).slice().sort((a, b) =>
+        Number(a.nodeIndex) - Number(b.nodeIndex)
+        || (columnOrder.get(String(a.stackKey || "")) ?? materialStackSortValue(a)) - (columnOrder.get(String(b.stackKey || "")) ?? materialStackSortValue(b))
+      );
     }
 
     function reengineeringSelectedCells(model = plyReengineeringModel()) {
