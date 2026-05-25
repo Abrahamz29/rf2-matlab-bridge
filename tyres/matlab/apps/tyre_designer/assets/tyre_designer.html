@@ -1207,6 +1207,7 @@
     const NODE_REST_SPREAD_TARGET_MM = 30;
     const NODE_SLICE_LABEL_MIN_GAP_PX = 4;
     const MATERIAL_RECOGNITION_TOP_N = 8;
+    const MATERIAL_GLOBAL_DOMINANCE_SCOPES = new Set(["PlyMaterial", "TreadMaterial:cap", "BulkMaterial:filler"]);
     const MATERIAL_GLOBAL_DOMINANCE_MIN = 0.8;
     const MATERIAL_GLOBAL_OVERRIDE_MAX_SCORE = 0.16;
     const MATERIAL_GLOBAL_OVERRIDE_SCORE_MARGIN = 0.08;
@@ -3881,14 +3882,15 @@
     function aggregateGlobalMaterialMatches(localMatches) {
       const byKey = new Map();
       const broadByKey = new Map();
-      const localBestCountsByKind = new Map();
-      const localBestTotalsByKind = new Map();
+      const localBestCountsByScope = new Map();
+      const localBestTotalsByScope = new Map();
       localMatches.forEach(match => {
         const localBest = match.candidates[0] || null;
         if (localBest && Number(localBest.score) <= 0.28) {
-          const bestKey = `${match.kind}:${localBest.baseKey}`;
-          localBestCountsByKind.set(bestKey, (localBestCountsByKind.get(bestKey) || 0) + 1);
-          localBestTotalsByKind.set(match.kind, (localBestTotalsByKind.get(match.kind) || 0) + 1);
+          const bestScope = materialDominanceScopeKey(match.kind, localBest);
+          const bestKey = `${bestScope}:${localBest.baseKey}`;
+          localBestCountsByScope.set(bestKey, (localBestCountsByScope.get(bestKey) || 0) + 1);
+          localBestTotalsByScope.set(bestScope, (localBestTotalsByScope.get(bestScope) || 0) + 1);
         }
         match.candidates.forEach(candidate => {
           const scopeKey = match.scopeKey || match.kind;
@@ -3918,10 +3920,13 @@
           if (Number.isFinite(candidate.densityMultiplier)) item.densityMultipliers.push(candidate.densityMultiplier);
           byKey.set(key, item);
 
-          const broadKey = `${match.kind}:${candidate.baseKey}`;
+          const dominanceScope = materialDominanceScopeKey(match.kind, candidate);
+          const broadKey = `${dominanceScope}:${candidate.baseKey}`;
           const broad = broadByKey.get(broadKey) || {
             key: broadKey,
             kind: match.kind,
+            dominanceScope,
+            dominanceScopeLabel: materialDominanceScopeLabel(dominanceScope),
             baseKey: candidate.baseKey,
             materialName: candidate.materialName,
             likelihood: 0,
@@ -3939,8 +3944,8 @@
 
       const totalsByScope = new Map();
       byKey.forEach(item => totalsByScope.set(item.scopeKey, (totalsByScope.get(item.scopeKey) || 0) + item.likelihood));
-      const totalsByKind = new Map();
-      broadByKey.forEach(item => totalsByKind.set(item.kind, (totalsByKind.get(item.kind) || 0) + item.likelihood));
+      const totalsByDominanceScope = new Map();
+      broadByKey.forEach(item => totalsByDominanceScope.set(item.dominanceScope, (totalsByDominanceScope.get(item.dominanceScope) || 0) + item.likelihood));
       const summaries = Array.from(byKey.values()).map(item => ({
         ...item,
         nodeCount: item.nodes.size,
@@ -3953,9 +3958,9 @@
         ...item,
         nodeCount: item.nodes.size,
         scopeCount: item.scopes.size,
-        probability: item.likelihood / Math.max(totalsByKind.get(item.kind) || 0, 1e-12),
-        winnerCount: localBestCountsByKind.get(item.key) || 0,
-        winnerShare: (localBestCountsByKind.get(item.key) || 0) / Math.max(localBestTotalsByKind.get(item.kind) || 0, 1),
+        probability: item.likelihood / Math.max(totalsByDominanceScope.get(item.dominanceScope) || 0, 1e-12),
+        winnerCount: localBestCountsByScope.get(item.key) || 0,
+        winnerShare: (localBestCountsByScope.get(item.key) || 0) / Math.max(localBestTotalsByScope.get(item.dominanceScope) || 0, 1),
         nodes: Array.from(item.nodes).sort((a, b) => a - b),
         scopes: Array.from(item.scopes).sort()
       }]));
@@ -3967,7 +3972,8 @@
         const localBest = match.candidates[0] || null;
         const alternatives = match.candidates.map(candidate => {
           const global = globalByKey.get(`${match.scopeKey || match.kind}:${candidate.baseKey}`);
-          const broad = broadByKey.get(`${match.kind}:${candidate.baseKey}`);
+          const dominanceScope = materialDominanceScopeKey(match.kind, candidate);
+          const broad = broadByKey.get(`${dominanceScope}:${candidate.baseKey}`);
           const scopedSupport = global ? 1 + Math.log1p(global.groupCount) * 0.35 + global.probability : 1;
           const broadProbability = Math.max(Number(broad?.winnerShare) || 0, Number(broad?.probability) || 0);
           const sharedLayerSupport = broad ? 1 + Math.log1p(broad.scopeCount) * 0.18 + Math.log1p(broad.groupCount) * 0.08 + broadProbability * 0.55 : 1;
@@ -3978,6 +3984,8 @@
             globalGroupCount: global?.groupCount || 0,
             globalWinnerShare: broad?.winnerShare || 0,
             globalWinnerCount: broad?.winnerCount || 0,
+            globalDominanceScope: dominanceScope,
+            globalDominanceScopeLabel: materialDominanceScopeLabel(dominanceScope),
             globalScopeLabel: global?.scopeLabel || match.scopeLabel || "",
             sharedScopeCount: broad?.scopeCount || 0,
             combinedLikelihood: candidate.localLikelihood * scopedSupport * sharedLayerSupport * dominanceBoost
@@ -3995,7 +4003,7 @@
 
     function materialGlobalDominanceBoost(match, candidate, localBest, broad) {
       if (!match || !candidate || !localBest || !broad) return 1;
-      if (String(match.kind || "") !== "PlyMaterial") return 1;
+      if (!MATERIAL_GLOBAL_DOMINANCE_SCOPES.has(String(broad.dominanceScope || ""))) return 1;
       const winnerShare = Number(broad.winnerShare) || 0;
       if (winnerShare < MATERIAL_GLOBAL_DOMINANCE_MIN) return 1;
       const candidateScore = Number(candidate.score);
@@ -4004,6 +4012,37 @@
       if (candidateScore > MATERIAL_GLOBAL_OVERRIDE_MAX_SCORE) return 1;
       if (candidateScore > localScore + MATERIAL_GLOBAL_OVERRIDE_SCORE_MARGIN) return 1;
       return 1 + winnerShare * 4;
+    }
+
+    function materialDominanceScopeKey(kind, candidate) {
+      const itemKind = String(kind || "");
+      if (itemKind === "PlyMaterial") return "PlyMaterial";
+      const text = `${String(candidate?.category || "")} ${String(candidate?.materialName || candidate?.name || "")}`.toLowerCase();
+      if (itemKind === "TreadMaterial") {
+        return text.includes("sidewall") ? "TreadMaterial:tread-sidewall" : "TreadMaterial:cap";
+      }
+      if (itemKind === "BulkMaterial") {
+        if (/(filler|bead|apex)/.test(text)) return "BulkMaterial:filler";
+        if (text.includes("inner liner")) return "BulkMaterial:inner-liner";
+        if (text.includes("belt")) return "BulkMaterial:belt";
+        if (text.includes("sidewall")) return "BulkMaterial:sidewall";
+        return "BulkMaterial:bulk";
+      }
+      return itemKind;
+    }
+
+    function materialDominanceScopeLabel(scope) {
+      const labels = {
+        "PlyMaterial": "Ply",
+        "TreadMaterial:cap": "Cap / Tread",
+        "TreadMaterial:tread-sidewall": "Tread Sidewall",
+        "BulkMaterial:filler": "Filler / Bead / Apex",
+        "BulkMaterial:inner-liner": "Inner Liner",
+        "BulkMaterial:belt": "Belt",
+        "BulkMaterial:sidewall": "Sidewall Bulk",
+        "BulkMaterial:bulk": "Bulk"
+      };
+      return labels[String(scope || "")] || String(scope || "");
     }
 
     function materialCandidateLikelihood(score) {

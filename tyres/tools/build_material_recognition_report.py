@@ -20,7 +20,7 @@ DEFAULT_ODS = REPO_ROOT / "input" / "TGM Gen V0.33 - GY F1 1975 Front.ods"
 DEFAULT_OUT = REPO_ROOT / "tyres" / "analysis" / "tgm_gen_material_recognition_compare.html"
 KIND_COLUMNS = ["Tread", "Bulk"]
 MATERIAL_RECOGNITION_TOP_N = 12
-GLOBAL_DOMINANT_KINDS = {"PlyMaterial"}
+GLOBAL_DOMINANT_SCOPES = {"PlyMaterial", "TreadMaterial:cap", "BulkMaterial:filler"}
 GLOBAL_DOMINANCE_MIN = 0.80
 GLOBAL_OVERRIDE_MAX_SCORE = 0.16
 GLOBAL_OVERRIDE_SCORE_MARGIN = 0.08
@@ -290,37 +290,50 @@ def material_identity_key(candidate: dict[str, Any]) -> str:
 def apply_global_material_probability(groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
     counts: Counter[tuple[str, str]] = Counter()
     totals: Counter[str] = Counter()
+    scope_meta: dict[str, tuple[str, str]] = {}
     for group in groups:
         local = group.get("localBest")
         if not local or local.get("score", math.inf) > UNKNOWN_SCORE_MAX:
             continue
-        counts[(group["kind"], local["material"])] += 1
-        totals[group["kind"]] += 1
+        scope = material_global_scope(group["kind"], local)
+        scope_meta[scope] = (group["kind"], material_global_scope_label(scope))
+        counts[(scope, local["material"])] += 1
+        totals[scope] += 1
 
-    dominant_by_kind: dict[str, tuple[str, float, int]] = {}
-    for kind in totals:
+    dominant_by_scope: dict[str, tuple[str, float, int]] = {}
+    for scope in totals:
         material, count = max(
-            ((material, count) for (candidate_kind, material), count in counts.items() if candidate_kind == kind),
+            ((material, count) for (candidate_scope, material), count in counts.items() if candidate_scope == scope),
             key=lambda item: item[1],
         )
-        probability = count / max(totals[kind], 1)
-        dominant_by_kind[kind] = (material, probability, count)
+        probability = count / max(totals[scope], 1)
+        dominant_by_scope[scope] = (material, probability, count)
 
     for group in groups:
         kind = group["kind"]
         local = group.get("localBest")
         if not local:
             continue
+        local_scope = material_global_scope(kind, local)
         final = dict(local)
         final["localMaterial"] = local["material"]
-        final["globalProbability"] = counts[(kind, local["material"])] / max(totals[kind], 1) if totals[kind] else 0
-        final["globalGroupCount"] = counts[(kind, local["material"])]
+        final["globalScope"] = local_scope
+        final["globalScopeLabel"] = material_global_scope_label(local_scope)
+        final["globalProbability"] = counts[(local_scope, local["material"])] / max(totals[local_scope], 1) if totals[local_scope] else 0
+        final["globalGroupCount"] = counts[(local_scope, local["material"])]
         final["globalOverride"] = False
 
-        dominant = dominant_by_kind.get(kind)
-        if dominant and kind in GLOBAL_DOMINANT_KINDS:
+        dominant = dominant_by_scope.get(local_scope)
+        if dominant and local_scope in GLOBAL_DOMINANT_SCOPES:
             dominant_material, dominant_probability, dominant_count = dominant
-            dominant_candidate = next((candidate for candidate in group.get("candidates", []) if candidate["material"] == dominant_material), None)
+            dominant_candidate = next(
+                (
+                    candidate
+                    for candidate in group.get("candidates", [])
+                    if candidate["material"] == dominant_material and material_global_scope(kind, candidate) == local_scope
+                ),
+                None,
+            )
             if (
                 dominant_candidate
                 and dominant_material != local["material"]
@@ -330,6 +343,8 @@ def apply_global_material_probability(groups: list[dict[str, Any]]) -> list[dict
             ):
                 final = dict(dominant_candidate)
                 final["localMaterial"] = local["material"]
+                final["globalScope"] = local_scope
+                final["globalScopeLabel"] = material_global_scope_label(local_scope)
                 final["globalProbability"] = dominant_probability
                 final["globalGroupCount"] = dominant_count
                 final["globalOverride"] = True
@@ -337,19 +352,58 @@ def apply_global_material_probability(groups: list[dict[str, Any]]) -> list[dict
         group["best"] = final
 
     rows = []
-    for (kind, material), count in sorted(counts.items(), key=lambda item: (item[0][0], -item[1], item[0][1])):
+    for (scope, material), count in sorted(counts.items(), key=lambda item: (scope_meta[item[0][0]][0], item[0][0], -item[1], item[0][1])):
+        kind, label = scope_meta[scope]
+        probability = count / max(totals[scope], 1)
         rows.append(
             {
                 "kind": kind,
+                "scope": scope,
+                "scopeLabel": label,
                 "material": material,
                 "localWinnerCount": count,
-                "total": totals[kind],
-                "probability": count / max(totals[kind], 1),
-                "dominant": count / max(totals[kind], 1) >= GLOBAL_DOMINANCE_MIN,
-                "stabilized": kind in GLOBAL_DOMINANT_KINDS and count / max(totals[kind], 1) >= GLOBAL_DOMINANCE_MIN,
+                "total": totals[scope],
+                "probability": probability,
+                "dominant": probability >= GLOBAL_DOMINANCE_MIN,
+                "stabilized": scope in GLOBAL_DOMINANT_SCOPES and probability >= GLOBAL_DOMINANCE_MIN,
             }
         )
     return rows
+
+
+def material_global_scope(kind: str, candidate: dict[str, Any]) -> str:
+    if kind == "PlyMaterial":
+        return "PlyMaterial"
+    text = f"{candidate.get('category', '')} {candidate.get('material', '')}".lower()
+    if kind == "TreadMaterial":
+        if "sidewall" in text:
+            return "TreadMaterial:tread-sidewall"
+        return "TreadMaterial:cap"
+    if kind == "BulkMaterial":
+        if re.search(r"filler|bead|apex", text):
+            return "BulkMaterial:filler"
+        if "inner liner" in text:
+            return "BulkMaterial:inner-liner"
+        if "belt" in text:
+            return "BulkMaterial:belt"
+        if "sidewall" in text:
+            return "BulkMaterial:sidewall"
+        return "BulkMaterial:bulk"
+    return kind
+
+
+def material_global_scope_label(scope: str) -> str:
+    labels = {
+        "PlyMaterial": "Ply",
+        "TreadMaterial:cap": "Cap / Tread",
+        "TreadMaterial:tread-sidewall": "Tread Sidewall",
+        "BulkMaterial:filler": "Filler / Bead / Apex",
+        "BulkMaterial:inner-liner": "Inner Liner",
+        "BulkMaterial:belt": "Belt",
+        "BulkMaterial:sidewall": "Sidewall Bulk",
+        "BulkMaterial:bulk": "Bulk",
+    }
+    return labels.get(scope, scope)
 
 
 def material_candidate_for_kind(kind: str, material: dict[str, Any]) -> bool:
@@ -601,6 +655,7 @@ def matrix_rows(values: dict[tuple[int, str], dict[str, Any] | None], columns: l
                     "eMultiplier": item.get("eMultiplier") if item else None,
                     "densityMultiplier": item.get("densityMultiplier") if item else None,
                     "globalProbability": item.get("globalProbability") if item else None,
+                    "globalScopeLabel": item.get("globalScopeLabel") if item else "",
                     "globalOverride": bool(item.get("globalOverride")) if item else False,
                     "localMaterial": item.get("localMaterial") if item else "",
                 }
@@ -694,7 +749,7 @@ def render_html(report: dict[str, Any]) -> str:
 </header>
 <main>
   <section class="note">
-    Links steht, was aus den Excel-/ODS-Selections und bekannten Generatorformeln kommt. Rechts steht, welches Einzelmaterial unser Recognizer aus den generierten TGM-Materialwerten ableitet. Ply-Materialien werden zusätzlich mit einer globalen Dominanzwahrscheinlichkeit stabilisiert, damit einzelne lokale Ausreißer nicht als Materialwechsel erscheinen.
+    Links steht, was aus den Excel-/ODS-Selections und bekannten Generatorformeln kommt. Rechts steht, welches Einzelmaterial unser Recognizer aus den generierten TGM-Materialwerten ableitet. Ply, Cap/Tread und Filler werden zusätzlich mit einer globalen Dominanzwahrscheinlichkeit stabilisiert, damit einzelne lokale Ausreißer nicht als Materialwechsel erscheinen.
   </section>
 
   <h2>Querschnitt-Materialbelegung</h2>
@@ -844,7 +899,8 @@ def render_matrix(rows: list[dict[str, Any]], columns: list[str], palette: dict[
             if cell.get("densityMultiplier") is not None:
                 title_parts.append(f"rho x{fmt(cell['densityMultiplier'])}")
             if cell.get("globalProbability") is not None:
-                title_parts.append(f"global {fmt_percent(cell['globalProbability'])}")
+                scope = f" {cell['globalScopeLabel']}" if cell.get("globalScopeLabel") else ""
+                title_parts.append(f"global{scope} {fmt_percent(cell['globalProbability'])}")
             if cell.get("globalOverride"):
                 title_parts.append(f"local {cell.get('localMaterial', '')}")
             cells.append(
@@ -866,6 +922,7 @@ def render_global_probability_table(rows: list[dict[str, Any]]) -> str:
     body = "".join(
         "<tr>"
         f"<td>{escape(row['kind'])}</td>"
+        f"<td>{escape(row['scopeLabel'])}</td>"
         f"<td>{escape(row['material'])}</td>"
         f"<td>{row['localWinnerCount']}</td>"
         f"<td>{row['total']}</td>"
@@ -875,7 +932,7 @@ def render_global_probability_table(rows: list[dict[str, Any]]) -> str:
         "</tr>"
         for row in rows
     )
-    return f"<table><thead><tr><th>TGM-Art</th><th>Lokaler Gewinner</th><th>Gruppen</th><th>Gesamt</th><th>Global</th><th>Dominant</th><th>Korrektur aktiv</th></tr></thead><tbody>{body}</tbody></table>"
+    return f"<table><thead><tr><th>TGM-Art</th><th>Scope</th><th>Lokaler Gewinner</th><th>Gruppen</th><th>Gesamt</th><th>Global</th><th>Dominant</th><th>Korrektur aktiv</th></tr></thead><tbody>{body}</tbody></table>"
 
 
 def render_summary_table(rows: list[dict[str, Any]], include_scores: bool) -> str:
