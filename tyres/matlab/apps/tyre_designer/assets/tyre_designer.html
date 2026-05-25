@@ -3631,7 +3631,7 @@
       });
 
       const global = aggregateGlobalMaterialMatches(localMatches);
-      enrichMaterialMatches(localMatches, global.byKey, global.broadByKey);
+      enrichMaterialMatches(localMatches, global.byKey, global.broadByKey, global.dominantByScope);
       materialRecognitionCache = {
         available: true,
         localMatches,
@@ -3952,7 +3952,7 @@
         nodes: Array.from(item.nodes).sort((a, b) => a - b)
       })).sort((a, b) => materialKindOrder(a.kind) - materialKindOrder(b.kind) || b.probability - a.probability);
       const summaryByKey = new Map(summaries.map(item => [item.key, item]));
-      const broadSummaryByKey = new Map(Array.from(broadByKey.values()).map(item => [item.key, {
+      const broadSummaries = Array.from(broadByKey.values()).map(item => ({
         ...item,
         nodeCount: item.nodes.size,
         scopeCount: item.scopes.size,
@@ -3962,11 +3962,25 @@
         secondWinnerShare: materialSecondWinnerShare(item.dominanceScope, item.key, localBestCountsByScope, localBestTotalsByScope),
         nodes: Array.from(item.nodes).sort((a, b) => a - b),
         scopes: Array.from(item.scopes).sort()
-      }]));
-      return { summaries, byKey: summaryByKey, broadByKey: broadSummaryByKey };
+      }));
+      const broadSummaryByKey = new Map(broadSummaries.map(item => [item.key, item]));
+      const dominantByScope = new Map();
+      broadSummaries.forEach(item => {
+        if (!item.winnerCount) return;
+        const current = dominantByScope.get(item.dominanceScope);
+        if (
+          !current
+          || item.winnerCount > current.winnerCount
+          || (item.winnerCount === current.winnerCount && item.probability > current.probability)
+          || (item.winnerCount === current.winnerCount && item.probability === current.probability && String(item.materialName).localeCompare(String(current.materialName)) < 0)
+        ) {
+          dominantByScope.set(item.dominanceScope, item);
+        }
+      });
+      return { summaries, byKey: summaryByKey, broadByKey: broadSummaryByKey, dominantByScope };
     }
 
-    function enrichMaterialMatches(localMatches, globalByKey, broadByKey = new Map()) {
+    function enrichMaterialMatches(localMatches, globalByKey, broadByKey = new Map(), dominantByScope = new Map()) {
       localMatches.forEach(match => {
         const localBest = match.candidates[0] || null;
         const alternatives = match.candidates.map(candidate => {
@@ -3989,7 +4003,10 @@
             sharedScopeCount: broad?.scopeCount || 0,
             combinedLikelihood: candidate.localLikelihood * scopedSupport * sharedLayerSupport * dominanceBoost
           };
-        }).sort((a, b) => b.combinedLikelihood - a.combinedLikelihood);
+        });
+        const globalOverride = materialGlobalDominanceOverride(match, localBest, alternatives, dominantByScope);
+        if (globalOverride) globalOverride.globalOverride = true;
+        alternatives.sort((a, b) => Number(b.globalOverride) - Number(a.globalOverride) || b.combinedLikelihood - a.combinedLikelihood);
         const likelihoodSum = alternatives.reduce((sum, candidate) => sum + candidate.combinedLikelihood, 0);
         match.alternatives = alternatives.map(candidate => ({
           ...candidate,
@@ -4009,6 +4026,20 @@
       if (!Number.isFinite(candidateScore) || !Number.isFinite(localScore)) return 1;
       if (candidateScore > localScore + MATERIAL_GLOBAL_DISTANCE_MARGIN) return 1;
       return 1 + winnerShare * 4;
+    }
+
+    function materialGlobalDominanceOverride(match, localBest, alternatives, dominantByScope) {
+      if (!match || !localBest || !alternatives?.length || !dominantByScope) return null;
+      const localScope = materialDominanceScopeKey(match.kind, localBest);
+      if (!MATERIAL_GLOBAL_DOMINANCE_SCOPES.has(String(localScope || ""))) return null;
+      const dominant = dominantByScope.get(localScope);
+      if (!dominant || !dominant.baseKey || dominant.baseKey === localBest.baseKey) return null;
+      const candidate = alternatives.find(item => item.baseKey === dominant.baseKey && item.globalDominanceScope === localScope);
+      if (!candidate) return null;
+      const candidateScore = Number(candidate.score);
+      const localScore = Number(localBest.score);
+      if (!Number.isFinite(candidateScore) || !Number.isFinite(localScore)) return null;
+      return candidateScore <= localScore + MATERIAL_GLOBAL_DISTANCE_MARGIN ? candidate : null;
     }
 
     function materialSecondWinnerShare(scope, activeKey, countsByScope, totalsByScope) {
