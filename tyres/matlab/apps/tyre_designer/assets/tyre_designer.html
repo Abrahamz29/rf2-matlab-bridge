@@ -130,6 +130,9 @@
       overflow: auto;
       padding: 14px;
     }
+    main.reengineering-main {
+      overflow: hidden;
+    }
     .view-page[hidden] {
       display: none !important;
     }
@@ -610,6 +613,16 @@
       background: #0b0f12;
       padding: 5px 7px;
       overflow: hidden;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      appearance: none;
+    }
+    .material-match-chip:hover,
+    .material-match-chip.open {
+      border-color: var(--accent);
+      background: #101923;
     }
     .material-match-chip .kind,
     .material-match-chip .name,
@@ -630,6 +643,61 @@
       font-weight: 700;
     }
     .material-match-chip .meta {
+      color: #b9d8f2;
+      font-size: 9px;
+    }
+    .material-candidate-panel {
+      grid-column: 1 / -1;
+      display: grid;
+      gap: 4px;
+      max-height: 134px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #0b0f12;
+      padding: 5px;
+    }
+    .material-candidate-row {
+      display: grid;
+      grid-template-columns: 10px minmax(0, 1.2fr) auto auto;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      padding: 4px 5px;
+      text-align: left;
+      cursor: pointer;
+      appearance: none;
+    }
+    .material-candidate-row:hover,
+    .material-candidate-row.selected {
+      border-color: var(--accent);
+      background: #102032;
+    }
+    .material-candidate-row .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+    }
+    .material-candidate-row .name,
+    .material-candidate-row .meta,
+    .material-candidate-row .mult {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .material-candidate-row .name {
+      color: #dceaf7;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .material-candidate-row .meta,
+    .material-candidate-row .mult {
       color: #b9d8f2;
       font-size: 9px;
     }
@@ -676,6 +744,255 @@
       border: 1px solid var(--line);
       border-radius: 5px;
     }
+    .reengineering-page {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 8px;
+      height: 100%;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .reengineering-grid {
+      display: grid;
+      grid-template-columns: minmax(460px, 1.15fr) minmax(420px, 0.85fr);
+      grid-template-rows: clamp(116px, 14vh, 150px) minmax(0, 0.46fr) minmax(150px, 0.54fr);
+      gap: 8px;
+      min-height: 0;
+      height: 100%;
+    }
+    .reengineering-overview-panel,
+    .reengineering-matrix-panel,
+    .reengineering-decision-panel,
+    .reengineering-family-panel {
+      min-width: 0;
+      min-height: 0;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 7px;
+      padding: 8px;
+      overflow: hidden;
+    }
+    .reengineering-overview-panel {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    .reengineering-matrix-panel {
+      grid-column: 1;
+      grid-row: 2 / span 2;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 7px;
+    }
+    .reengineering-decision-panel {
+      grid-column: 2;
+      grid-row: 1 / span 2;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 6px;
+      overflow: auto;
+    }
+    .reengineering-family-panel {
+      grid-column: 2;
+      grid-row: 3;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 7px;
+    }
+    .reengineering-plot {
+      display: block;
+      width: 100%;
+      height: 100%;
+      min-height: 0;
+    }
+    .reengineering-panel-head {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .reengineering-panel-head h3 {
+      margin: 0;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .reengineering-meta {
+      color: var(--muted);
+      font-size: 10px;
+      text-align: right;
+    }
+    .reengineering-matrix-wrap,
+    .reengineering-family-list,
+    .reengineering-candidates {
+      min-height: 0;
+      overflow: auto;
+    }
+    .reengineering-matrix-grid {
+      display: grid;
+      gap: 3px;
+      min-width: max-content;
+      align-items: stretch;
+    }
+    .reengineering-matrix-header {
+      position: sticky;
+      top: 0;
+      z-index: 3;
+    }
+    .reengineering-node-label {
+      position: sticky;
+      left: 0;
+      z-index: 2;
+    }
+    .reengineering-matrix-header:first-child {
+      left: 0;
+      z-index: 4;
+    }
+    .reengineering-matrix-header,
+    .reengineering-node-label,
+    .reengineering-cell {
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #0b0f12;
+    }
+    .reengineering-matrix-header,
+    .reengineering-node-label {
+      padding: 5px 6px;
+      color: #b9d8f2;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .reengineering-node-label.selected {
+      border-color: var(--accent);
+      color: var(--text);
+    }
+    .reengineering-cell {
+      min-height: 38px;
+      padding: 4px 6px;
+      display: grid;
+      gap: 2px;
+      color: #dceaf7;
+      text-align: left;
+      cursor: pointer;
+      appearance: none;
+      font: inherit;
+      border-color: color-mix(in srgb, var(--family-color, #617286) 45%, var(--line));
+      background: color-mix(in srgb, var(--family-color, #617286) 18%, #0b0f12);
+    }
+    .reengineering-cell:hover,
+    .reengineering-cell.selected {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--family-color, #617286) 28%, #102032);
+    }
+    .reengineering-cell.empty {
+      cursor: default;
+      opacity: 0.35;
+      background: #0b0f12;
+      border-style: dashed;
+    }
+    .reengineering-cell .mat,
+    .reengineering-cell .meta,
+    .reengineering-cell .fit {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .reengineering-cell .mat {
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .reengineering-cell .meta,
+    .reengineering-cell .fit {
+      color: #b9d8f2;
+      font-size: 8.5px;
+    }
+    .reengineering-candidates {
+      display: grid;
+      gap: 3px;
+      max-height: 76px;
+    }
+    .reengineering-candidate-row,
+    .reengineering-family-row {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      background: #0b0f12;
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      appearance: none;
+    }
+    .reengineering-candidate-row {
+      display: grid;
+      grid-template-columns: 10px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 7px;
+      padding: 4px 6px;
+    }
+    .reengineering-family-row {
+      display: grid;
+      grid-template-columns: 10px minmax(0, 1fr) 88px auto;
+      align-items: center;
+      gap: 7px;
+      padding: 6px;
+      margin-bottom: 5px;
+    }
+    .reengineering-candidate-row:hover,
+    .reengineering-candidate-row.selected,
+    .reengineering-family-row:hover,
+    .reengineering-family-row.selected {
+      border-color: var(--accent);
+      background: #102032;
+    }
+    .reengineering-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--family-color, #b99cff);
+    }
+    .reengineering-candidate-row .name,
+    .reengineering-family-row .name {
+      min-width: 0;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+      color: #dceaf7;
+      font-size: 10px;
+      font-weight: 700;
+    }
+    .reengineering-candidate-row .meta,
+    .reengineering-family-row .meta,
+    .reengineering-family-row .range {
+      color: #b9d8f2;
+      font-size: 8.5px;
+      white-space: nowrap;
+    }
+    .reengineering-family-row .coverage {
+      position: relative;
+      height: 5px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #070a0d;
+      overflow: hidden;
+    }
+    .reengineering-family-row .coverage span {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      background: var(--family-color, #b99cff);
+      opacity: 0.85;
+    }
+    .reengineering-chart-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(150px, 1fr));
+      grid-template-rows: repeat(3, minmax(0, 1fr));
+      gap: 5px;
+      min-height: 0;
+    }
+    .reengineering-chart-grid .material-chart {
+      min-height: 72px;
+    }
     .material-series-toggle {
       cursor: pointer;
     }
@@ -707,6 +1024,9 @@
       stroke-opacity: 0.3;
       stroke-dasharray: 2 3;
       pointer-events: none;
+    }
+    .node-layer-link {
+      cursor: pointer;
     }
     .node-label {
       fill: #e6edf3;
@@ -759,6 +1079,7 @@
     <nav class="view-nav" aria-label="Tyre designer views">
       <button class="view-tab active" type="button" data-view="model">Model View</button>
       <button class="view-tab" type="button" data-view="node-explorer">Node Explorer</button>
+      <button class="view-tab" type="button" data-view="reengineering">Reengineering</button>
       <button class="view-tab" type="button" data-view="materials">Materials</button>
     </nav>
     <main>
@@ -826,6 +1147,45 @@
         </div>
         <div id="materials-workspace" class="materials-workspace"></div>
       </section>
+      <section id="reengineering-view" class="reengineering-page view-page" hidden>
+        <div class="page-head">
+          <h2>Material Reengineering</h2>
+          <div id="reengineering-page-meta" class="reengineering-meta"></div>
+        </div>
+        <div class="reengineering-grid">
+          <div class="reengineering-overview-panel">
+            <svg id="reengineering-plot" class="model-plot reengineering-plot" viewBox="0 0 1100 240" preserveAspectRatio="none" tabindex="0" aria-label="Reengineering tyre overview"></svg>
+          </div>
+          <section class="reengineering-matrix-panel" aria-label="Node material stack matrix">
+            <div class="reengineering-panel-head">
+              <h3>Node x Material matrix</h3>
+              <div id="reengineering-matrix-meta" class="reengineering-meta"></div>
+            </div>
+            <div id="reengineering-matrix" class="reengineering-matrix-wrap"></div>
+          </section>
+          <section class="reengineering-decision-panel" aria-label="Material decision panel">
+            <div class="reengineering-panel-head">
+              <h3 id="reengineering-decision-title">Material decision</h3>
+              <div id="reengineering-decision-meta" class="reengineering-meta"></div>
+            </div>
+            <div id="reengineering-candidates" class="reengineering-candidates"></div>
+            <div class="reengineering-chart-grid">
+              <svg id="reengineering-young-chart" class="material-chart" viewBox="0 0 320 220" preserveAspectRatio="none" aria-label="Material Young modulus comparison"></svg>
+              <svg id="reengineering-density-chart" class="material-chart" viewBox="0 0 320 220" preserveAspectRatio="none" aria-label="Material density comparison"></svg>
+              <svg id="reengineering-heat-chart" class="material-chart" viewBox="0 0 320 220" preserveAspectRatio="none" aria-label="Material heat comparison"></svg>
+              <svg id="reengineering-conductivity-chart" class="material-chart" viewBox="0 0 320 220" preserveAspectRatio="none" aria-label="Material conductivity comparison"></svg>
+              <svg id="reengineering-dimensionless-chart" class="material-chart" viewBox="0 0 320 220" preserveAspectRatio="none" aria-label="Material dimensionless comparison"></svg>
+            </div>
+          </section>
+          <section class="reengineering-family-panel" aria-label="Material families">
+            <div class="reengineering-panel-head">
+              <h3>Family Summary</h3>
+              <div id="reengineering-family-meta" class="reengineering-meta"></div>
+            </div>
+            <div id="reengineering-family-summary" class="reengineering-family-list"></div>
+          </section>
+        </div>
+      </section>
     </main>
     <footer id="message">Ready.</footer>
   </div>
@@ -841,7 +1201,7 @@
     const materialHiddenSeries = new Set();
     const materialKindFilters = new Set(["TreadMaterial", "BulkMaterial", "PlyMaterial"]);
     const nodeSelectionDrag = { active: false, dragging: false, plotId: "", start: null, current: null, additive: false, suppressClick: false };
-    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0 };
+    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0, materialCandidatePanelKind: "", selectedMaterialCandidateKey: "", materialCandidateDefaults: {}, plyFamilyDefaults: {}, reengineeringFamilyDefaults: {}, reengineeringFamilyKey: "", reengineeringNodeIndex: null, reengineeringPlyIndex: null, reengineeringStackKey: "" };
     const LAYER_EXPLODE_TARGET_MM = 30;
     const NODE_LAYER_SPREAD_TARGET_MM = 30;
     const NODE_REST_SPREAD_TARGET_MM = 30;
@@ -864,6 +1224,14 @@
         }
         state = incoming;
         materialRecognitionCache = null;
+        viewState.materialCandidateDefaults = {};
+        viewState.plyFamilyDefaults = {};
+        viewState.reengineeringFamilyDefaults = {};
+        viewState.selectedMaterialCandidateKey = "";
+        viewState.reengineeringFamilyKey = "";
+        viewState.reengineeringNodeIndex = null;
+        viewState.reengineeringPlyIndex = null;
+        viewState.reengineeringStackKey = "";
         viewState.currentView = normalizeViewName(state?.startView || viewState.currentView);
         render();
       });
@@ -908,6 +1276,42 @@
         });
       });
       document.addEventListener("click", event => {
+        const plyCandidateTarget = event.target.closest("[data-ply-family-candidate-key]");
+        if (plyCandidateTarget) {
+          selectPlyFamilyCandidateDefault(
+            plyCandidateTarget.dataset.plyFamilyKey || "",
+            plyCandidateTarget.dataset.plyFamilyCandidateKey || ""
+          );
+          drawReengineering();
+          return;
+        }
+        const reengineeringCell = event.target.closest("[data-reengineering-cell]");
+        if (reengineeringCell) {
+          selectReengineeringCell(Number(reengineeringCell.dataset.nodeIndex), reengineeringCell.dataset.stackKey || "", Number(reengineeringCell.dataset.plyIndex));
+          return;
+        }
+        const reengineeringJump = event.target.closest("[data-reengineering-jump]");
+        if (reengineeringJump) {
+          jumpToReengineeringFamily(reengineeringJump.dataset.plyFamilyKey || "", Number(reengineeringJump.dataset.nodeIndex), reengineeringJump.dataset.stackKey || "", Number(reengineeringJump.dataset.plyIndex));
+          return;
+        }
+        const reengineeringFamily = event.target.closest("[data-ply-family-key]");
+        if (reengineeringFamily && !event.target.closest("[data-ply-family-candidate-key]")) {
+          selectReengineeringFamily(reengineeringFamily.dataset.plyFamilyKey || "");
+          return;
+        }
+        const candidateTarget = event.target.closest("[data-material-candidate-key]");
+        if (candidateTarget) {
+          selectMaterialCandidateDefault(candidateTarget.dataset.materialCandidateKey || "");
+          drawMaterialTeardown();
+          return;
+        }
+        const matchTarget = event.target.closest("[data-material-match-kind]");
+        if (matchTarget) {
+          toggleMaterialCandidatePanel(matchTarget.dataset.materialMatchKind || "");
+          drawMaterialTeardown();
+          return;
+        }
         const kindTarget = event.target.closest("[data-material-kind-filter]");
         if (kindTarget) {
           toggleMaterialKindFilter(kindTarget.dataset.materialKindFilter || "");
@@ -918,13 +1322,20 @@
         if (!target) return;
         toggleMaterialSeries(target.dataset.materialChartKey || "", target.dataset.materialSeriesKey || "");
       });
+      document.addEventListener("contextmenu", event => {
+        const matchTarget = event.target.closest("[data-material-match-kind]");
+        if (!matchTarget) return;
+        event.preventDefault();
+        toggleMaterialCandidatePanel(matchTarget.dataset.materialMatchKind || "");
+        drawMaterialTeardown();
+      });
       const materialsWorkspace = document.getElementById("materials-workspace");
       materialsWorkspace.addEventListener("input", handleMaterialsWorkspaceInput);
       materialsWorkspace.addEventListener("change", handleMaterialsWorkspaceChange);
       materialsWorkspace.addEventListener("click", handleMaterialsWorkspaceClick);
-      ["geometry-plot", "node-explorer-plot"].forEach(plotId => {
+      ["geometry-plot", "node-explorer-plot", "reengineering-plot"].forEach(plotId => {
         document.getElementById(plotId).addEventListener("click", event => {
-          if (plotId === "node-explorer-plot") event.currentTarget.focus();
+          if (plotId === "node-explorer-plot" || plotId === "reengineering-plot") event.currentTarget.focus();
           if (nodeSelectionDrag.suppressClick) {
             nodeSelectionDrag.suppressClick = false;
             return;
@@ -935,7 +1346,7 @@
             return;
           }
           const target = event.target.closest("[data-focus-key]");
-          if (!target && plotId === "node-explorer-plot") {
+          if (!target && (plotId === "node-explorer-plot" || plotId === "reengineering-plot")) {
             const nodeIndex = nearestNodeFromEvent(event, plotId);
             if (Number.isFinite(nodeIndex)) {
               handleNodeClickSelection(nodeIndex, event);
@@ -952,6 +1363,13 @@
       nodeExplorerPlot.addEventListener("pointercancel", cancelNodeSelectionDrag);
       nodeExplorerPlot.addEventListener("pointerleave", finishNodeSelectionDrag);
       nodeExplorerPlot.addEventListener("keydown", handleNodeExplorerKeydown);
+      const reengineeringPlot = document.getElementById("reengineering-plot");
+      reengineeringPlot.addEventListener("pointerdown", beginNodeSelectionDrag);
+      reengineeringPlot.addEventListener("pointermove", updateNodeSelectionDrag);
+      reengineeringPlot.addEventListener("pointerup", finishNodeSelectionDrag);
+      reengineeringPlot.addEventListener("pointercancel", cancelNodeSelectionDrag);
+      reengineeringPlot.addEventListener("pointerleave", finishNodeSelectionDrag);
+      reengineeringPlot.addEventListener("keydown", handleNodeExplorerKeydown);
       document.querySelectorAll("[data-view]").forEach(button => {
         button.addEventListener("click", () => {
           setCurrentView(button.dataset.view || "model");
@@ -1030,14 +1448,16 @@
     function setCurrentView(viewName) {
       viewState.currentView = normalizeViewName(viewName);
       renderCurrentView();
-      if (viewState.currentView === "node-explorer") {
-        setTimeout(() => document.getElementById("node-explorer-plot")?.focus(), 0);
+      if (viewState.currentView === "node-explorer" || viewState.currentView === "reengineering") {
+        const plotId = viewState.currentView === "reengineering" ? "reengineering-plot" : "node-explorer-plot";
+        setTimeout(() => document.getElementById(plotId)?.focus(), 0);
       }
     }
 
     function normalizeViewName(viewName) {
       const value = String(viewName || "").trim().toLowerCase().replace(/[_\s]+/g, "-");
       if (["node", "nodes", "node-explorer", "nodeexplorer"].includes(value)) return "node-explorer";
+      if (["reengineering", "reverse-engineering", "reverseengineering", "reengineer"].includes(value)) return "reengineering";
       if (["material", "materials"].includes(value)) return "materials";
       return "model";
     }
@@ -1045,9 +1465,12 @@
     function renderCurrentView() {
       const isModel = viewState.currentView === "model";
       const isNodeExplorer = viewState.currentView === "node-explorer";
+      const isReengineering = viewState.currentView === "reengineering";
       const isMaterials = viewState.currentView === "materials";
+      document.querySelector("main")?.classList.toggle("reengineering-main", isReengineering);
       document.getElementById("model-view").hidden = !isModel;
       document.getElementById("node-explorer-view").hidden = !isNodeExplorer;
+      document.getElementById("reengineering-view").hidden = !isReengineering;
       document.getElementById("materials-view").hidden = !isMaterials;
       document.querySelectorAll("[data-view]").forEach(button => {
         const active = button.dataset.view === viewState.currentView;
@@ -1058,6 +1481,8 @@
         drawGeometry();
       } else if (isNodeExplorer) {
         drawNodeExplorer();
+      } else if (isReengineering) {
+        drawReengineering();
       } else {
         drawMaterialsPage();
       }
@@ -1068,6 +1493,7 @@
       const workspace = document.getElementById("materials-workspace");
       if (!workspace) return;
       if (options.preserveScroll !== false) rememberMaterialScrollPositions();
+      const focusState = captureMaterialFocusState(options);
       const library = materialLibraryData();
       if (!library.available) {
         workspace.innerHTML = `<div class="materials-empty">${escapeHtml(library.message || "Material database unavailable.")}<br>${escapeHtml(library.path || "")}</div>`;
@@ -1138,14 +1564,7 @@
         </section>`;
       drawMaterialsLibraryPlots(selected);
       restoreMaterialScrollPositions(options);
-      if (options.focusSearch) {
-        const search = document.getElementById("material-search");
-        if (search) {
-          search.focus();
-          const cursor = String(search.value || "").length;
-          search.setSelectionRange(cursor, cursor);
-        }
-      }
+      restoreMaterialFocusState(focusState);
     }
 
     function handleMaterialsWorkspaceInput(event) {
@@ -1217,6 +1636,34 @@
       }
       const maxScroll = Math.max(0, list.scrollHeight - list.clientHeight);
       list.scrollTop = clamp(Number(viewState.materialListScrollTop) || 0, 0, maxScroll);
+    }
+
+    function captureMaterialFocusState(options = {}) {
+      const active = document.activeElement;
+      if (active?.id !== "material-search" && !options.focusSearch) return null;
+      const valueLength = String(active?.value || viewState.materialSearch || "").length;
+      const start = Number(active?.selectionStart);
+      const end = Number(active?.selectionEnd);
+      return {
+        target: "material-search",
+        start: Number.isFinite(start) ? start : valueLength,
+        end: Number.isFinite(end) ? end : valueLength
+      };
+    }
+
+    function restoreMaterialFocusState(focusState) {
+      if (focusState?.target !== "material-search") return;
+      const search = document.getElementById("material-search");
+      if (!search) return;
+      const length = String(search.value || "").length;
+      const start = clamp(Number(focusState.start), 0, length);
+      const end = clamp(Number(focusState.end), 0, length);
+      search.focus({ preventScroll: true });
+      try {
+        search.setSelectionRange(start, end);
+      } catch {
+        search.setSelectionRange(length, length);
+      }
     }
 
     function materialLibraryData() {
@@ -1448,9 +1895,741 @@
       drawMaterialTeardown();
     }
 
+    function drawReengineering() {
+      const model = plyReengineeringModel();
+      ensureReengineeringSelection(model);
+      drawGeometryPlot(document.getElementById("reengineering-plot"));
+      drawReengineeringMatrix(model);
+      drawReengineeringDecision(model);
+      drawReengineeringFamilySummary(model);
+      const pageMeta = document.getElementById("reengineering-page-meta");
+      if (pageMeta) {
+        pageMeta.textContent = model.cells.length
+          ? `${model.cells.length} material cells | ${model.families.length} families`
+          : "no material cells";
+      }
+    }
+
+    function plyReengineeringModel() {
+      const data = state?.plotData || {};
+      const points = (data.geometry || []).map(point => ({ ...point, nodeIndex: Number(point.nodeIndex) }));
+      const nodes = Array.from(new Set(points.map(point => Number(point.nodeIndex)).filter(Number.isFinite))).sort((a, b) => a - b);
+      if (points.length) selectedNodeIndicesOrDefault(points);
+      const selectedNodes = new Set((viewState.selectedNodeIndices || []).map(Number).filter(Number.isFinite));
+      const params = (data.plyParams || []).filter(row => Number.isFinite(Number(row.nodeIndex)) && Number.isFinite(Number(row.plyIndex)));
+      const layers = Array.from(new Set(params.map(row => Number(row.plyIndex)).filter(Number.isFinite))).sort((a, b) => a - b);
+      const materialKinds = new Set(["TreadMaterial", "BulkMaterial", "PlyMaterial"]);
+      const materials = asArray(data.materials).filter(row => materialKinds.has(String(row.kind || "")));
+      const crossRows = asArray(data.plyCrossSection);
+      const rubberByNode = new Map(asArray(data.rubberCrossSection).map(row => {
+        const treadDepthMm = Math.max(0, Number(row.treadDepthM) * 1000 || 0);
+        const nodeThicknessMm = Math.max(treadDepthMm, Number(row.nodeThicknessM) * 1000 || 0);
+        return [Number(row.nodeIndex), { treadDepthMm, nodeThicknessMm, bulkThicknessMm: Math.max(0, nodeThicknessMm - treadDepthMm) }];
+      }).filter(([node]) => Number.isFinite(node)));
+      const recognition = materialRecognitionData();
+      const matches = recognition.available ? recognition.localMatches.filter(match => materialKinds.has(String(match.kind || ""))) : [];
+
+      const materialsByCell = new Map();
+      materials.forEach(row => {
+        const key = reengineeringCellKey(row.nodeIndex, materialStackKey(row.kind, materialGroupPlyIndex(row, row.materialIndex)));
+        if (!materialsByCell.has(key)) materialsByCell.set(key, []);
+        materialsByCell.get(key).push(row);
+      });
+      const matchesByCell = new Map();
+      matches.forEach(match => matchesByCell.set(reengineeringCellKey(match.nodeIndex, materialStackKey(match.kind, match.plyIndex)), match));
+      const crossByCell = new Map();
+      crossRows.forEach(row => {
+        const key = reengineeringCellKey(row.nodeIndex, materialStackKey("PlyMaterial", row.plyIndex));
+        if (!crossByCell.has(key)) crossByCell.set(key, row);
+      });
+
+      const familyMap = new Map();
+      const cells = [];
+      const addCell = cell => {
+        const materialRows = sortMaterialRows(cell.materialRows || []);
+        const signatureKey = materialFamilySignatureKey(cell.kind, materialRows);
+        const familyKey = signatureKey
+          ? `material-family:${cell.kind}:${signatureKey}`
+          : `material-family:missing:${cell.kind}:${cell.key}`;
+        const fullCell = { ...cell, materialRows, familyKey, signatureKey };
+        if (!familyMap.has(familyKey)) {
+          familyMap.set(familyKey, {
+            key: familyKey,
+            kind: fullCell.kind,
+            signatureKey,
+            cells: [],
+            matches: [],
+            materialRows: [],
+            nodes: [],
+            layers: [],
+            stackKeys: [],
+            stackLabels: [],
+            candidates: [],
+            best: null,
+            color: "#b99cff",
+            flags: []
+          });
+        }
+        const family = familyMap.get(familyKey);
+        family.cells.push(fullCell);
+        family.materialRows.push(...materialRows);
+        if (fullCell.match) family.matches.push(fullCell.match);
+        cells.push(fullCell);
+      };
+
+      nodes.forEach(nodeIndex => {
+        const rubber = rubberByNode.get(nodeIndex) || { treadDepthMm: NaN, bulkThicknessMm: NaN };
+        [
+          { kind: "TreadMaterial", stackKey: "tread", stackLabel: "Tread", matrixLabel: "Tread", thicknessMm: rubber.treadDepthMm },
+          { kind: "BulkMaterial", stackKey: "bulk", stackLabel: "Bulk", matrixLabel: "Bulk", thicknessMm: rubber.bulkThicknessMm }
+        ].forEach(spec => {
+          const key = reengineeringCellKey(nodeIndex, spec.stackKey);
+          const materialRows = sortMaterialRows(materialsByCell.get(key) || []);
+          const match = matchesByCell.get(key) || null;
+          if (!materialRows.length && !match) return;
+          addCell({
+            key,
+            nodeIndex,
+            kind: spec.kind,
+            stackKey: spec.stackKey,
+            stackLabel: spec.stackLabel,
+            matrixLabel: spec.matrixLabel,
+            plyIndex: NaN,
+            angleDeg: NaN,
+            thicknessMm: spec.thicknessMm,
+            innerOffsetMm: NaN,
+            outerOffsetMm: NaN,
+            materialRows,
+            match
+          });
+        });
+      });
+
+      params.slice()
+        .sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex) || Number(a.plyIndex) - Number(b.plyIndex))
+        .forEach(param => {
+          const nodeIndex = Number(param.nodeIndex);
+          const plyIndex = Number(param.plyIndex);
+          const stackKey = materialStackKey("PlyMaterial", plyIndex);
+          const key = reengineeringCellKey(nodeIndex, stackKey);
+          const materialRows = sortMaterialRows(materialsByCell.get(key) || []);
+          const match = matchesByCell.get(key) || null;
+          const cross = crossByCell.get(key) || {};
+          addCell({
+            key,
+            nodeIndex,
+            kind: "PlyMaterial",
+            stackKey,
+            stackLabel: `L${plyIndex}`,
+            matrixLabel: `L${plyIndex}`,
+            plyIndex,
+            angleDeg: Number(param.angleDeg),
+            thicknessMm: Number(param.thicknessM) * 1000,
+            innerOffsetMm: layerInnerOffsetMm(cross),
+            outerOffsetMm: layerOuterOffsetMm(cross),
+            materialRows,
+            match
+          });
+        });
+
+      const families = Array.from(familyMap.values())
+        .sort((a, b) => materialKindOrder(a.kind) - materialKindOrder(b.kind)
+          || Math.min(...a.cells.map(cell => materialStackSortValue(cell))) - Math.min(...b.cells.map(cell => materialStackSortValue(cell)))
+          || Math.min(...a.cells.map(cell => cell.nodeIndex)) - Math.min(...b.cells.map(cell => cell.nodeIndex)));
+      const stackFamilyCounts = new Map();
+      families.forEach(family => {
+        family.nodes = Array.from(new Set(family.cells.map(cell => cell.nodeIndex))).sort((a, b) => a - b);
+        family.layers = Array.from(new Set(family.cells.map(cell => cell.plyIndex))).sort((a, b) => a - b);
+        family.stackKeys = Array.from(new Set(family.cells.map(cell => cell.stackKey))).sort((a, b) => materialStackSortValue({ stackKey: a }) - materialStackSortValue({ stackKey: b }));
+        family.stackLabels = family.stackKeys.map(key => materialStackLabel(key));
+        family.stackKeys.forEach(key => stackFamilyCounts.set(key, (stackFamilyCounts.get(key) || 0) + 1));
+      });
+      families.forEach((family, index) => {
+        family.color = COLORS[index % COLORS.length];
+        family.defaultBaseKey = reengineeringFamilyDefaultBaseKey(family.key);
+        family.candidates = aggregateSelectedMaterialCandidateAlternatives(family.matches, family.defaultBaseKey);
+        family.best = family.defaultBaseKey
+          ? family.candidates.find(candidate => candidate.key === family.defaultBaseKey) || family.candidates[0] || null
+          : family.candidates[0] || null;
+        family.flags = plyFamilyFlags(family, stackFamilyCounts);
+      });
+      cells.forEach(cell => {
+        cell.family = familyMap.get(cell.familyKey) || null;
+        cell.best = cell.family?.best || cell.match?.best || null;
+      });
+
+      const presentStacks = new Set(cells.map(cell => cell.stackKey));
+      const columns = [
+        { key: "tread", kind: "TreadMaterial", label: "Tread" },
+        { key: "bulk", kind: "BulkMaterial", label: "Bulk" },
+        ...layers.map(layer => ({ key: materialStackKey("PlyMaterial", layer), kind: "PlyMaterial", label: `L${layer}`, plyIndex: layer }))
+      ].filter(column => presentStacks.has(column.key));
+
+      return { nodes, layers, columns, cells, families, selectedNodes };
+    }
+
+    function ensureReengineeringSelection(model) {
+      if (!model.cells.length) {
+        viewState.reengineeringFamilyKey = "";
+        viewState.reengineeringNodeIndex = null;
+        viewState.reengineeringPlyIndex = null;
+        viewState.reengineeringStackKey = "";
+        return;
+      }
+      const hasFamily = model.families.some(family => family.key === viewState.reengineeringFamilyKey);
+      if (!hasFamily) {
+        const activeNode = Number(viewState.selectedNodeIndex);
+        const cell = model.cells.find(item => item.nodeIndex === activeNode) || model.cells[0];
+        viewState.reengineeringFamilyKey = cell.familyKey;
+        viewState.reengineeringNodeIndex = cell.nodeIndex;
+        viewState.reengineeringPlyIndex = cell.plyIndex;
+        viewState.reengineeringStackKey = cell.stackKey;
+      }
+    }
+
+    function drawReengineeringMatrix(model) {
+      const element = document.getElementById("reengineering-matrix");
+      const meta = document.getElementById("reengineering-matrix-meta");
+      if (!element) return;
+      if (!model.cells.length) {
+        element.innerHTML = `<div class="materials-empty">No material stack data.</div>`;
+        if (meta) meta.textContent = "";
+        return;
+      }
+      const byCell = new Map(model.cells.map(cell => [reengineeringCellKey(cell.nodeIndex, cell.stackKey), cell]));
+      if (meta) meta.textContent = `${model.nodes.length} nodes x ${model.columns.length} stack items`;
+      const columns = `58px repeat(${model.columns.length}, minmax(112px, 1fr))`;
+      const html = [
+        `<div class="reengineering-matrix-grid" style="grid-template-columns:${escapeAttr(columns)}">`,
+        `<div class="reengineering-matrix-header">Node</div>`,
+        ...model.columns.map(column => `<div class="reengineering-matrix-header">${escapeHtml(column.label)}</div>`)
+      ];
+      model.nodes.forEach(node => {
+        const selected = model.selectedNodes.has(node);
+        html.push(`<div class="reengineering-node-label ${selected ? "selected" : ""}">N${escapeHtml(node)}</div>`);
+        model.columns.forEach(column => {
+          const cell = byCell.get(reengineeringCellKey(node, column.key));
+          if (!cell) {
+            html.push(`<div class="reengineering-cell empty"></div>`);
+            return;
+          }
+          const family = cell.family;
+          const best = cell.best;
+          const color = family?.color || materialKindColor(cell.kind);
+          const confidence = best ? `${Math.round(clamp(best.confidence, 0, 1) * 100)}%` : "-";
+          const eText = best ? materialMultiplierRangeText([best.modulusMultiplier], "E") : "Ex-";
+          const dText = best ? materialMultiplierRangeText([best.densityMultiplier], "rho") : "rhox-";
+          const active = viewState.reengineeringFamilyKey === cell.familyKey
+            && Number(viewState.reengineeringNodeIndex) === node
+            && viewState.reengineeringStackKey === cell.stackKey;
+          html.push(`
+            <button type="button" class="reengineering-cell ${active ? "selected" : ""}" data-reengineering-cell="1" data-node-index="${escapeAttr(node)}" data-stack-key="${escapeAttr(cell.stackKey)}" data-ply-index="${escapeAttr(cell.plyIndex)}" style="--family-color:${escapeAttr(color)}" title="${escapeAttr(reengineeringCellTitle(cell))}">
+              <span class="mat">${escapeHtml(reengineeringMaterialLabel(best || family || cell))}</span>
+              <span class="meta">${escapeHtml(reengineeringCellMeta(cell))}</span>
+              <span class="fit">${escapeHtml(confidence)} | ${escapeHtml(eText)} | ${escapeHtml(dText)}</span>
+            </button>`);
+        });
+      });
+      html.push(`</div>`);
+      element.innerHTML = html.join("");
+    }
+
+    function drawReengineeringDecision(model) {
+      const title = document.getElementById("reengineering-decision-title");
+      const meta = document.getElementById("reengineering-decision-meta");
+      const candidates = document.getElementById("reengineering-candidates");
+      const charts = {
+        young: document.getElementById("reengineering-young-chart"),
+        density: document.getElementById("reengineering-density-chart"),
+        heat: document.getElementById("reengineering-heat-chart"),
+        conductivity: document.getElementById("reengineering-conductivity-chart"),
+        dimensionless: document.getElementById("reengineering-dimensionless-chart")
+      };
+      const family = model.families.find(item => item.key === viewState.reengineeringFamilyKey) || model.families[0] || null;
+      if (!family) {
+        if (title) title.textContent = "Material decision";
+        if (meta) meta.textContent = "";
+        if (candidates) candidates.innerHTML = `<div class="materials-empty">No family selected.</div>`;
+        Object.values(charts).forEach(svg => drawMaterialEmptyChart(svg, "Material", "No family selected"));
+        return;
+      }
+
+      if (title) title.textContent = `${plyFamilyLabel(family)} decision`;
+      if (meta) meta.textContent = `${materialKindLabel(family.kind)} | ${family.stackLabels.join(", ")} | ${nodeRangeText(family.nodes)}`;
+      if (candidates) {
+        const rows = family.candidates.slice(0, 10);
+        candidates.innerHTML = rows.length ? rows.map(candidate => {
+          const active = candidate.key === family.defaultBaseKey;
+          const confidence = Math.round(clamp(candidate.confidence, 0, 1) * 100);
+          const eText = materialMultiplierRangeText(candidate.modulusMultipliers, "E");
+          const dText = materialMultiplierRangeText(candidate.densityMultipliers, "rho");
+          return `
+            <button type="button" class="reengineering-candidate-row ${active ? "selected" : ""}" data-ply-family-key="${escapeAttr(family.key)}" data-ply-family-candidate-key="${escapeAttr(candidate.key)}" style="--family-color:${escapeAttr(family.color)}" title="${escapeAttr(candidate.name)}">
+              <span class="reengineering-dot"></span>
+              <span class="name">${escapeHtml(candidate.name)}</span>
+              <span class="meta">${confidence}% ${escapeHtml(candidate.matchType)}${active ? " default" : ""} | s${escapeHtml(fmt(candidate.score))} | ${escapeHtml(eText)} | ${escapeHtml(dText)}</span>
+            </button>`;
+        }).join("") : `<div class="materials-empty">No database candidates.</div>`;
+      }
+
+      const candidate = reengineeringFamilyCandidateWithMaterial(family.best, family.kind);
+      const candidateE = materialCandidateMultiplier(candidate, "modulusMultipliers");
+      const candidateDensity = materialCandidateMultiplier(candidate, "densityMultipliers");
+      drawMaterialTrendChart(charts.young, "Young's modulus",
+        plyFamilyObservedPropertySeries(family, "youngsModulusPa", value => value / 1e6, "MPa", "observed E")
+          .concat(materialCandidatePropertySeries(candidate, "youngsModulusPa", value => value * candidateE / 1e6, "MPa", "db E")),
+        "MPa", "reengineering-young");
+      drawMaterialTrendChart(charts.density, "Density",
+        plyFamilyObservedPropertySeries(family, "densityKgM3", value => value, "kg/m3", "observed rho")
+          .concat(materialCandidatePropertySeries(candidate, "densityKgM3", value => value * candidateDensity, "kg/m3", "db rho")),
+        "kg/m3", "reengineering-density");
+      drawMaterialTrendChart(charts.heat, "Specific heat",
+        plyFamilyObservedPropertySeries(family, "specificHeatJKgK", value => value, "J/kgK", "observed cp")
+          .concat(materialCandidatePropertySeries(candidate, "specificHeat", value => value, "J/kgK", "db cp")),
+        "J/kgK", "reengineering-heat");
+      drawMaterialTrendChart(charts.conductivity, "Conductivity",
+        plyFamilyObservedPropertySeries(family, "conductivityWMK", value => value, "W/mK", "observed k")
+          .concat(materialCandidatePropertySeries(candidate, "thermalConductivity", value => value, "W/mK", "db k")),
+        "W/mK", "reengineering-conductivity");
+      drawMaterialTrendChart(charts.dimensionless, "Poisson / Compression",
+        plyFamilyObservedDimensionlessSeries(family).concat(materialCandidateDimensionlessSeries(candidate)),
+        "-", "reengineering-dimensionless");
+    }
+
+    function drawReengineeringFamilySummary(model) {
+      const element = document.getElementById("reengineering-family-summary");
+      const meta = document.getElementById("reengineering-family-meta");
+      if (!element) return;
+      if (meta) meta.textContent = `${model.families.length} families`;
+      if (!model.families.length) {
+        element.innerHTML = `<div class="materials-empty">No material families.</div>`;
+        return;
+      }
+      element.innerHTML = model.families.map(family => {
+        const selected = family.key === viewState.reengineeringFamilyKey;
+        const flags = family.flags.length ? ` | ${family.flags.join(", ")}` : "";
+        const best = family.best;
+        const confidence = best ? `${Math.round(clamp(best.confidence, 0, 1) * 100)}%` : "-";
+        return `
+          <button type="button" class="reengineering-family-row ${selected ? "selected" : ""}" data-ply-family-key="${escapeAttr(family.key)}" style="--family-color:${escapeAttr(family.color)}" title="${escapeAttr(plyFamilyLabel(family))}">
+            <span class="reengineering-dot"></span>
+            <span class="name">${escapeHtml(plyFamilyLabel(family))}<span class="meta"> | ${escapeHtml(family.stackLabels.join(", "))} | ${escapeHtml(nodeRangeText(family.nodes))}${escapeHtml(flags)}</span></span>
+            <span class="coverage" title="${escapeAttr(nodeRangeText(family.nodes))}">${familyCoverageBars(family.nodes, model.nodes)}</span>
+            <span class="range">${escapeHtml(confidence)} | ${escapeHtml(rangeText(family.cells.map(cell => cell.thicknessMm), "mm"))} | ${escapeHtml(rangeText(family.cells.map(cell => cell.angleDeg), "deg"))}</span>
+          </button>`;
+      }).join("");
+    }
+
+    function plyCellKey(nodeIndex, plyIndex) {
+      return `${Number(nodeIndex)}:${Number(plyIndex)}`;
+    }
+
+    function reengineeringCellKey(nodeIndex, stackKey) {
+      return `${Number(nodeIndex)}:${String(stackKey || "")}`;
+    }
+
+    function materialStackKey(kind, plyIndex = NaN) {
+      const key = String(kind || "");
+      if (key === "TreadMaterial") return "tread";
+      if (key === "BulkMaterial") return "bulk";
+      if (key === "PlyMaterial") return `ply:${Number(plyIndex)}`;
+      return key;
+    }
+
+    function materialStackLabel(stackKey) {
+      const key = String(stackKey || "");
+      if (key === "tread") return "Tread";
+      if (key === "bulk") return "Bulk";
+      if (key.startsWith("ply:")) return `L${Number(key.slice(4))}`;
+      return key || "Material";
+    }
+
+    function materialStackSortValue(cell) {
+      const key = String(cell?.stackKey || "");
+      if (key === "tread") return 0;
+      if (key === "bulk") return 1;
+      if (key.startsWith("ply:")) return 10 + Number(key.slice(4));
+      return 999;
+    }
+
+    function plyMaterialSignatureKey(rows) {
+      const values = sortMaterialRows(rows || []).map(row => [
+        numberKey(row.temperatureK),
+        numberKey(row.densityKgM3),
+        numberKey(row.youngsModulusPa),
+        numberKey(row.poissonRatio),
+        numberKey(row.compressionMultiplier),
+        numberKey(row.specificHeatJKgK),
+        numberKey(row.conductivityWMK)
+      ].join(":"));
+      return values.join("|");
+    }
+
+    function materialFamilySignatureKey(kind, rows) {
+      const signature = plyMaterialSignatureKey(rows);
+      return signature ? `${String(kind || "Material")}:${signature}` : "";
+    }
+
+    function plyFamilyDefaultBaseKey(familyKey) {
+      return reengineeringFamilyDefaultBaseKey(familyKey);
+    }
+
+    function reengineeringFamilyDefaultBaseKey(familyKey) {
+      const key = String(familyKey || "");
+      return String(viewState.reengineeringFamilyDefaults?.[key] || viewState.plyFamilyDefaults?.[key] || "");
+    }
+
+    function selectPlyFamilyCandidateDefault(familyKey, baseKey) {
+      const family = String(familyKey || "");
+      const candidate = String(baseKey || "");
+      if (!family || !candidate) return;
+      if (!viewState.reengineeringFamilyDefaults || typeof viewState.reengineeringFamilyDefaults !== "object") {
+        viewState.reengineeringFamilyDefaults = {};
+      }
+      if (!viewState.plyFamilyDefaults || typeof viewState.plyFamilyDefaults !== "object") viewState.plyFamilyDefaults = {};
+      viewState.reengineeringFamilyDefaults[family] = candidate;
+      viewState.plyFamilyDefaults[family] = candidate;
+      viewState.reengineeringFamilyKey = family;
+      const model = plyReengineeringModel();
+      const item = model.families.find(candidateFamily => candidateFamily.key === family);
+      viewState.selectedMaterialCandidateKey = materialCandidateKey(item?.kind || "PlyMaterial", candidate);
+    }
+
+    function selectReengineeringCell(nodeIndex, stackKey = "", plyIndex = NaN) {
+      const node = Number(nodeIndex);
+      const stack = stackKey || materialStackKey("PlyMaterial", plyIndex);
+      const model = plyReengineeringModel();
+      const cell = model.cells.find(item => item.nodeIndex === node && item.stackKey === stack);
+      if (!cell) return;
+      viewState.reengineeringFamilyKey = cell.familyKey;
+      viewState.reengineeringNodeIndex = node;
+      viewState.reengineeringPlyIndex = cell.plyIndex;
+      viewState.reengineeringStackKey = cell.stackKey;
+      viewState.selectedNodeIndices = [node];
+      viewState.selectedNodeIndex = node;
+      renderCurrentView();
+    }
+
+    function selectReengineeringFamily(familyKey) {
+      const key = String(familyKey || "");
+      const model = plyReengineeringModel();
+      const family = model.families.find(item => item.key === key);
+      if (!family) return;
+      const firstCell = family.cells[0];
+      viewState.reengineeringFamilyKey = family.key;
+      viewState.reengineeringNodeIndex = firstCell?.nodeIndex ?? null;
+      viewState.reengineeringPlyIndex = firstCell?.plyIndex ?? null;
+      viewState.reengineeringStackKey = firstCell?.stackKey ?? "";
+      viewState.selectedNodeIndices = family.nodes.slice();
+      viewState.selectedNodeIndex = family.nodes[0] ?? null;
+      renderCurrentView();
+    }
+
+    function jumpToReengineeringFamily(familyKey, nodeIndex = NaN, stackKey = "", plyIndex = NaN) {
+      const key = String(familyKey || "");
+      if (key) viewState.reengineeringFamilyKey = key;
+      if (Number.isFinite(Number(nodeIndex))) {
+        viewState.reengineeringNodeIndex = Number(nodeIndex);
+        viewState.selectedNodeIndices = [Number(nodeIndex)];
+        viewState.selectedNodeIndex = Number(nodeIndex);
+      }
+      if (stackKey) viewState.reengineeringStackKey = String(stackKey);
+      if (Number.isFinite(Number(plyIndex))) viewState.reengineeringPlyIndex = Number(plyIndex);
+      viewState.currentView = "reengineering";
+      renderCurrentView();
+    }
+
+    function plyFamilyFlags(family, stackFamilyCounts) {
+      const flags = [];
+      if (family.stackKeys.some(key => (stackFamilyCounts.get(key) || 0) > 1)) flags.push(family.kind === "PlyMaterial" ? "layer split" : "stack split");
+      if (family.best && Number(family.best.confidence) < 0.46) flags.push("ambiguous");
+      const eValues = (family.best?.modulusMultipliers || []).map(Number).filter(Number.isFinite);
+      const dValues = (family.best?.densityMultipliers || []).map(Number).filter(Number.isFinite);
+      if (multiplierRangeRatio(eValues) > 1.35) flags.push("E spread");
+      if (multiplierRangeRatio(dValues) > 1.08) flags.push("rho spread");
+      return flags;
+    }
+
+    function multiplierRangeRatio(values) {
+      const finite = (values || []).map(Number).filter(value => Number.isFinite(value) && value > 0);
+      if (finite.length < 2) return 1;
+      return Math.max(...finite) / Math.max(Math.min(...finite), 1e-12);
+    }
+
+    function plyFamilyCandidateWithMaterial(candidate) {
+      return reengineeringFamilyCandidateWithMaterial(candidate, "PlyMaterial");
+    }
+
+    function reengineeringFamilyCandidateWithMaterial(candidate, kind) {
+      if (!candidate) return null;
+      const material = materialLibraryMaterialForCandidate(candidate);
+      return material ? { ...candidate, kind, material } : null;
+    }
+
+    function plyCandidateShortLabel(candidate) {
+      if (!candidate) return "-";
+      const name = String(candidate.name || candidate.materialName || "Ply");
+      const cleaned = name.replace(/^Ply\s*[-–]\s*/i, "").replace(/^Race\s*[-–]\s*/i, "");
+      return cleaned.length > 18 ? cleaned.slice(0, 17) + "." : cleaned;
+    }
+
+    function reengineeringMaterialLabel(item) {
+      if (!item) return "-";
+      if (item.name || item.materialName) return plyCandidateShortLabel(item);
+      if (item.best) return plyCandidateShortLabel(item.best);
+      if (item.kind) return materialKindLabel(item.kind);
+      return "Material";
+    }
+
+    function plyFamilyLabel(family) {
+      const best = family?.best;
+      return best ? `${materialKindShort(family?.kind)} ${plyCandidateShortLabel(best)}` : `${materialKindLabel(family?.kind)} ${family?.stackLabels?.join("/") || ""}`;
+    }
+
+    function reengineeringCellTitle(cell) {
+      const family = cell.family;
+      const best = cell.best;
+      const nodeText = `Node ${cell.nodeIndex} ${cell.stackLabel}`;
+      const materialText = best ? plyCandidateShortLabel(best) : materialKindLabel(cell.kind);
+      const fitText = best
+        ? `${Math.round(clamp(best.confidence, 0, 1) * 100)}% | ${materialMultiplierRangeText([best.modulusMultiplier], "E")} | ${materialMultiplierRangeText([best.densityMultiplier], "rho")}`
+        : "";
+      const angleText = Number.isFinite(Number(cell.angleDeg)) ? ` | ${fmt(cell.angleDeg)} deg` : "";
+      return `${nodeText} | ${materialText} | ${fmt(cell.thicknessMm)} mm${angleText} | ${fitText} | ${family?.stackLabels?.join(", ") || ""}`;
+    }
+
+    function reengineeringCellMeta(cell) {
+      const parts = [cell.stackLabel, `${fmt(cell.thicknessMm)} mm`];
+      if (Number.isFinite(Number(cell.angleDeg))) parts.push(`${fmt(cell.angleDeg)} deg`);
+      return parts.join(" | ");
+    }
+
+    function plyFamilyObservedPropertySeries(family, field, convert, unit, label) {
+      const points = mergeMaterialSeriesPoints((family?.materialRows || []).map(row => {
+        const raw = Number(row[field]);
+        const value = Number.isFinite(raw) ? convert(raw) : NaN;
+        const tempC = temperatureC(row);
+        return {
+          x: tempC,
+          y: value,
+          title: `${label} ${fmt(tempC)} C: ${fmt(value)} ${unit}`
+        };
+      }).filter(point => Number.isFinite(point.x) && Number.isFinite(point.y)));
+      return points.length ? [{
+        key: `observed-${field}`,
+        label: "observed",
+        color: "#dce6ef",
+        dash: "",
+        pinned: true,
+        points
+      }] : [];
+    }
+
+    function plyFamilyObservedDimensionlessSeries(family) {
+      return [
+        { field: "poissonRatio", label: "obs v", color: "#dce6ef", dash: "", title: "Poisson" },
+        { field: "compressionMultiplier", label: "obs c", color: "#dce6ef", dash: "3 2", title: "Compression" }
+      ].map(spec => {
+        const points = mergeMaterialSeriesPoints((family?.materialRows || []).map(row => {
+          const value = Number(row[spec.field]);
+          const tempC = temperatureC(row);
+          return {
+            x: tempC,
+            y: value,
+            title: `${spec.title} ${fmt(tempC)} C: ${fmt(value)}`
+          };
+        }).filter(point => Number.isFinite(point.x) && Number.isFinite(point.y)));
+        return { key: `observed-${spec.field}`, label: spec.label, color: spec.color, dash: spec.dash, pinned: true, points };
+      }).filter(series => series.points.length);
+    }
+
+    function nodeRangeText(nodes) {
+      const values = Array.from(new Set(Array.from(nodes || []).map(Number).filter(Number.isFinite))).sort((a, b) => a - b);
+      if (!values.length) return "Nodes -";
+      const ranges = [];
+      let start = values[0];
+      let previous = values[0];
+      for (let index = 1; index <= values.length; index += 1) {
+        const value = values[index];
+        if (value === previous + 1) {
+          previous = value;
+          continue;
+        }
+        ranges.push(start === previous ? `${start}` : `${start}..${previous}`);
+        start = value;
+        previous = value;
+      }
+      return `Nodes ${ranges.slice(0, 3).join(", ")}${ranges.length > 3 ? " +" + (ranges.length - 3) : ""}`;
+    }
+
+    function rangeText(values, suffix = "") {
+      const finite = (values || []).map(Number).filter(Number.isFinite);
+      if (!finite.length) return "-";
+      const min = Math.min(...finite);
+      const max = Math.max(...finite);
+      const text = Math.abs(max - min) < 1e-9 ? fmt(min) : `${fmt(min)}..${fmt(max)}`;
+      return suffix ? `${text} ${suffix}` : text;
+    }
+
+    function familyCoverageBars(nodes, allNodes) {
+      const universe = Array.from(new Set((allNodes || []).map(Number).filter(Number.isFinite))).sort((a, b) => a - b);
+      const values = Array.from(new Set((nodes || []).map(Number).filter(Number.isFinite))).sort((a, b) => a - b);
+      if (!universe.length || !values.length) return "";
+      const indexByNode = new Map(universe.map((node, index) => [node, index]));
+      const ranges = consecutiveRanges(values);
+      const denom = Math.max(1, universe.length - 1);
+      return ranges.map(([start, end]) => {
+        const startIndex = indexByNode.get(start) ?? 0;
+        const endIndex = indexByNode.get(end) ?? startIndex;
+        const left = universe.length === 1 ? 0 : startIndex / denom * 100;
+        const right = universe.length === 1 ? 100 : endIndex / denom * 100;
+        const width = universe.length === 1 ? 100 : Math.max(1.4, right - left + 100 / denom);
+        return `<span style="left:${left.toFixed(2)}%;width:${Math.min(100 - left, width).toFixed(2)}%"></span>`;
+      }).join("");
+    }
+
+    function consecutiveRanges(values) {
+      const sorted = Array.from(new Set((values || []).map(Number).filter(Number.isFinite))).sort((a, b) => a - b);
+      if (!sorted.length) return [];
+      const ranges = [];
+      let start = sorted[0];
+      let previous = sorted[0];
+      for (let index = 1; index <= sorted.length; index += 1) {
+        const value = sorted[index];
+        if (value === previous + 1) {
+          previous = value;
+          continue;
+        }
+        ranges.push([start, previous]);
+        start = value;
+        previous = value;
+      }
+      return ranges;
+    }
+
+    function nodeMaterialPreviewInfo(model, nodes, kind, stackKey, fallbackLabel) {
+      const fallback = {
+        label: fallbackLabel,
+        color: materialKindColor(kind),
+        attrs: "",
+        title: materialKindLabel(kind)
+      };
+      const nodeSet = new Set((nodes || []).map(Number).filter(Number.isFinite));
+      const cells = (model?.cells || []).filter(cell => cell.kind === kind && cell.stackKey === stackKey && nodeSet.has(Number(cell.nodeIndex)));
+      if (!cells.length) return fallback;
+      const families = Array.from(new Map(cells.map(cell => [cell.familyKey, cell.family])).values()).filter(Boolean);
+      const labels = Array.from(new Set(cells
+        .map(cell => reengineeringMaterialLabel(cell.best || cell.family || cell))
+        .filter(label => label && label !== "-")));
+      const materialLabel = labels.length === 1
+        ? nodeLayerMaterialToken(labels[0])
+        : labels.length > 1 ? `${labels.length} mats` : "";
+      const targetCell = cells[0];
+      const targetFamily = targetCell.family || families[0] || null;
+      const attrs = targetFamily ? [
+        `data-reengineering-jump="1"`,
+        `data-ply-family-key="${escapeAttr(targetFamily.key)}"`,
+        `data-node-index="${escapeAttr(targetCell.nodeIndex)}"`,
+        `data-stack-key="${escapeAttr(targetCell.stackKey)}"`,
+        `data-ply-index="${escapeAttr(targetCell.plyIndex)}"`
+      ].join(" ") : "";
+      return {
+        label: materialLabel ? `${fallbackLabel} ${materialLabel}` : fallbackLabel,
+        color: families.length === 1 ? targetFamily?.color || fallback.color : fallback.color,
+        attrs,
+        title: `${fallbackLabel} | ${labels.length ? labels.join(", ") : "unmatched"} | ${nodeRangeText(cells.map(cell => cell.nodeIndex))}`
+      };
+    }
+
+    function nodeLayerPreviewInfo(plyModel, nodes, plyIndex) {
+      const layer = Number(plyIndex);
+      const fallback = {
+        label: `L${layer}`,
+        color: COLORS[(layer - 1) % COLORS.length],
+        attrs: "",
+        title: `Layer ${layer}`
+      };
+      const nodeSet = new Set((nodes || []).map(Number).filter(Number.isFinite));
+      const cells = (plyModel?.cells || []).filter(cell => Number(cell.plyIndex) === layer && nodeSet.has(Number(cell.nodeIndex)));
+      if (!cells.length) return fallback;
+
+      const families = Array.from(new Map(cells.map(cell => [cell.familyKey, cell.family])).values()).filter(Boolean);
+      const labels = Array.from(new Set(cells
+        .map(cell => reengineeringMaterialLabel(cell.best || cell.family || cell))
+        .filter(label => label && label !== "-")));
+      const materialLabel = labels.length === 1
+        ? nodeLayerMaterialToken(labels[0])
+        : labels.length > 1 ? `${labels.length} mats` : "";
+      const targetCell = cells[0];
+      const targetFamily = targetCell.family || families[0] || null;
+      const attrs = targetFamily ? [
+        `data-reengineering-jump="1"`,
+        `data-ply-family-key="${escapeAttr(targetFamily.key)}"`,
+        `data-node-index="${escapeAttr(targetCell.nodeIndex)}"`,
+        `data-stack-key="${escapeAttr(targetCell.stackKey)}"`,
+        `data-ply-index="${escapeAttr(targetCell.plyIndex)}"`
+      ].join(" ") : "";
+      return {
+        label: materialLabel ? `L${layer} ${materialLabel}` : `L${layer}`,
+        color: families.length === 1 ? targetFamily?.color || fallback.color : fallback.color,
+        attrs,
+        title: `L${layer} | ${labels.length ? labels.join(", ") : "unmatched"} | ${nodeRangeText(cells.map(cell => cell.nodeIndex))}`
+      };
+    }
+
+    function nodeLayerMaterialToken(label) {
+      const text = String(label || "")
+        .replace(/^Ply\s*[-\u2013]\s*/i, "")
+        .replace(/^Race\s*[-\u2013]\s*/i, "")
+        .trim();
+      if (text.length <= 12) return text;
+      const parts = text.split(/\s+/).filter(Boolean);
+      const compact = parts.length > 1 ? `${parts[0]} ${parts[1]}` : text;
+      return compact.length <= 12 ? compact : compact.slice(0, 11) + ".";
+    }
+
+    function drawReengineeringLayerHighlights(svg, frame, rubber, layers) {
+      const model = plyReengineeringModel();
+      const family = model.families.find(item => item.key === viewState.reengineeringFamilyKey);
+      if (!family) return;
+      const selectedCells = new Set(family.cells.map(cell => reengineeringCellKey(cell.nodeIndex, cell.stackKey)));
+      if (family.kind === "TreadMaterial" || family.kind === "BulkMaterial") {
+        const fieldX = family.kind === "TreadMaterial" ? "treadXMm" : "innerXMm";
+        const fieldY = family.kind === "TreadMaterial" ? "treadYMm" : "innerYMm";
+        const rows = (rubber || []).filter(row => selectedCells.has(reengineeringCellKey(row.nodeIndex, materialStackKey(family.kind))));
+        splitSegments(rows.slice().sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex))).forEach(segment => {
+          if (segment.length < 2) return;
+          const path = pointPath(segment, frame, fieldX, fieldY);
+          if (!path) return;
+          svg.insertAdjacentHTML("beforeend",
+            `<path d="${path}" fill="none" stroke="${escapeAttr(family.color)}" stroke-width="2.8" stroke-opacity="0.95" pointer-events="none"><title>${escapeHtml(plyFamilyLabel(family))}</title></path>`);
+        });
+        return;
+      }
+
+      const rows = (layers || []).filter(row => selectedCells.has(reengineeringCellKey(row.nodeIndex, materialStackKey("PlyMaterial", row.plyIndex))));
+      const byLayer = new Map();
+      rows.forEach(row => {
+        const layer = Number(row.plyIndex);
+        if (!byLayer.has(layer)) byLayer.set(layer, []);
+        byLayer.get(layer).push(row);
+      });
+      byLayer.forEach(layerRows => {
+        const ordered = layerRows.slice().sort((a, b) => Number(a.nodeIndex) - Number(b.nodeIndex));
+        splitSegments(ordered).forEach(segment => {
+          if (segment.length < 2) return;
+          const path = pointPath(segment, frame, "xMm", "yMm");
+          if (!path) return;
+          svg.insertAdjacentHTML("beforeend",
+            `<path d="${path}" fill="none" stroke="${escapeAttr(family.color)}" stroke-width="2.6" stroke-opacity="0.95" pointer-events="none"><title>${escapeHtml(plyFamilyLabel(family))}</title></path>`);
+        });
+      });
+    }
+
     function drawGeometryPlot(svg) {
       if (!svg) return;
-      syncSvgViewBox(svg, 1100, 520);
+      const compact = svg.id === "reengineering-plot";
+      syncSvgViewBox(svg, 1100, compact ? 240 : 520);
       svg.innerHTML = "";
       const data = state?.plotData || {};
       const geometry = data.geometry || [];
@@ -1488,16 +2667,17 @@
         .concat(rubber.map(p => p.treadYMm))
         .concat(rubber.map(p => p.innerYMm))
         .concat(layers.map(p => p.outerYMm));
-      const frame = makeFrame(svg, xs, ys, true);
+      const frame = makeFrame(svg, xs, ys, true, compact ? { left: 18, right: 18, top: 10, bottom: 12 } : null);
       const displayLayers = applyLayerExplosion(rubber, layers, layerExplodeStrength(), LAYER_EXPLODE_TARGET_MM);
       storeNodeHitMap(svg, frame, points);
-      const cloneGroups = svg.id === "node-explorer-plot"
+      const cloneGroups = (svg.id === "node-explorer-plot" || svg.id === "reengineering-plot")
         ? nodeCloneGroups(points, rubber, layers, materials)
         : null;
 
-      drawAxes(svg, frame, "Radial coordinate X [mm]", "Lateral coordinate Y [mm]");
+      if (!compact) drawAxes(svg, frame, "Radial coordinate X [mm]", "Lateral coordinate Y [mm]");
       drawRubber(svg, frame, rubber);
       drawLayers(svg, frame, displayLayers);
+      if (svg.id === "reengineering-plot") drawReengineeringLayerHighlights(svg, frame, rubber, displayLayers);
       drawNodeLayerGuides(svg, frame, points, displayLayers);
       const shellPath = pointPath(points, frame, "xMm", "yMm");
       svg.insertAdjacentHTML("beforeend", `<path d="${shellPath}" fill="none" stroke="#dce6ef" stroke-width="1.2" opacity="${focusOpacity(geometryFocusKey("surface")).toFixed(2)}"/>`);
@@ -1506,14 +2686,16 @@
         svg.insertAdjacentHTML("beforeend",
           `<circle class="node-marker" data-node-index="${escapeAttr(p.nodeIndex)}" cx="${frame.sx(p.xMm).toFixed(1)}" cy="${frame.sy(p.yMm).toFixed(1)}" r="${marker.radius}" fill="${marker.fill}" stroke="${marker.stroke}" stroke-width="${marker.strokeWidth}" stroke-opacity="${marker.strokeOpacity}"><title>${escapeHtml(marker.title)}</title></circle>`);
       });
-      drawNodeNumbers(svg, frame, points, displayLayers);
-      drawLineCallouts(svg, frame, rubber, displayLayers);
-      if (cloneGroups) drawCloneLegend(svg, cloneGroups);
-      drawLegend(svg, [
-        { label: "Surface", color: "#dce6ef" },
-        { label: "Tread depth", color: "#f0b85a" },
-        { label: "Node thickness", color: "#78d3ff" }
-      ]);
+      if (!compact) {
+        drawNodeNumbers(svg, frame, points, displayLayers);
+        drawLineCallouts(svg, frame, rubber, displayLayers);
+        if (cloneGroups) drawCloneLegend(svg, cloneGroups);
+        drawLegend(svg, [
+          { label: "Surface", color: "#dce6ef" },
+          { label: "Tread depth", color: "#f0b85a" },
+          { label: "Node thickness", color: "#78d3ff" }
+        ]);
+      }
     }
 
     function drawNodeDetail() {
@@ -1552,6 +2734,7 @@
         outerYMm: Number(p.outerY) * 1000
       }));
       const groups = buildNodeSectionGroups(selectedNodes, rubber, layers);
+      const plyModel = plyReengineeringModel();
       if (title) title.textContent = selectedNodeLabel(selectedNodes);
       if (!groups.length) {
         svg.insertAdjacentHTML("beforeend", `<text x="50%" y="50%" fill="#9aa7b3" text-anchor="middle">No node data</text>`);
@@ -1574,7 +2757,7 @@
 
       svg.insertAdjacentHTML("beforeend", `<text x="${margin.left}" y="24" fill="#b9d8f2" font-size="12" font-weight="700">${escapeHtml(selectedNodeLabel(selectedNodes))} section</text>`);
       if (groups.length > 1) {
-        drawNodeSectionHeaderLabels(svg, xAt, groups, margin.top + 17, sectionX);
+        drawNodeSectionHeaderLabels(svg, xAt, groups, margin.top + 17, sectionX, plyModel);
       }
 
       groups.forEach((group, index) => {
@@ -1591,14 +2774,29 @@
 
         const sliceLabels = [];
         if (visibility.rest) {
-          sliceLabels.push(drawNodeSliceBand(svg, xAt, yTop, yBottom, 0, group.displayTreadDepthMm, "#f0b85a", 0.2, "TD", group));
-          sliceLabels.push(drawNodeSliceBand(svg, xAt, yTop, yBottom, group.displayTreadDepthMm, group.displayNodeThicknessMm, "#78d3ff", 0.13, "NT", group));
+          const treadPreview = nodeMaterialPreviewInfo(plyModel, group.nodes, "TreadMaterial", "tread", "TD");
+          const bulkPreview = nodeMaterialPreviewInfo(plyModel, group.nodes, "BulkMaterial", "bulk", "NT");
+          sliceLabels.push(drawNodeSliceBand(svg, xAt, yTop, yBottom, 0, group.displayTreadDepthMm, treadPreview.color, 0.2, treadPreview.label, group, {
+            title: treadPreview.title,
+            attrs: treadPreview.attrs,
+            className: "node-layer-link"
+          }));
+          sliceLabels.push(drawNodeSliceBand(svg, xAt, yTop, yBottom, group.displayTreadDepthMm, group.displayNodeThicknessMm, bulkPreview.color, 0.13, bulkPreview.label, group, {
+            title: bulkPreview.title,
+            attrs: bulkPreview.attrs,
+            className: "node-layer-link"
+          }));
         }
         if (visibility.layers) {
           group.layerPlan.forEach(item => {
             const layer = Number(item.row.plyIndex || 1);
-            const color = COLORS[(layer - 1) % COLORS.length];
-            sliceLabels.push(drawNodeSliceBand(svg, xAt, yTop, yBottom, item.displayInner, item.displayOuter, color, 0.22, `L${layer}`, group));
+            const preview = nodeLayerPreviewInfo(plyModel, group.nodes, layer);
+            const color = preview.color || COLORS[(layer - 1) % COLORS.length];
+            sliceLabels.push(drawNodeSliceBand(svg, xAt, yTop, yBottom, item.displayInner, item.displayOuter, color, 0.22, preview.label, group, {
+              title: preview.title,
+              attrs: preview.attrs,
+              className: "node-layer-link"
+            }));
           });
         }
         if (groups.length === 1 && groupHeight >= 34) drawNodeSliceLabels(svg, sliceLabels, yTop - 4);
@@ -1617,7 +2815,7 @@
           treadDepthMm: groups[0].treadDepthMm,
           nodeThicknessMm: groups[0].nodeThicknessMm,
           trueMaxDepthMm: trueMaxDepth
-        }, nodeSectionVisibility());
+        }, nodeSectionVisibility(), groups[0], plyModel);
       } else {
         drawNodeSectionGroupLegend(svg, groups, w - margin.right + 16, margin.top + 10, h - margin.bottom);
       }
@@ -1790,46 +2988,58 @@
       });
     }
 
-    function drawNodeSectionHeaderLabels(svg, xAt, groups, y, scale = null) {
+    function drawNodeSectionHeaderLabels(svg, xAt, groups, y, scale = null, plyModel = null) {
       const reference = scale?.referenceGroup || groups[0];
       if (!reference) return;
       const visibility = nodeSectionVisibility();
       const labels = [];
       if (visibility.rest) {
-        labels.push({ x: (xAt(0, reference) + xAt(reference.displayTreadDepthMm, reference)) / 2, width: estimateNodeSliceLabelWidth("TD"), label: "TD", color: "#f0b85a" });
-        labels.push({ x: (xAt(reference.displayTreadDepthMm, reference) + xAt(reference.displayNodeThicknessMm, reference)) / 2, width: estimateNodeSliceLabelWidth("NT"), label: "NT", color: "#78d3ff" });
+        const treadPreview = nodeMaterialPreviewInfo(plyModel, reference.nodes, "TreadMaterial", "tread", "TD");
+        const bulkPreview = nodeMaterialPreviewInfo(plyModel, reference.nodes, "BulkMaterial", "bulk", "NT");
+        labels.push({ x: (xAt(0, reference) + xAt(reference.displayTreadDepthMm, reference)) / 2, width: estimateNodeSliceLabelWidth(treadPreview.label), label: treadPreview.label, color: treadPreview.color, attrs: treadPreview.attrs, className: "node-layer-link" });
+        labels.push({ x: (xAt(reference.displayTreadDepthMm, reference) + xAt(reference.displayNodeThicknessMm, reference)) / 2, width: estimateNodeSliceLabelWidth(bulkPreview.label), label: bulkPreview.label, color: bulkPreview.color, attrs: bulkPreview.attrs, className: "node-layer-link" });
       }
       if (visibility.layers) {
         reference.layerPlan.forEach(item => {
           const layer = Number(item.row.plyIndex || 1);
+          const preview = nodeLayerPreviewInfo(plyModel, reference.nodes, layer);
           labels.push({
             x: (xAt(item.displayInner, reference) + xAt(item.displayOuter, reference)) / 2,
-            width: estimateNodeSliceLabelWidth(`L${layer}`),
-            label: `L${layer}`,
-            color: COLORS[(layer - 1) % COLORS.length]
+            width: estimateNodeSliceLabelWidth(preview.label),
+            label: preview.label,
+            color: preview.color || COLORS[(layer - 1) % COLORS.length],
+            attrs: preview.attrs,
+            className: "node-layer-link"
           });
         });
       }
       drawNodeSliceLabels(svg, labels, y);
     }
 
-    function drawNodeSliceBand(svg, xAt, yTop, yBottom, startMm, endMm, color, opacity, label, group = null) {
+    function drawNodeSliceBand(svg, xAt, yTop, yBottom, startMm, endMm, color, opacity, label, group = null, options = {}) {
       const x1 = xAt(startMm, group);
       const x2 = xAt(endMm, group);
       const width = Math.max(1, x2 - x1);
+      const attrs = options.attrs ? ` ${options.attrs}` : "";
+      const className = options.className ? ` class="${escapeAttr(options.className)}"` : "";
+      const title = options.title || label;
       svg.insertAdjacentHTML("beforeend",
-        `<rect x="${x1.toFixed(1)}" y="${yTop.toFixed(1)}" width="${width.toFixed(1)}" height="${(yBottom - yTop).toFixed(1)}" fill="${color}" fill-opacity="${opacity}" stroke="${color}" stroke-opacity="0.75" stroke-width="0.9"><title>${escapeHtml(label)}</title></rect>`);
+        `<rect${className}${attrs} x="${x1.toFixed(1)}" y="${yTop.toFixed(1)}" width="${width.toFixed(1)}" height="${(yBottom - yTop).toFixed(1)}" fill="${color}" fill-opacity="${opacity}" stroke="${color}" stroke-opacity="0.75" stroke-width="0.9"><title>${escapeHtml(title)}</title></rect>`);
       return {
         x: x1 + width / 2,
         width: estimateNodeSliceLabelWidth(label),
         label,
-        color
+        color,
+        attrs: options.attrs || "",
+        className: options.className || ""
       };
     }
 
     function drawNodeSliceLabels(svg, candidates, y) {
       chooseNodeSliceLabels(candidates).forEach(item => {
-        svg.insertAdjacentHTML("beforeend", `<text x="${item.x.toFixed(1)}" y="${y.toFixed(1)}" fill="${item.color}" font-size="9" text-anchor="middle">${escapeHtml(item.label)}</text>`);
+        const attrs = item.attrs ? ` ${item.attrs}` : "";
+        const className = item.className ? ` class="${escapeAttr(item.className)}"` : "";
+        svg.insertAdjacentHTML("beforeend", `<text${className}${attrs} x="${item.x.toFixed(1)}" y="${y.toFixed(1)}" fill="${item.color}" font-size="9" text-anchor="middle">${escapeHtml(item.label)}</text>`);
       });
     }
 
@@ -1882,11 +3092,13 @@
       return String(label ?? "").length * 5.4 + 1;
     }
 
-    function drawNodeSliceLegend(svg, layerPlan, x, y, values, visibility = nodeSectionVisibility()) {
+    function drawNodeSliceLegend(svg, layerPlan, x, y, values, visibility = nodeSectionVisibility(), group = null, plyModel = null) {
       svg.insertAdjacentHTML("beforeend", `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="#b9d8f2" font-size="10" font-weight="700">Stack</text>`);
+      const treadPreview = nodeMaterialPreviewInfo(plyModel, group?.nodes || [], "TreadMaterial", "tread", "TD");
+      const bulkPreview = nodeMaterialPreviewInfo(plyModel, group?.nodes || [], "BulkMaterial", "bulk", "NT");
       const rows = visibility.rest ? [
-        { label: "TD", color: "#f0b85a", valueMm: values.treadDepthMm },
-        { label: "NT", color: "#78d3ff", valueMm: values.nodeThicknessMm }
+        { label: treadPreview.label, color: treadPreview.color, valueMm: values.treadDepthMm },
+        { label: bulkPreview.label, color: bulkPreview.color, valueMm: values.nodeThicknessMm }
       ] : [];
       rows.forEach((row, index) => {
         const rowY = y + 18 + index * 15;
@@ -1901,9 +3113,10 @@
         }
         layerPlan.forEach((item, index) => {
           const layer = Number(item.row.plyIndex || 1);
-          const color = COLORS[(layer - 1) % COLORS.length];
+          const preview = nodeLayerPreviewInfo(plyModel, group?.nodes || [], layer);
+          const color = preview.color || COLORS[(layer - 1) % COLORS.length];
           const rowY = layerTitleY + 18 + index * 15;
-          drawNodeSliceLegendRow(svg, x, rowY, color, `L${layer}`, layerThicknessMm(item.row));
+          drawNodeSliceLegendRow(svg, x, rowY, color, preview.label, layerThicknessMm(item.row));
         });
       } else if (!visibility.rest) {
         svg.insertAdjacentHTML("beforeend", `<text x="${x.toFixed(1)}" y="${(y + 18).toFixed(1)}" fill="#9aa7b3" font-size="10">hidden</text>`);
@@ -1958,12 +3171,30 @@
       drawMaterialSummary(summary, rows);
       drawMaterialRecognition(recognition, selectedNodes);
       const filteredRows = filterMaterialRowsByKind(rows);
+      const selectedCandidate = selectedMaterialCandidateForNodes(selectedNodes);
+      const candidate = selectedCandidate && materialKindFilters.has(selectedCandidate.kind) ? selectedCandidate : null;
+      const candidateE = materialCandidateMultiplier(candidate, "modulusMultipliers");
+      const candidateDensity = materialCandidateMultiplier(candidate, "densityMultipliers");
 
-      drawMaterialTrendChart(charts.young, "Young's modulus", materialPropertySeries(filteredRows, "youngsModulusPa", value => value / 1e6, "MPa", selectedNodes), "MPa", "young");
-      drawMaterialTrendChart(charts.density, "Density", materialPropertySeries(filteredRows, "densityKgM3", value => value, "kg/m3", selectedNodes), "kg/m3", "density");
-      drawMaterialTrendChart(charts.heat, "Specific heat", materialPropertySeries(filteredRows, "specificHeatJKgK", value => value, "J/kgK", selectedNodes), "J/kgK", "heat");
-      drawMaterialTrendChart(charts.conductivity, "Conductivity", materialPropertySeries(filteredRows, "conductivityWMK", value => value, "W/mK", selectedNodes), "W/mK", "conductivity");
-      drawMaterialTrendChart(charts.dimensionless, "Poisson / Compression", materialDimensionlessSeries(filteredRows, selectedNodes), "-", "dimensionless");
+      drawMaterialTrendChart(charts.young, "Young's modulus",
+        materialPropertySeries(filteredRows, "youngsModulusPa", value => value / 1e6, "MPa", selectedNodes)
+          .concat(materialCandidatePropertySeries(candidate, "youngsModulusPa", value => value * candidateE / 1e6, "MPa", "E")),
+        "MPa", "young");
+      drawMaterialTrendChart(charts.density, "Density",
+        materialPropertySeries(filteredRows, "densityKgM3", value => value, "kg/m3", selectedNodes)
+          .concat(materialCandidatePropertySeries(candidate, "densityKgM3", value => value * candidateDensity, "kg/m3", "rho")),
+        "kg/m3", "density");
+      drawMaterialTrendChart(charts.heat, "Specific heat",
+        materialPropertySeries(filteredRows, "specificHeatJKgK", value => value, "J/kgK", selectedNodes)
+          .concat(materialCandidatePropertySeries(candidate, "specificHeat", value => value, "J/kgK", "cp")),
+        "J/kgK", "heat");
+      drawMaterialTrendChart(charts.conductivity, "Conductivity",
+        materialPropertySeries(filteredRows, "conductivityWMK", value => value, "W/mK", selectedNodes)
+          .concat(materialCandidatePropertySeries(candidate, "thermalConductivity", value => value, "W/mK", "k")),
+        "W/mK", "conductivity");
+      drawMaterialTrendChart(charts.dimensionless, "Poisson / Compression",
+        materialDimensionlessSeries(filteredRows, selectedNodes).concat(materialCandidateDimensionlessSeries(candidate)),
+        "-", "dimensionless");
     }
 
     function toggleMaterialKindFilter(kind) {
@@ -2002,6 +3233,79 @@
     function isMaterialSeriesHidden(chartKey, seriesKey) {
       const key = materialSeriesVisibilityKey(chartKey, seriesKey);
       return key ? materialHiddenSeries.has(key) : false;
+    }
+
+    function toggleMaterialCandidatePanel(kind) {
+      const key = String(kind || "");
+      viewState.materialCandidatePanelKind = viewState.materialCandidatePanelKind === key ? "" : key;
+    }
+
+    function selectMaterialCandidateDefault(key) {
+      const parsed = parseMaterialCandidateKey(key);
+      if (!parsed.kind || !parsed.baseKey) return;
+      if (!viewState.materialCandidateDefaults || typeof viewState.materialCandidateDefaults !== "object") {
+        viewState.materialCandidateDefaults = {};
+      }
+      viewState.materialCandidateDefaults[parsed.kind] = parsed.baseKey;
+      viewState.selectedMaterialCandidateKey = materialCandidateKey(parsed.kind, parsed.baseKey);
+      viewState.materialCandidatePanelKind = parsed.kind;
+    }
+
+    function toggleSelectedMaterialCandidate(key) {
+      selectMaterialCandidateDefault(key);
+    }
+
+    function materialCandidateKey(kind, baseKey) {
+      return `${String(kind || "")}:${encodeURIComponent(String(baseKey || ""))}`;
+    }
+
+    function parseMaterialCandidateKey(key) {
+      const value = String(key || "");
+      const separator = value.indexOf(":");
+      if (separator < 0) return { kind: "", baseKey: "" };
+      const kind = value.slice(0, separator);
+      const encoded = value.slice(separator + 1);
+      try {
+        return { kind, baseKey: decodeURIComponent(encoded) };
+      } catch {
+        return { kind, baseKey: encoded };
+      }
+    }
+
+    function materialCandidateDefaultForKind(kind) {
+      return String(viewState.materialCandidateDefaults?.[String(kind || "")] || "");
+    }
+
+    function selectedMaterialCandidateForNodes(selectedNodes) {
+      const selectedKey = String(viewState.selectedMaterialCandidateKey || "");
+      if (!selectedKey) return null;
+      const recognition = materialRecognitionData();
+      if (!recognition.available) return null;
+      const selectedSet = new Set((selectedNodes || []).map(Number).filter(Number.isFinite));
+      const selectedMatches = recognition.localMatches.filter(match => selectedSet.has(Number(match.nodeIndex)) && match.best);
+      for (const kind of ["TreadMaterial", "BulkMaterial", "PlyMaterial"]) {
+        const candidates = aggregateSelectedMaterialCandidateAlternatives(selectedMatches.filter(match => match.kind === kind));
+        const candidate = candidates.find(item => materialCandidateKey(kind, item.key) === selectedKey);
+        if (candidate) {
+          const material = materialLibraryMaterialForCandidate(candidate);
+          return material ? { ...candidate, kind, material } : null;
+        }
+      }
+      return null;
+    }
+
+    function materialLibraryMaterialForCandidate(candidate) {
+      const id = Number(candidate?.materialId);
+      const materials = materialLibraryMaterials();
+      return materials.find(material => Number(material.id) === id)
+        || materials.find(material => materialIdentityKey(material) === String(candidate?.key || ""))
+        || null;
+    }
+
+    function materialCandidateMultiplier(candidate, field) {
+      const values = (candidate?.[field] || []).map(Number).filter(Number.isFinite);
+      if (!values.length) return 1;
+      return values.reduce((sum, value) => sum + value, 0) / values.length;
     }
 
     function materialRowsForNode(nodeIndex) {
@@ -2103,31 +3407,45 @@
       const recognition = materialRecognitionData();
       const kinds = ["TreadMaterial", "BulkMaterial", "PlyMaterial"];
       if (!recognition.available) {
-        element.innerHTML = kinds.map(kind => `<div class="material-match-chip"><span class="kind">${escapeHtml(materialKindLabel(kind))}</span><span class="name">-</span><span class="meta">not matched</span></div>`).join("");
+        element.innerHTML = kinds.map(kind => `<button type="button" class="material-match-chip" data-material-match-kind="${escapeAttr(kind)}"><span class="kind">${escapeHtml(materialKindLabel(kind))}</span><span class="name">-</span><span class="meta">not matched</span></button>`).join("");
         return;
       }
 
       const selectedSet = new Set((selectedNodes || []).map(Number).filter(Number.isFinite));
       const selectedMatches = recognition.localMatches.filter(match => selectedSet.has(Number(match.nodeIndex)) && match.best);
-      element.innerHTML = kinds.map(kind => {
-        const aggregate = aggregateSelectedMaterialMatches(selectedMatches.filter(match => match.kind === kind));
+      let panelHtml = "";
+      const chipHtml = kinds.map(kind => {
+        const aggregate = aggregateSelectedMaterialMatches(selectedMatches.filter(match => match.kind === kind), materialCandidateDefaultForKind(kind));
+        const open = viewState.materialCandidatePanelKind === kind;
         if (!aggregate) {
-          return `<div class="material-match-chip"><span class="kind">${escapeHtml(materialKindLabel(kind))}</span><span class="name">-</span><span class="meta">no rows</span></div>`;
+          return `<button type="button" class="material-match-chip ${open ? "open" : ""}" data-material-match-kind="${escapeAttr(kind)}"><span class="kind">${escapeHtml(materialKindLabel(kind))}</span><span class="name">-</span><span class="meta">no rows</span></button>`;
         }
         const confidence = Math.round(clamp(aggregate.confidence, 0, 1) * 100);
         const eText = materialMultiplierRangeText(aggregate.modulusMultipliers, "E");
         const dText = materialMultiplierRangeText(aggregate.densityMultipliers, "rho");
-        const title = `${materialKindLabel(kind)}: ${aggregate.name} | ${confidence}% | ${aggregate.matchType} | ${eText} | ${dText} | ${aggregate.groupCount} groups`;
+        const defaultText = aggregate.manualDefault ? " | user default" : "";
+        const title = `${materialKindLabel(kind)}: ${aggregate.name} | ${confidence}% | ${aggregate.matchType}${defaultText} | ${eText} | ${dText} | ${aggregate.groupCount} groups`;
+        if (open) panelHtml = drawMaterialCandidatePanel(kind, aggregate.alternatives || []);
         return `
-          <div class="material-match-chip" title="${escapeAttr(title)}">
-            <span class="kind">${escapeHtml(materialKindLabel(kind))} ${escapeHtml(aggregate.matchType)}</span>
+          <button type="button" class="material-match-chip ${open ? "open" : ""}" data-material-match-kind="${escapeAttr(kind)}" title="${escapeAttr(title)}">
+            <span class="kind">${escapeHtml(materialKindLabel(kind))} ${escapeHtml(aggregate.matchType)}${aggregate.manualDefault ? " default" : ""}</span>
             <span class="name">${escapeHtml(aggregate.name)}</span>
             <span class="meta">${confidence}% | ${escapeHtml(eText)} | ${escapeHtml(dText)}</span>
-          </div>`;
+          </button>`;
       }).join("");
+      element.innerHTML = chipHtml + panelHtml;
     }
 
-    function aggregateSelectedMaterialMatches(matches) {
+    function aggregateSelectedMaterialMatches(matches, preferredKey = "") {
+      const alternatives = aggregateSelectedMaterialCandidateAlternatives(matches, preferredKey);
+      const manualDefault = preferredKey ? alternatives.find(item => item.key === preferredKey) : null;
+      if (manualDefault) {
+        return {
+          ...manualDefault,
+          manualDefault: true,
+          alternatives
+        };
+      }
       const byMaterial = new Map();
       matches.forEach(match => {
         const best = match.best;
@@ -2154,9 +3472,104 @@
       const items = Array.from(byMaterial.values()).map(item => ({
         ...item,
         confidence: item.confidenceWeight > 0 ? item.confidenceSum / item.confidenceWeight : 0,
-        matchType: dominantMatchType(item.matchTypes)
+        matchType: dominantMatchType(item.matchTypes),
+        alternatives
       })).sort((a, b) => b.confidenceWeight - a.confidenceWeight || b.confidence - a.confidence);
       return items[0] || null;
+    }
+
+    function aggregateSelectedMaterialCandidateAlternatives(matches, preferredKey = "") {
+      const byMaterial = new Map();
+      matches.forEach(match => {
+        asArray(match.alternatives).forEach(candidate => {
+          const key = candidate.baseKey;
+          const item = byMaterial.get(key) || {
+            key,
+            materialId: candidate.materialId,
+            name: candidate.materialName,
+            category: candidate.category,
+            confidenceWeight: 0,
+            confidenceValues: [],
+            scoreSum: 0,
+            scoreWeight: 0,
+            globalProbabilitySum: 0,
+            globalGroupCount: 0,
+            groupCount: 0,
+            scopes: new Set(),
+            matchTypes: new Map(),
+            modulusMultipliers: [],
+            densityMultipliers: []
+          };
+          const weight = Math.max(0.000001, Number(candidate.confidence) || 0);
+          item.confidenceWeight += weight;
+          item.confidenceValues.push(Number(candidate.confidence) || 0);
+          item.scoreSum += (Number(candidate.score) || 0) * weight;
+          item.scoreWeight += weight;
+          item.globalProbabilitySum += (Number(candidate.globalProbability) || 0) * weight;
+          item.globalGroupCount = Math.max(item.globalGroupCount, Number(candidate.globalGroupCount) || 0);
+          item.groupCount += 1;
+          if (match.scopeLabel) item.scopes.add(match.scopeLabel);
+          item.matchTypes.set(candidate.matchType, (item.matchTypes.get(candidate.matchType) || 0) + 1);
+          if (Number.isFinite(candidate.modulusMultiplier)) item.modulusMultipliers.push(candidate.modulusMultiplier);
+          if (Number.isFinite(candidate.densityMultiplier)) item.densityMultipliers.push(candidate.densityMultiplier);
+          byMaterial.set(key, item);
+        });
+      });
+      return Array.from(byMaterial.values()).map(item => ({
+        ...item,
+        confidence: item.confidenceValues.length
+          ? item.confidenceValues.reduce((sum, value) => sum + value, 0) / item.confidenceValues.length
+          : 0,
+        score: item.scoreWeight > 0 ? item.scoreSum / item.scoreWeight : Infinity,
+        globalProbability: item.scoreWeight > 0 ? item.globalProbabilitySum / item.scoreWeight : 0,
+        matchType: dominantMatchType(item.matchTypes),
+        scopeCount: item.scopes.size,
+        scopeText: materialCandidateScopeText(Array.from(item.scopes)),
+        preferred: item.key === preferredKey
+      })).sort((a, b) =>
+        Number(b.preferred) - Number(a.preferred)
+        || b.confidence - a.confidence
+        || b.scopeCount - a.scopeCount
+        || b.globalProbability - a.globalProbability
+        || a.score - b.score);
+    }
+
+    function materialCandidateScopeText(scopes) {
+      const values = (scopes || []).filter(Boolean).sort((a, b) => {
+        const aNumber = Number(String(a).replace(/^\D+/, ""));
+        const bNumber = Number(String(b).replace(/^\D+/, ""));
+        if (Number.isFinite(aNumber) && Number.isFinite(bNumber)) return aNumber - bNumber;
+        return String(a).localeCompare(String(b));
+      });
+      if (!values.length) return "";
+      if (values.length <= 4) return values.join(", ");
+      return `${values.slice(0, 4).join(", ")} +${values.length - 4}`;
+    }
+
+    function drawMaterialCandidatePanel(kind, candidates) {
+      const rows = (candidates || []).slice(0, 10);
+      if (!rows.length) {
+        return `<div class="material-candidate-panel"><div class="material-candidate-row"><span></span><span class="name">No candidates</span><span class="meta">-</span><span class="mult">-</span></div></div>`;
+      }
+      return `<div class="material-candidate-panel" data-material-candidate-panel-kind="${escapeAttr(kind)}">${rows.map(candidate => {
+        const key = materialCandidateKey(kind, candidate.key);
+        const defaultForKind = materialCandidateDefaultForKind(kind);
+        const active = candidate.key === defaultForKind || key === viewState.selectedMaterialCandidateKey;
+        const confidence = Math.round(clamp(candidate.confidence, 0, 1) * 100);
+        const global = Math.round(clamp(candidate.globalProbability, 0, 1) * 100);
+        const eText = materialMultiplierRangeText(candidate.modulusMultipliers, "E");
+        const dText = materialMultiplierRangeText(candidate.densityMultipliers, "rho");
+        const scopeText = candidate.scopeText ? ` | ${candidate.scopeText}` : "";
+        const defaultText = active ? " | default" : "";
+        const title = `${candidate.name}${defaultText}${scopeText} | ${confidence}% candidate share | global ${global}% | score ${fmt(candidate.score)} | ${eText} | ${dText}`;
+        return `
+          <button type="button" class="material-candidate-row ${active ? "selected" : ""}" data-material-candidate-key="${escapeAttr(key)}" title="${escapeAttr(title)}">
+            <span class="dot" style="background:${materialKindColor(kind)}"></span>
+            <span class="name">${escapeHtml(candidate.name)}</span>
+            <span class="meta">${confidence}% ${escapeHtml(candidate.matchType)}${active ? " default" : ""}${scopeText ? ` | ${escapeHtml(candidate.scopeText)}` : ""} | g${global}% | s${escapeHtml(fmt(candidate.score))}</span>
+            <span class="mult">${escapeHtml(eText)} | ${escapeHtml(dText)}</span>
+          </button>`;
+      }).join("")}</div>`;
     }
 
     function dominantMatchType(types) {
@@ -2187,7 +3600,7 @@
       const library = materialLibraryMaterials();
       const groups = observedMaterialGroups(state?.plotData?.materials || []);
       if (!library.length || !groups.length) {
-        materialRecognitionCache = { available: false, localMatches: [], globalSummaries: [], globalByKey: new Map() };
+        materialRecognitionCache = { available: false, localMatches: [], globalSummaries: [], globalByKey: new Map(), globalBroadByKey: new Map() };
         return materialRecognitionCache;
       }
 
@@ -2205,12 +3618,13 @@
       });
 
       const global = aggregateGlobalMaterialMatches(localMatches);
-      enrichMaterialMatches(localMatches, global.byKey);
+      enrichMaterialMatches(localMatches, global.byKey, global.broadByKey);
       materialRecognitionCache = {
         available: true,
         localMatches,
         globalSummaries: global.summaries,
-        globalByKey: global.byKey
+        globalByKey: global.byKey,
+        globalBroadByKey: global.broadByKey
       };
       return materialRecognitionCache;
     }
@@ -2226,6 +3640,7 @@
         const materialIndex = Number.isFinite(Number(row.materialIndex))
           ? Number(row.materialIndex)
           : fallbackMaterialIndex(fallbackState, row);
+        const plyIndex = materialGroupPlyIndex(row, materialIndex);
         const key = `${node}:${kind}:${materialIndex}`;
         if (!groups.has(key)) {
           groups.set(key, {
@@ -2233,6 +3648,9 @@
             nodeIndex: node,
             kind,
             materialIndex,
+            plyIndex,
+            scopeKey: materialMatchScopeKey(kind, plyIndex),
+            scopeLabel: materialMatchScopeLabel(kind, plyIndex),
             order,
             points: []
           });
@@ -2253,6 +3671,26 @@
           points: group.points.sort((a, b) => a.temperatureK - b.temperatureK)
         }))
         .filter(group => group.points.length);
+    }
+
+    function materialGroupPlyIndex(row, materialIndex) {
+      if (String(row?.kind || "") !== "PlyMaterial") return NaN;
+      const explicit = Number(row?.plyIndex);
+      return Number.isFinite(explicit) ? explicit : Number(materialIndex);
+    }
+
+    function materialMatchScopeKey(kind, plyIndex) {
+      if (String(kind || "") === "PlyMaterial" && Number.isFinite(Number(plyIndex))) {
+        return `PlyMaterial:L${Number(plyIndex)}`;
+      }
+      return String(kind || "");
+    }
+
+    function materialMatchScopeLabel(kind, plyIndex) {
+      if (String(kind || "") === "PlyMaterial" && Number.isFinite(Number(plyIndex))) {
+        return `L${Number(plyIndex)}`;
+      }
+      return materialKindLabel(kind);
     }
 
     function fallbackMaterialIndex(stateMap, row) {
@@ -2428,12 +3866,16 @@
 
     function aggregateGlobalMaterialMatches(localMatches) {
       const byKey = new Map();
+      const broadByKey = new Map();
       localMatches.forEach(match => {
         match.candidates.forEach(candidate => {
-          const key = `${match.kind}:${candidate.baseKey}`;
+          const scopeKey = match.scopeKey || match.kind;
+          const key = `${scopeKey}:${candidate.baseKey}`;
           const item = byKey.get(key) || {
             key,
             kind: match.kind,
+            scopeKey,
+            scopeLabel: match.scopeLabel || materialKindLabel(match.kind),
             baseKey: candidate.baseKey,
             materialId: candidate.materialId,
             materialName: candidate.materialName,
@@ -2453,32 +3895,60 @@
           if (Number.isFinite(candidate.modulusMultiplier)) item.modulusMultipliers.push(candidate.modulusMultiplier);
           if (Number.isFinite(candidate.densityMultiplier)) item.densityMultipliers.push(candidate.densityMultiplier);
           byKey.set(key, item);
+
+          const broadKey = `${match.kind}:${candidate.baseKey}`;
+          const broad = broadByKey.get(broadKey) || {
+            key: broadKey,
+            kind: match.kind,
+            baseKey: candidate.baseKey,
+            materialName: candidate.materialName,
+            likelihood: 0,
+            groupCount: 0,
+            nodes: new Set(),
+            scopes: new Set()
+          };
+          broad.likelihood += likelihood;
+          broad.groupCount += 1;
+          broad.nodes.add(match.nodeIndex);
+          broad.scopes.add(scopeKey);
+          broadByKey.set(broadKey, broad);
         });
       });
 
-      const totalsByKind = new Map();
-      byKey.forEach(item => totalsByKind.set(item.kind, (totalsByKind.get(item.kind) || 0) + item.likelihood));
+      const totalsByScope = new Map();
+      byKey.forEach(item => totalsByScope.set(item.scopeKey, (totalsByScope.get(item.scopeKey) || 0) + item.likelihood));
       const summaries = Array.from(byKey.values()).map(item => ({
         ...item,
         nodeCount: item.nodes.size,
-        probability: item.likelihood / Math.max(totalsByKind.get(item.kind) || 0, 1e-12),
+        probability: item.likelihood / Math.max(totalsByScope.get(item.scopeKey) || 0, 1e-12),
         score: item.likelihood > 0 ? item.scoreSum / item.likelihood : Infinity,
         nodes: Array.from(item.nodes).sort((a, b) => a - b)
       })).sort((a, b) => materialKindOrder(a.kind) - materialKindOrder(b.kind) || b.probability - a.probability);
       const summaryByKey = new Map(summaries.map(item => [item.key, item]));
-      return { summaries, byKey: summaryByKey };
+      const broadSummaryByKey = new Map(Array.from(broadByKey.values()).map(item => [item.key, {
+        ...item,
+        nodeCount: item.nodes.size,
+        scopeCount: item.scopes.size,
+        nodes: Array.from(item.nodes).sort((a, b) => a - b),
+        scopes: Array.from(item.scopes).sort()
+      }]));
+      return { summaries, byKey: summaryByKey, broadByKey: broadSummaryByKey };
     }
 
-    function enrichMaterialMatches(localMatches, globalByKey) {
+    function enrichMaterialMatches(localMatches, globalByKey, broadByKey = new Map()) {
       localMatches.forEach(match => {
         const alternatives = match.candidates.map(candidate => {
-          const global = globalByKey.get(`${match.kind}:${candidate.baseKey}`);
-          const support = global ? 1 + Math.log1p(global.groupCount) * 0.35 + global.probability : 1;
+          const global = globalByKey.get(`${match.scopeKey || match.kind}:${candidate.baseKey}`);
+          const broad = broadByKey.get(`${match.kind}:${candidate.baseKey}`);
+          const scopedSupport = global ? 1 + Math.log1p(global.groupCount) * 0.35 + global.probability : 1;
+          const sharedLayerSupport = broad ? 1 + Math.log1p(broad.scopeCount) * 0.18 + Math.log1p(broad.groupCount) * 0.08 : 1;
           return {
             ...candidate,
             globalProbability: global?.probability || 0,
             globalGroupCount: global?.groupCount || 0,
-            combinedLikelihood: candidate.localLikelihood * support
+            globalScopeLabel: global?.scopeLabel || match.scopeLabel || "",
+            sharedScopeCount: broad?.scopeCount || 0,
+            combinedLikelihood: candidate.localLikelihood * scopedSupport * sharedLayerSupport
           };
         }).sort((a, b) => b.combinedLikelihood - a.combinedLikelihood);
         const likelihoodSum = alternatives.reduce((sum, candidate) => sum + candidate.combinedLikelihood, 0);
@@ -2507,6 +3977,71 @@
 
     function materialIdentityKey(material) {
       return `${String(material?.category || "")}|${String(material?.name || "")}`.toLowerCase();
+    }
+
+    function materialCandidatePropertySeries(candidate, field, convert, unit, labelSuffix) {
+      const material = candidate?.material;
+      if (!material) return [];
+      const color = materialKindColor(candidate.kind);
+      const label = `${materialKindShort(candidate.kind)} db ${labelSuffix}`;
+      const points = mergeMaterialSeriesPoints(asArray(material.points).map(point => {
+        const raw = Number(point[field]);
+        const value = Number.isFinite(raw) ? convert(raw) : NaN;
+        const tempC = temperatureC(point);
+        return {
+          x: tempC,
+          y: value,
+          title: `${candidate.name} ${labelSuffix} ${fmt(tempC)} C: ${fmt(value)} ${unit}`
+        };
+      }).filter(point => Number.isFinite(point.x) && Number.isFinite(point.y)));
+      return points.length ? [{
+        key: `candidate-${candidate.kind}-${candidate.key}-${field}`,
+        label,
+        color,
+        dash: "6 3",
+        pinned: true,
+        points
+      }] : [];
+    }
+
+    function materialCandidateDimensionlessSeries(candidate) {
+      const material = candidate?.material;
+      if (!material) return [];
+      const color = materialKindColor(candidate.kind);
+      return [
+        {
+          field: "poissonsRatio",
+          suffix: "v",
+          label: `${materialKindShort(candidate.kind)} db v`,
+          dash: "6 3",
+          title: "Poisson"
+        },
+        {
+          field: "compressionTensionRatio",
+          suffix: "c",
+          label: `${materialKindShort(candidate.kind)} db c`,
+          dash: "2 3",
+          title: "Compression"
+        }
+      ].map(item => {
+        const points = mergeMaterialSeriesPoints(asArray(material.points).map(point => {
+          const raw = Number(point[item.field]);
+          const tempC = temperatureC(point);
+          return {
+            x: tempC,
+            y: raw,
+            title: `${candidate.name} ${item.title} ${fmt(tempC)} C: ${fmt(raw)}`
+          };
+        }).filter(point => Number.isFinite(point.x) && Number.isFinite(point.y)));
+        return {
+          key: `candidate-${candidate.kind}-${candidate.key}-${item.field}`,
+          label: item.label,
+          color,
+          dash: item.dash,
+          pinned: true,
+          points
+        };
+      }).filter(series => series.points.length);
     }
 
     function materialPropertySeries(rows, field, convert, unit, selectedNodes = []) {
@@ -2683,7 +4218,9 @@
     }
 
     function drawMaterialSeriesLegend(svg, seriesList, x, y, maxWidth, chartKey) {
-      const compact = seriesList.slice(0, 5);
+      const compact = seriesList.slice()
+        .sort((a, b) => Number(b.pinned === true) - Number(a.pinned === true))
+        .slice(0, 5);
       let cursor = x;
       compact.forEach(series => {
         const label = String(series.label || "");
@@ -2838,7 +4375,7 @@
     }
 
     function handleNodeExplorerKeydown(event) {
-      if (viewState.currentView !== "node-explorer") return;
+      if (viewState.currentView !== "node-explorer" && viewState.currentView !== "reengineering") return;
       const nodes = nodeExplorerNodeIndices();
       if (!nodes.length) return;
 
@@ -3468,11 +5005,11 @@
       });
     }
 
-    function makeFrame(svg, xs, ys, equalScale) {
+    function makeFrame(svg, xs, ys, equalScale, marginOverride = null) {
       const view = svg.viewBox.baseVal;
       const w = view.width || 1100;
       const h = view.height || 520;
-      const margin = { left: 58, right: 36, top: 38, bottom: 50 };
+      const margin = marginOverride || { left: 58, right: 36, top: 38, bottom: 50 };
       let minX = Math.min(...xs), maxX = Math.max(...xs);
       let minY = Math.min(...ys), maxY = Math.max(...ys);
       const padX = Math.max((maxX - minX) * 0.05, 1);

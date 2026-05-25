@@ -27,10 +27,13 @@ plotData.plyCrossSection = localBuildPlyCrossSection(plotData.geometry, plotData
 
 materialRows = P.section == "Node" & ismember(P.key, ["BulkMaterial", "TreadMaterial", "PlyMaterial"]);
 material = localRowsToMatrix(P(materialRows, :), 7);
-materialIndex = localMaterialIndexByNodeAndKind(P.nodeIndex(materialRows), P.key(materialRows), material(:, 1));
-plotData.materials = table(P.nodeIndex(materialRows), P.key(materialRows), materialIndex, ...
+materialKind = P.key(materialRows);
+materialIndex = localMaterialIndexByNodeAndKind(P.nodeIndex(materialRows), materialKind, material(:, 1));
+materialPlyIndex = nan(size(materialIndex));
+materialPlyIndex(materialKind == "PlyMaterial") = materialIndex(materialKind == "PlyMaterial");
+plotData.materials = table(P.nodeIndex(materialRows), materialKind, materialIndex, materialPlyIndex, ...
     material(:, 1), material(:, 2), material(:, 3), material(:, 4), material(:, 5), material(:, 6), material(:, 7), ...
-    'VariableNames', {'nodeIndex', 'kind', 'materialIndex', 'temperatureK', 'densityKgM3', 'youngsModulusPa', ...
+    'VariableNames', {'nodeIndex', 'kind', 'materialIndex', 'plyIndex', 'temperatureK', 'densityKgM3', 'youngsModulusPa', ...
     'poissonRatio', 'compressionMultiplier', 'specificHeatJKgK', 'conductivityWMK'});
 
 plotData.summary = model.summary;

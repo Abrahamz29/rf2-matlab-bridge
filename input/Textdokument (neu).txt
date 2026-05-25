@@ -1,0 +1,187 @@
+# Project Chrono Reifenmodelle: Ansätze und Einordnung
+
+## Ziel
+
+Es geht ausschließlich um die Reifenmodell-Ansätze in Project Chrono / Chrono::Vehicle.
+
+Fokus:
+
+- Welche Reifenmodelltypen gibt es?
+- Was können sie?
+- Wofür sind sie sinnvoll?
+- Welche Modelle eignen sich für Reifenmodell-Analyse?
+- Welche Modelle eignen sich für Struktur/Karkasse/Gürtel/Kontaktpatch?
+- Welche Modelle eignen sich für schnelle Fahrdynamik-Kennfelder?
+
+---
+
+## Überblick: Reifenmodellklassen in Chrono
+
+Chrono::Vehicle enthält mehrere Reifenmodelltypen mit unterschiedlicher Modellierungstiefe.
+
+| Modelltyp | Klasse | Hauptzweck |
+|---|---|---|
+| Rigid Tire | einfacher Kontaktkörper | sehr schnelle Simulation, keine echte Reifenphysik |
+| Fiala Tire | semi-physikalisches Brush-Modell | einfache Seitenkraft-/Schlupfmodellierung |
+| TMeasy Tire | semi-empirisches Reifenmodell | Handling, transiente Kräfte, relativ einfache Parametrierung |
+| Pacejka 89 / 2002 | Magic-Formula-artig | Kennfeld-/Handlingmodell |
+| Pac02 | erweitertes Pacejka-Modell | stationär und transient, mit Slip-State-Dynamik |
+| ANCF Tire | FE-basierter deformierbarer Reifen | Karkasse, Gürtel, Struktur, Kontakt |
+| Reissner Tire | FE-Shell-Reifen | laminierte Shell-Struktur, Gürtel-/Ply-Modellierung |
+| FEA Tire allgemein | Finite-Elemente-Reifen | detaillierte Struktur- und Kontaktanalyse |
+
+---
+
+# 1. Rigid Tire
+
+## Charakter
+
+Der Rigid Tire ist kein echtes Reifenmodell. Er bildet den Reifen im Wesentlichen als starren Körper ab.
+
+## Eigenschaften
+
+- sehr schnell
+- einfache Kontaktgeometrie
+- keine reale Reifenverformung
+- keine Karkassendynamik
+- keine Relaxationslänge
+- keine echte Seitenkraftentwicklung aus Reifenstruktur
+- kein sinnvoller Kontaktpatch im physikalischen Sinn
+
+## Sinnvoll für
+
+- einfache Fahrzeugtests
+- grobe Dynamiksimulation
+- Debugging
+- niedrige Rechenkosten
+- Vergleichsbasis
+
+## Nicht sinnvoll für
+
+- Reifenmodellforschung
+- Kontaktpatch-Analyse
+- Gürtel-/Karkassenuntersuchung
+- transientes Seitenkraftverhalten
+- Reifenkennfelder
+
+## Einschätzung
+
+Für den Nutzer wahrscheinlich uninteressant, außer als Minimalreferenz.
+
+---
+
+# 2. Fiala Tire
+
+## Charakter
+
+Fiala ist ein einfaches semi-physikalisches Brush-Modell. Es beschreibt Reifenkräfte aus Schlupf, Normalkraft und Reibwert mit einem relativ einfachen analytischen Ansatz.
+
+## Typische Modellinhalte
+
+- Seitenkraft über Schräglaufwinkel
+- Längskraft über Längsschlupf
+- kombinierter Schlupf in einfacher Form
+- Sättigung durch Reibwertgrenze
+- einfache Abbildung von Cornering Stiffness
+- keine echte Reifenstruktur
+
+## Vorteile
+
+- sehr gut verständlich
+- mathematisch überschaubar
+- schnell
+- gute Basis zum Lernen
+- gut für erste MATLAB-/Python-Vergleiche
+- geeignet für einfache Einspur-/Zweispurmodelle
+
+## Nachteile
+
+- keine echte Karkasse
+- keine Gürtellagen
+- keine lokale Kontaktpatch-Auflösung
+- kein detailliertes thermisches Verhalten
+- begrenzte Genauigkeit im Grenzbereich
+- keine realistische Profil-/Treadstruktur
+
+## Sinnvoll für
+
+- Grundverständnis von Schlupf und Seitenkraft
+- Vergleich mit eigenem Brush-Modell
+- schnelle Fahrdynamikmodelle
+- einfache Reglerentwicklung
+- Ableitung von Cornering-Stiffness-Effekten
+
+## Für den Nutzer interessant, weil
+
+Fiala eine gute Brücke zwischen Theorie und Simulation ist. Damit kann man sehr sauber verstehen:
+
+- wie `alpha` zu `Fy` wird
+- wann Sättigung eintritt
+- wie Reibwert die Kraft begrenzt
+- wie stark ein einfacher Brush-Ansatz von komplexeren Modellen abweicht
+
+## Einschätzung
+
+Guter Einstieg, aber kein Ersatz für rFactor-2-TGM oder FE-Reifen.
+
+---
+
+# 3. TMeasy Tire
+
+## Charakter
+
+TMeasy ist ein semi-empirisches Reifenmodell, das mit relativ wenigen, gut interpretierbaren Parametern arbeitet. Es ist komplexer und praxisnäher als Fiala, aber deutlich einfacher als ein FE-Reifen.
+
+## Typische Modellinhalte
+
+- Längskraft
+- Seitenkraft
+- Rückstellmoment
+- kombinierter Schlupf
+- nichtlineare Kraft-Schlupf-Kennlinien
+- transiente Kraftentwicklung
+- relativ einfache Parametrierung
+- teilweise Kontaktpatch-/Slip-State-Dynamik
+
+## Vorteile
+
+- guter Kompromiss aus Einfachheit und Realismus
+- schneller als FE-Reifen
+- deutlich praxisnäher als Fiala
+- gut für Kennfelder
+- gut für transiente Seitenkraftuntersuchungen
+- weniger datenhungrig als Magic Formula
+- besser interpretierbar als reine Fit-Modelle
+
+## Nachteile
+
+- keine echte Karkassen-/Gürtelstruktur
+- keine expliziten Ply-Lagen
+- kein echter lokaler Kontaktpatch wie bei FE-Modellen
+- begrenzt bei Profilrillen, Belt-Crown, Schultereffekten
+- nicht ideal für detaillierte Strukturfragen
+
+## Sinnvoll für
+
+- Fahrdynamik
+- Kennfeldgenerierung
+- Vergleich mit Pacejka
+- transiente Reifenreaktion
+- eigene reduzierte Reifenmodelle
+- Echtzeit-/Near-Realtime-Simulation
+
+## Für den Nutzer interessant, weil
+
+TMeasy wahrscheinlich der beste Chrono-Einstieg ist, wenn man Reifenkräfte systematisch untersuchen will, ohne sofort FE-Komplexität zu haben.
+
+Mögliche Untersuchungen:
+
+```text
+Fy(alpha, Fz)
+Fx(kappa, Fz)
+Mz(alpha, Fz)
+Fy(t) nach alpha step
+Relaxationsverhalten
+kombinierter Schlupf
+Lastabhängigkeit
+Camber-Einfluss, falls parametriert

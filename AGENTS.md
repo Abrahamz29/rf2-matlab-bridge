@@ -21,6 +21,11 @@ live plotting, and automated driving experiments.
     caches
 - Preserve user changes. Do not revert unrelated edits.
 - Verify changes with the narrowest relevant check before committing.
+- When external sources, papers, guides, web pages, formula references, or
+  datasets are used for implementation or analysis decisions, record them under
+  `references/` in addition to citing them in the conversation. Keep entries
+  concise but include title/source, URL or local path, retrieval date when
+  applicable, and what the source was used for.
 
 ## Git Workflow
 

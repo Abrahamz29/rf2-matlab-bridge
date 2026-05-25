@@ -4,7 +4,7 @@ function varargout = tyre_designer_open(tyre, options)
 %       "Menu", "node-explorer")
 %
 %   TYRE can be a TGM path, a database display name, or a TGM file name/stem.
-%   MENU and VIEW accept "model", "node-explorer", or "materials".
+%   MENU and VIEW accept "model", "node-explorer", "reengineering", or "materials".
 arguments
     tyre (1,1) string = ""
     options.Menu (1,1) string = ""

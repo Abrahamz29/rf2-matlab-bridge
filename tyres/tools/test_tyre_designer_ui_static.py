@@ -13,6 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 APP_DIR = REPO_ROOT / "tyres" / "matlab" / "apps" / "tyre_designer"
 HTML_PATH = APP_DIR / "assets" / "tyre_designer.html"
 IMPL_PATH = APP_DIR / "tyre_designer_app.m"
+PLOT_DATA_PATH = APP_DIR / "tyre_designer_plot_data.m"
 ENTRY_PATH = APP_DIR / "tyre_designer.m"
 WRAPPER_PATH = APP_DIR / "tyre_designer_open.m"
 LEGACY_ENTRY_PATH = REPO_ROOT / "tyres" / "matlab" / "functions" / "tyre_designer.m"
@@ -24,13 +25,14 @@ MATERIAL_DB_PATH = REPO_ROOT / "tyres" / "database" / "rf2_material_database.sql
 def run_check() -> dict:
     html = HTML_PATH.read_text(encoding="utf-8")
     impl = IMPL_PATH.read_text(encoding="utf-8")
+    plot_data = PLOT_DATA_PATH.read_text(encoding="utf-8")
     entry = ENTRY_PATH.read_text(encoding="utf-8")
     wrapper = WRAPPER_PATH.read_text(encoding="utf-8")
     material_db_builder = MATERIAL_DB_BUILDER_PATH.read_text(encoding="utf-8")
     function_names = set(re.findall(r"\bfunction\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", html))
     errors: list[str] = []
 
-    for path in [HTML_PATH, IMPL_PATH, ENTRY_PATH, WRAPPER_PATH, MATERIAL_DB_BUILDER_PATH]:
+    for path in [HTML_PATH, IMPL_PATH, PLOT_DATA_PATH, ENTRY_PATH, WRAPPER_PATH, MATERIAL_DB_BUILDER_PATH]:
         if not path.is_file():
             errors.append(f"missing file: {path.relative_to(REPO_ROOT)}")
     if not MATERIAL_DB_PATH.is_file():
@@ -47,9 +49,11 @@ def run_check() -> dict:
         "normalizeViewName",
         'data-view="model"',
         'data-view="node-explorer"',
+        'data-view="reengineering"',
         'data-view="materials"',
         'id="model-view"',
         'id="node-explorer-view"',
+        'id="reengineering-view"',
         'id="materials-view"',
         'id="materials-workspace"',
         "materials-page",
@@ -72,6 +76,21 @@ def run_check() -> dict:
         'id="materials-ratio-chart"',
         'id="materials-shore-chart"',
         'id="node-explorer-plot"',
+        'id="reengineering-plot"',
+        'id="reengineering-matrix"',
+        'id="reengineering-candidates"',
+        'id="reengineering-family-summary"',
+        "Material Reengineering",
+        "Node x Material matrix",
+        "Family Summary",
+        "plyFamilyDefaults",
+        "reengineeringFamilyDefaults",
+        "reengineeringStackKey",
+        "reengineeringFamilyKey",
+        "data-reengineering-cell",
+        "data-ply-family-key",
+        "data-ply-family-candidate-key",
+        "data-reengineering-jump",
         "node-explorer-grid",
         "node-overview-panel",
         "node-detail-panel",
@@ -85,6 +104,10 @@ def run_check() -> dict:
         'id="node-material-recognition"',
         "material-recognition",
         "material-match-chip",
+        "material-candidate-panel",
+        "material-candidate-row",
+        "data-material-match-kind",
+        "data-material-candidate-key",
         'id="material-young-chart"',
         'id="material-density-chart"',
         'id="material-heat-chart"',
@@ -97,6 +120,10 @@ def run_check() -> dict:
         "data-material-kind-filter",
         "materialHiddenSeries",
         "materialRecognitionCache",
+        "selectedMaterialCandidateKey",
+        "materialCandidateDefaults",
+        "materialMatchScopeKey",
+        "sharedScopeCount",
         "responsivePlotObserver",
         "ResizeObserver",
         "syncSvgViewBox",
@@ -117,6 +144,7 @@ def run_check() -> dict:
         "drawGeometry",
         "drawGeometryPlot",
         "drawNodeExplorer",
+        "drawReengineering",
         "drawNodeDetail",
         "drawMaterialsPage",
         "materialLibraryData",
@@ -212,6 +240,8 @@ def run_check() -> dict:
         "toggleMaterialSelection",
         "rememberMaterialScrollPositions",
         "restoreMaterialScrollPositions",
+        "captureMaterialFocusState",
+        "restoreMaterialFocusState",
         "materialListRowHtml",
         "drawMaterialsLibraryPlots",
         "materialLibraryPropertySeries",
@@ -234,6 +264,8 @@ def run_check() -> dict:
         "nodeSectionGroupKey",
         "drawNodeSectionGroupLegend",
         "drawNodeSectionHeaderLabels",
+        "nodeLayerPreviewInfo",
+        "nodeLayerMaterialToken",
         "drawNodeSliceBand",
         "drawNodeSliceLabels",
         "chooseNodeSliceLabels",
@@ -243,11 +275,54 @@ def run_check() -> dict:
         "drawNodeSliceLegend",
         "drawNodeSliceLegendRow",
         "drawMaterialTeardown",
+        "plyReengineeringModel",
+        "ensureReengineeringSelection",
+        "drawReengineeringMatrix",
+        "drawReengineeringDecision",
+        "drawReengineeringFamilySummary",
+        "plyCellKey",
+        "reengineeringCellKey",
+        "materialStackKey",
+        "materialStackLabel",
+        "materialStackSortValue",
+        "plyMaterialSignatureKey",
+        "materialFamilySignatureKey",
+        "plyFamilyDefaultBaseKey",
+        "reengineeringFamilyDefaultBaseKey",
+        "selectPlyFamilyCandidateDefault",
+        "selectReengineeringCell",
+        "selectReengineeringFamily",
+        "jumpToReengineeringFamily",
+        "plyFamilyFlags",
+        "plyFamilyCandidateWithMaterial",
+        "reengineeringFamilyCandidateWithMaterial",
+        "plyCandidateShortLabel",
+        "reengineeringMaterialLabel",
+        "plyFamilyLabel",
+        "reengineeringCellTitle",
+        "reengineeringCellMeta",
+        "plyFamilyObservedPropertySeries",
+        "plyFamilyObservedDimensionlessSeries",
+        "nodeRangeText",
+        "rangeText",
+        "familyCoverageBars",
+        "consecutiveRanges",
+        "nodeMaterialPreviewInfo",
+        "drawReengineeringLayerHighlights",
         "toggleMaterialKindFilter",
         "filterMaterialRowsByKind",
         "toggleMaterialSeries",
         "materialSeriesVisibilityKey",
         "isMaterialSeriesHidden",
+        "toggleMaterialCandidatePanel",
+        "selectMaterialCandidateDefault",
+        "toggleSelectedMaterialCandidate",
+        "materialCandidateKey",
+        "parseMaterialCandidateKey",
+        "materialCandidateDefaultForKind",
+        "selectedMaterialCandidateForNodes",
+        "materialLibraryMaterialForCandidate",
+        "materialCandidateMultiplier",
         "materialRowsForNode",
         "materialRowsForNodes",
         "sortMaterialRows",
@@ -262,10 +337,16 @@ def run_check() -> dict:
         "drawMaterialSummary",
         "drawMaterialRecognition",
         "aggregateSelectedMaterialMatches",
+        "aggregateSelectedMaterialCandidateAlternatives",
+        "materialCandidateScopeText",
+        "drawMaterialCandidatePanel",
         "dominantMatchType",
         "materialMultiplierRangeText",
         "materialRecognitionData",
         "observedMaterialGroups",
+        "materialGroupPlyIndex",
+        "materialMatchScopeKey",
+        "materialMatchScopeLabel",
         "fallbackMaterialIndex",
         "dedupeMaterialCandidates",
         "isMaterialCandidateForKind",
@@ -281,6 +362,8 @@ def run_check() -> dict:
         "materialCandidateLikelihood",
         "materialMatchType",
         "materialIdentityKey",
+        "materialCandidatePropertySeries",
+        "materialCandidateDimensionlessSeries",
         "materialPropertySeries",
         "mergeMaterialSeriesPoints",
         "materialDimensionlessSeries",
@@ -387,6 +470,7 @@ def run_check() -> dict:
         "tyre_designer_project_root()",
         "options.StartView",
         '"materials"',
+        '"reengineering"',
         "localNormalizeStartView",
         "state.startView",
         "encoded.rubberCrossSection",
@@ -394,6 +478,13 @@ def run_check() -> dict:
     ]:
         if marker not in impl:
             errors.append(f"missing MATLAB marker: {marker}")
+
+    for marker in [
+        "materialPlyIndex",
+        "'plyIndex'",
+    ]:
+        if marker not in plot_data:
+            errors.append(f"missing plot-data marker: {marker}")
 
     for forbidden in [
         "localLoadInputModel",
@@ -414,6 +505,7 @@ def run_check() -> dict:
         "options.Menu",
         "options.View",
         '"StartView", startView',
+        '"reengineering"',
         "tyre_designer(tyre",
     ]:
         if marker not in wrapper:
