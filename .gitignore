@@ -20,11 +20,10 @@ Installed/
 # OS/editor
 .DS_Store
 Thumbs.db
+~$*.pptx
 
 # Local downloads and extracted archives
 bridge/downloads/
-tracks/blacklake/downloads/
-tracks/blacklake/cache/
 tyres/downloads/
 tyres/cache/
 tyres/output/

@@ -1,9 +1,8 @@
-﻿# Python
+# Python
 
-- `rf2_matlab_bridge.py`, `rf2_automation.py` und `rf2_control.py` bleiben die
-  MATLAB/Shared-Memory- und Automationsebene.
-- Track-spezifische Generatoren liegen unter `tracks/`, aktuell
-  `tracks/blacklake/tools/blacklake_builder.py`.
+- `rf2_matlab_bridge.py` is the rFactor 2 shared-memory layer used by MATLAB
+  and tyre-validation tooling.
+- Track, vehicle, actuator, and open-loop automation code is outside the
+  current repository scope.
 
-Reifenmodell-spezifische Parser und Datenbanktools liegen unter `tyres/tools/`.
-
+Tyre-model-specific parsers and database tools live under `tyres/tools/`.

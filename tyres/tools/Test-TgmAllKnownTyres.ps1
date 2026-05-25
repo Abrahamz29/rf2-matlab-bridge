@@ -26,7 +26,7 @@ try {
     $tgmRootEscaped = $TgmRoot.Replace("'", "''")
     $reportPathEscaped = $ReportPath.Replace("'", "''")
     $roundtripDirEscaped = $RoundtripDir.Replace("'", "''")
-    $batch = "addpath('bridge/matlab'); addpath('tyres/matlab/functions'); addpath('tracks/blacklake/matlab'); report = rf2TgmAllKnownTyresSmoke('TgmRoot','$tgmRootEscaped','ReportPath','$reportPathEscaped','RoundtripDir','$roundtripDirEscaped'); assert(report.passed);"
+    $batch = "addpath('bridge/matlab'); addpath('tyres/matlab/functions'); report = rf2TgmAllKnownTyresSmoke('TgmRoot','$tgmRootEscaped','ReportPath','$reportPathEscaped','RoundtripDir','$roundtripDirEscaped'); assert(report.passed);"
     & $MatlabExe -batch $batch
 
     $report = Get-Content -LiteralPath $ReportPath -Raw | ConvertFrom-Json

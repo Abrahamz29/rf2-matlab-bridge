@@ -4,7 +4,6 @@ projectRoot = fileparts(mfilename("fullpath"));
 addpath(fullfile(projectRoot, "bridge", "matlab"));
 addpath(fullfile(projectRoot, "tyres", "matlab", "functions"));
 addpath(fullfile(projectRoot, "tyres", "matlab", "apps", "tyre_designer"));
-addpath(fullfile(projectRoot, "tracks", "blacklake", "matlab"));
 try
     client = RF2Client(projectRoot);
     status = client.status();

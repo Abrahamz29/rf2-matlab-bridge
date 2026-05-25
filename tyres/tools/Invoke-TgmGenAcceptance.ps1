@@ -88,7 +88,7 @@ try {
         $matlabReportFullPath = (Resolve-Path (Split-Path -Parent $MatlabReportPath)).Path
         $matlabReportFullPath = Join-Path $matlabReportFullPath (Split-Path -Leaf $MatlabReportPath)
         $matlabReportEscaped = $matlabReportFullPath.Replace("'", "''")
-        $matlabBatch = "addpath('bridge/matlab'); addpath('tyres/matlab/functions'); addpath('tracks/blacklake/matlab'); report = rf2TgmGeneratorSmoke; fid = fopen('$matlabReportEscaped','w'); fwrite(fid, jsonencode(report), 'char'); fclose(fid); assert(report.passed);"
+        $matlabBatch = "addpath('bridge/matlab'); addpath('tyres/matlab/functions'); report = rf2TgmGeneratorSmoke; fid = fopen('$matlabReportEscaped','w'); fwrite(fid, jsonencode(report), 'char'); fclose(fid); assert(report.passed);"
         & $MatlabExe -batch $matlabBatch
         Write-Host ("MATLAB headless smoke: True")
         Write-Host ("MATLAB report: {0}" -f $matlabReportFullPath)

@@ -1,7 +1,7 @@
 # Bridge MATLAB
 
-This folder contains the shared-memory client, telemetry plotting, and
-automation-facing MATLAB entry points.
+This folder contains the rFactor 2 shared-memory client and telemetry plotting
+entry points used for tyre validation workflows.
 
 ## TGM Generator App
 
@@ -26,4 +26,6 @@ The `rf2Tgm*.m`, `rf2ReadTgm.m`, `rf2WriteTgm.m`, and
 `tyres/matlab/functions/`. They add the app folder to the MATLAB path and call
 the implementation files under `tyres/matlab/apps/tgm_generator`.
 
-Bridge files here remain telemetry, plotting, and automation entry points.
+Bridge files here remain telemetry and plotting entry points. Track, vehicle,
+actuator, and open-loop automation code has been removed from this repository
+scope.

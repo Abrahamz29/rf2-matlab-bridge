@@ -16,13 +16,11 @@ and research tyre models wherever useful.
 - Do not expand track, car, or general vehicle-authoring features unless the
   user explicitly asks or they are directly needed to validate a tyre model.
 - Prefer domain-first folders over language-first folders:
-  - `bridge/` for shared-memory access, telemetry, automation runners, and
-    MATLAB/Python bridge code used by tyre validation workflows
-  - `tracks/blacklake/` for legacy/reference BlackLake assets only; do not
-    grow track-authoring features without an explicit request
+  - `bridge/` for rFactor 2 shared-memory telemetry used by tyre validation
+    workflows
   - `docs/` for operational notes and workflow documentation
-  - `scenarios/` for tyre-model experiment batches, sweeps, validation cases,
-    and reproducible test inputs
+  - `tyres/scenarios/` for tyre-model experiment batches, sweeps, validation
+    cases, and reproducible test inputs
   - `tyres/` for tyre model inputs, rFactor 2 TGM/TBC data, model databases,
     tyre references, tTool scenarios, MATLAB apps, tools, generated lookup
     extracts, and local tyre caches
