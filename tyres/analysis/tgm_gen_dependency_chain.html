@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TGM Gen Dependency Chain</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0b1014;
+      --panel: #111922;
+      --panel2: #162230;
+      --line: #263444;
+      --text: #e7eef5;
+      --muted: #91a4b7;
+      --accent: #72b7ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 13px/1.45 Segoe UI, Roboto, Arial, sans-serif;
+    }
+    header, main { max-width: 1480px; margin: 0 auto; padding: 22px; }
+    header { border-bottom: 1px solid var(--line); }
+    h1 { margin: 0 0 8px; font-size: 28px; font-weight: 750; }
+    h2 { margin: 0 0 10px; font-size: 18px; }
+    p { margin: 6px 0; color: var(--muted); }
+    code { color: #b9d8f2; }
+    .layout { display: grid; grid-template-columns: minmax(0, 1.65fr) minmax(360px, .9fr); gap: 14px; align-items: start; }
+    .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 14px; }
+    .summary { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 14px; margin-bottom: 14px; }
+    .summary ul { margin: 0; padding-left: 18px; color: #cdd9e4; }
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+    button {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: #0f171f;
+      color: #d8e6f2;
+      border-radius: 6px;
+      padding: 7px 10px;
+      cursor: pointer;
+      font: inherit;
+    }
+    button.active { border-color: var(--accent); background: #12304a; color: #fff; }
+    .legend { display: flex; flex-wrap: wrap; gap: 10px; color: #c9d7e3; }
+    .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+    .swatch { width: 11px; height: 11px; border-radius: 3px; display: inline-block; border: 1px solid rgba(255,255,255,.25); }
+    .flow-wrap { overflow: auto; border: 1px solid var(--line); border-radius: 8px; background: #0d151d; }
+    svg { min-width: 1120px; width: 100%; height: auto; display: block; }
+    .edge { stroke: #5e7489; stroke-width: 2; marker-end: url(#arrow); opacity: .7; }
+    .flow-node rect { stroke: rgba(255,255,255,.22); stroke-width: 1.2; rx: 8; }
+    .flow-node text { fill: #f6fbff; font-weight: 700; pointer-events: none; }
+    .flow-node .tagline { fill: #c1cfdb; font-weight: 500; }
+    .flow-node { cursor: pointer; opacity: .94; }
+    .flow-node:hover rect { stroke: #ffffff; }
+    .flow-node.selected rect { stroke: #ffffff; stroke-width: 2.2; }
+    .hidden { display: none; }
+    .detail-title { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .group-pill { display: inline-flex; align-items: center; gap: 6px; padding: 3px 8px; border: 1px solid var(--line); border-radius: 999px; color: #d8e6f2; white-space: nowrap; }
+    .detail-list, .evidence-list { margin: 10px 0 0; padding-left: 18px; }
+    .detail-list li, .evidence-list li { margin: 5px 0; color: #cdd9e4; }
+    .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .tag { border: 1px solid #314457; background: #0e1822; border-radius: 999px; padding: 2px 8px; color: #bdd3e6; }
+    .note { color: #cdd9e4; border-left: 3px solid var(--accent); padding: 8px 10px; background: #0f1b26; }
+    .small { color: var(--muted); font-size: 12px; }
+    @media (max-width: 1100px) {
+      .layout, .summary { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <h1>TGM Gen Dependency Chain</h1>
+  <p>Quelle: <code>input\TGM Gen V0.33 - GY F1 1975 Front.ods</code></p>
+</header>
+<main>
+  <section class="summary">
+    <div class="panel note">
+      <ul>
+        <li>Export-relevant: material selections, multipliers, ply span/angle controls, cord geometry, effective thickness and node-specific ply thickness.</li>
+<li>Visualizer only: the drawn Kernfahne/polyline. It is useful for checking the construction but is not the exported object.</li>
+<li>Generated export content includes 0 Geometry lines, 0 PlyParams lines, 0 PlyMaterial lines, 0 BulkMaterial lines and 0 TreadMaterial lines.</li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h2>Gruppen</h2>
+      <div class="legend"><span class="legend-item"><span class="swatch" style="background:#4cc9f0"></span>Ply geometry</span>
+<span class="legend-item"><span class="swatch" style="background:#7cda77"></span>Ply thickness</span>
+<span class="legend-item"><span class="swatch" style="background:#f0b85a"></span>Material properties</span>
+<span class="legend-item"><span class="swatch" style="background:#b090ff"></span>Node-level TGM assembly</span>
+<span class="legend-item"><span class="swatch" style="background:#ff8f5c"></span>Final export</span>
+<span class="legend-item"><span class="swatch" style="background:#8aa0b5"></span>Visualizer only</span></div>
+    </div>
+  </section>
+  <section class="layout">
+    <div class="panel">
+      <h2>Formelpfad</h2>
+      <div class="filters"><button class="filter-button active" data-filter="All">All</button>
+<button class="filter-button" data-filter="Thickness">Thickness</button>
+<button class="filter-button" data-filter="Angle">Angle</button>
+<button class="filter-button" data-filter="Material">Material</button>
+<button class="filter-button" data-filter="Geometry">Geometry</button>
+<button class="filter-button" data-filter="Export">Export</button></div>
+      <div class="flow-wrap"><svg viewBox="0 0 1280 700" role="img" aria-label="TGM Gen dependency flow"><defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L9,3 z" fill="#5e7489" /></marker></defs><path class="edge" data-tags="Geometry,Thickness" d="M 250.0 113.0 C 270.0 113.0, 270.0 113.0, 290.0 113.0" /><path class="edge" data-tags="Thickness" d="M 500.0 113.0 C 520.0 113.0, 520.0 113.0, 540.0 113.0" /><path class="edge" data-tags="Thickness" d="M 750.0 113.0 C 770.0 113.0, 770.0 113.0, 790.0 113.0" /><path class="edge" data-tags="Thickness" d="M 895.0 156.0 C 770.0 156.0, 770.0 220.0, 645.0 220.0" /><path class="edge" data-tags="Angle,Geometry" d="M 250.0 263.0 C 270.0 263.0, 270.0 263.0, 290.0 263.0" /><path class="edge" data-tags="Angle,Thickness" d="M 500.0 263.0 C 520.0 263.0, 520.0 263.0, 540.0 263.0" /><path class="edge" data-tags="Thickness,Angle" d="M 750.0 263.0 C 770.0 263.0, 770.0 293.0, 790.0 293.0" /><path class="edge" data-tags="Material" d="M 250.0 413.0 C 270.0 413.0, 270.0 413.0, 290.0 413.0" /><path class="edge" data-tags="Material" d="M 500.0 413.0 C 645.0 413.0, 645.0 293.0, 790.0 293.0" /><path class="edge" data-tags="Material" d="M 250.0 413.0 C 395.0 413.0, 395.0 473.0, 540.0 473.0" /><path class="edge" data-tags="Export,Thickness,Angle,Material" d="M 895.0 336.0 C 895.0 336.0, 895.0 430.0, 895.0 430.0" /><path class="edge" data-tags="Export,Material,Geometry" d="M 750.0 473.0 C 770.0 473.0, 770.0 473.0, 790.0 473.0" /><path class="edge" data-tags="Export" d="M 1000.0 473.0 C 1020.0 473.0, 1020.0 473.0, 1040.0 473.0" /><path class="edge" data-tags="Angle,Geometry" d="M 250.0 263.0 C 395.0 263.0, 395.0 613.0, 540.0 613.0" /><path class="edge" data-tags="Angle,Geometry" d="M 500.0 263.0 C 520.0 263.0, 520.0 613.0, 540.0 613.0" /><g class="flow-node" data-id="strand-inputs" data-tags="Geometry,Thickness"><title>Strand Diameter + Strand Spacing</title><rect x="40" y="70" width="210" height="86" fill="#4cc9f0" fill-opacity=".72" /><text x="54" y="98" font-size="13">Strand Diameter +</text><text x="54" y="115" font-size="13">Strand Spacing</text><text class="tagline" x="54" y="140" font-size="11">Ply geometry</text></g><g class="flow-node" data-id="strand-area" data-tags="Geometry,Thickness"><title>Strand Cross Section</title><rect x="290" y="70" width="210" height="86" fill="#4cc9f0" fill-opacity=".72" /><text x="304" y="98" font-size="13">Strand Cross Section</text><text class="tagline" x="304" y="140" font-size="11">Ply geometry</text></g><g class="flow-node" data-id="relative-area" data-tags="Thickness"><title>Relative Area</title><rect x="540" y="70" width="210" height="86" fill="#7cda77" fill-opacity=".72" /><text x="554" y="98" font-size="13">Relative Area</text><text class="tagline" x="554" y="140" font-size="11">Ply thickness</text></g><g class="flow-node" data-id="effective-thickness" data-tags="Thickness"><title>Effective Ply Thickness</title><rect x="790" y="70" width="210" height="86" fill="#7cda77" fill-opacity=".72" /><text x="804" y="98" font-size="13">Effective Ply</text><text x="804" y="115" font-size="13">Thickness</text><text class="tagline" x="804" y="140" font-size="11">Ply thickness</text></g><g class="flow-node" data-id="span-angle-inputs" data-tags="Angle,Geometry"><title>Start/End Nodes + Angle Controls</title><rect x="40" y="220" width="210" height="86" fill="#4cc9f0" fill-opacity=".72" /><text x="54" y="248" font-size="13">Start/End Nodes +</text><text x="54" y="265" font-size="13">Angle Controls</text><text class="tagline" x="54" y="290" font-size="11">Ply geometry</text></g><g class="flow-node" data-id="local-angle" data-tags="Angle,Geometry"><title>Local Ply Angle</title><rect x="290" y="220" width="210" height="86" fill="#4cc9f0" fill-opacity=".72" /><text x="304" y="248" font-size="13">Local Ply Angle</text><text class="tagline" x="304" y="290" font-size="11">Ply geometry</text></g><g class="flow-node" data-id="node-thickness" data-tags="Thickness,Angle,Geometry"><title>Node-specific Ply Thickness</title><rect x="540" y="220" width="210" height="86" fill="#7cda77" fill-opacity=".72" /><text x="554" y="248" font-size="13">Node-specific Ply</text><text x="554" y="265" font-size="13">Thickness</text><text class="tagline" x="554" y="290" font-size="11">Ply thickness</text></g><g class="flow-node" data-id="material-selection" data-tags="Material"><title>Material Selection + Multipliers</title><rect x="40" y="370" width="210" height="86" fill="#f0b85a" fill-opacity=".72" /><text x="54" y="398" font-size="13">Material Selection +</text><text x="54" y="415" font-size="13">Multipliers</text><text class="tagline" x="54" y="440" font-size="11">Material properties</text></g><g class="flow-node" data-id="material-lines" data-tags="Material,Export"><title>PlyMaterial + BulkMaterial + TreadMaterial</title><rect x="290" y="370" width="210" height="86" fill="#f0b85a" fill-opacity=".72" /><text x="304" y="398" font-size="13">PlyMaterial +</text><text x="304" y="415" font-size="13">BulkMaterial +</text><text class="tagline" x="304" y="440" font-size="11">Material properties</text></g><g class="flow-node" data-id="tgm-ply-contribution" data-tags="Thickness,Angle,Material"><title>Directional Stiffness / Mass Contribution</title><rect x="790" y="250" width="210" height="86" fill="#b090ff" fill-opacity=".72" /><text x="804" y="278" font-size="13">Directional Stiffness</text><text x="804" y="295" font-size="13">/ Mass Contribution</text><text class="tagline" x="804" y="320" font-size="11">Node-level TGM assembly</text></g><g class="flow-node" data-id="bulk-tread-assembly" data-tags="Material,Geometry"><title>Rubber + Tread Node Assembly</title><rect x="540" y="430" width="210" height="86" fill="#b090ff" fill-opacity=".72" /><text x="554" y="458" font-size="13">Rubber + Tread Node</text><text x="554" y="475" font-size="13">Assembly</text><text class="tagline" x="554" y="500" font-size="11">Node-level TGM assembly</text></g><g class="flow-node" data-id="tgm-output" data-tags="Export"><title>TGM Output Assembly</title><rect x="790" y="430" width="210" height="86" fill="#b090ff" fill-opacity=".72" /><text x="804" y="458" font-size="13">TGM Output Assembly</text><text class="tagline" x="804" y="500" font-size="11">Node-level TGM assembly</text></g><g class="flow-node" data-id="final-export" data-tags="Export"><title>Final TGM Export</title><rect x="1040" y="430" width="210" height="86" fill="#ff8f5c" fill-opacity=".72" /><text x="1054" y="458" font-size="13">Final TGM Export</text><text class="tagline" x="1054" y="500" font-size="11">Final export</text></g><g class="flow-node" data-id="visualizer" data-tags="Geometry,Angle"><title>Ply Angle Visualiser / Kernfahne</title><rect x="540" y="570" width="210" height="86" fill="#8aa0b5" fill-opacity=".72" /><text x="554" y="598" font-size="13">Ply Angle Visualiser /</text><text x="554" y="615" font-size="13">Kernfahne</text><text class="tagline" x="554" y="640" font-size="11">Visualizer only</text></g></svg></div>
+    </div>
+    <aside class="panel" id="detail-panel">
+      <h2>Detail</h2>
+      <p class="small">Klicke einen Knoten im Diagramm an.</p>
+    </aside>
+  </section>
+</main>
+<script>
+const nodes = [{"id": "strand-inputs", "label": "Strand Diameter + Strand Spacing", "group": "Ply geometry", "tags": ["Geometry", "Thickness"], "summary": "Wire or cord diameter and center spacing define the available reinforcing area before any node-specific scaling.", "details": ["Ply cord diameter: 0.00064 m", "Ply cord spacing: 0.00099 m", "Belt cord diameter: 0.00012 m"], "evidence": [{"description": "Strand cross section formula uses strand diameter.", "status": "verified"}, {"description": "Relative area formula uses strand cross section, diameter and spacing.", "status": "verified"}]}, {"id": "strand-area", "label": "Strand Cross Section", "group": "Ply geometry", "tags": ["Geometry", "Thickness"], "summary": "The generator turns strand diameter into strand area. This is the first geometric reduction from construction input to numeric model input.", "details": ["Ply strand area: 3.217e-07 square m", "Belt strand area: 1.131e-08 square m"], "evidence": [{"description": "Strand cross section formula uses strand diameter.", "status": "verified"}]}, {"id": "relative-area", "label": "Relative Area", "group": "Ply thickness", "tags": ["Thickness"], "summary": "Cross section is normalized by diameter and spacing. This gives the area fraction carried by the reinforcing strands.", "details": ["Ply relative area: 0.5077", "Belt relative area: 0.0952"], "evidence": [{"description": "Relative area formula uses strand cross section, diameter and spacing.", "status": "verified"}]}, {"id": "effective-thickness", "label": "Effective Ply Thickness", "group": "Ply thickness", "tags": ["Thickness"], "summary": "Relative area is converted into an equivalent continuous ply thickness. This value is export relevant.", "details": ["Ply effective thickness: 0.0003249 m", "Chafer effective thickness: 0.0003249 m", "Belt effective thickness: 1.142e-05 m"], "evidence": [{"description": "Effective ply thickness formula uses strand diameter and relative area.", "status": "verified"}]}, {"id": "span-angle-inputs", "label": "Start/End Nodes + Angle Controls", "group": "Ply geometry", "tags": ["Angle", "Geometry"], "summary": "Start and end nodes activate each ply over the tyre cross-section. Angle multiplier and minimum angle shape the local orientation.", "details": ["Ply1: active span 0 to 38, material Nylon \u2013 70s", "Ply2: active span 0 to 38, material Nylon \u2013 70s", "Ply3 turnup: active span 0 to 38, material Nylon \u2013 70s", "Ply4: active span 0 to 38, material Nylon \u2013 70s", "Chafer1: active span 0 to 3, material Nylon \u2013 70s", "Chafer2: active span 0 to 5, material Nylon \u2013 70s", "Belt1: active span 17 to 38, material Nylon \u2013 70s", "Belt2: active span 17 to 38, material Nylon \u2013 70s", "Angle multiplier: 1.04", "Minimum angle: 27 deg", "Thick multiplier: 1"], "evidence": [{"description": "Ply activation is derived from start/end node definitions.", "status": "verified"}, {"description": "Angle controls feed the local-angle calculation region.", "status": "verified"}]}, {"id": "local-angle", "label": "Local Ply Angle", "group": "Ply geometry", "tags": ["Angle", "Geometry"], "summary": "The construction sheet derives a local ply angle per active node from the span and angle settings.", "details": ["Calculated for each active node and ply family.", "Used by node thickness and directional stiffness calculations."], "evidence": [{"description": "Local angle formulas depend on the angle controls and active span.", "status": "verified"}]}, {"id": "node-thickness", "label": "Node-specific Ply Thickness", "group": "Ply thickness", "tags": ["Thickness", "Angle", "Geometry"], "summary": "Effective thickness is adjusted by local angle, radius/position and thick multipliers for every active node.", "details": ["Per-node ply thickness is present for ply, turnup, chafer and belt families.", "The calculation uses effective ply thickness, local angle, node radius/position and thick multiplier."], "evidence": [{"description": "Node-specific thickness formula uses effective thickness, local angle, node position and thick multiplier.", "status": "verified"}]}, {"id": "material-selection", "label": "Material Selection + Multipliers", "group": "Material properties", "tags": ["Material"], "summary": "Named construction materials are pulled from the material library and scaled by modulus and density multipliers.", "details": ["Tread: Race \u2013 G \u2013 FI 1975 Tread", "Tread sidewall: Race \u2013 G \u2013 FI 1975 Tread Sidewall", "Bulk filler: Race \u2013 G \u2013 FI 1975 Filler with E multiplier 0.95, density multiplier 1.018", "Bulk sidewall: Race \u2013 G \u2013 FI 1975 Sidewall with E multiplier 0.9, density multiplier 1.012", "Bulk belt: Race \u2013 G \u2013 FI 1975 Sidewall with E multiplier 1, density multiplier 1.01", "Bead wire: Steel \u2013 0.8% Carbon Steel with E multiplier 0.2, density multiplier 1"], "evidence": [{"description": "Construction material cells pull data from the material library and apply multipliers.", "status": "verified"}]}, {"id": "material-lines", "label": "PlyMaterial + BulkMaterial + TreadMaterial", "group": "Material properties", "tags": ["Material", "Export"], "summary": "The generator emits temperature-dependent material lines for reinforcement, bulk rubber and tread compounds.", "details": ["PlyMaterial lines are emitted for reinforcement plies.", "BulkMaterial lines are emitted for filler, sidewall, belt and liner rubber.", "TreadMaterial lines are emitted for tread cap and tread sidewall."], "evidence": [{"description": "Construction emits material text from resolved material properties.", "status": "verified"}]}, {"id": "tgm-ply-contribution", "label": "Directional Stiffness / Mass Contribution", "group": "Node-level TGM assembly", "tags": ["Thickness", "Angle", "Material"], "summary": "Node ply thickness, local ply angle and material properties are combined into directional model contributions.", "details": ["Thickness and angle control the active contribution at each node.", "Material properties control density, modulus, heat capacity and conductivity."], "evidence": [{"description": "TGM ply contribution uses node-specific ply thickness.", "status": "verified"}]}, {"id": "bulk-tread-assembly", "label": "Rubber + Tread Node Assembly", "group": "Node-level TGM assembly", "tags": ["Material", "Geometry"], "summary": "Bulk, filler, belt and tread materials are blended per node from the construction and geometry weights.", "details": ["Geometry weights blend filler, sidewall and belt rubber at node level.", "Tread and tread-sidewall selections are forwarded into TGM material output."], "evidence": [{"description": "TGM rubber assembly uses construction material values and geometry weights.", "status": "verified"}]}, {"id": "tgm-output", "label": "TGM Output Assembly", "group": "Node-level TGM assembly", "tags": ["Export"], "summary": "The TGM sheet assembles generated text lines for quasi-static settings, node geometry, materials and per-node ply parameters.", "details": ["The TGM sheet assembles complete model text sections.", "Node geometry, material definitions and PlyParams are combined before export."], "evidence": [{"description": "TGM output text is forwarded into the export sheet.", "status": "verified"}]}, {"id": "final-export", "label": "Final TGM Export", "group": "Final export", "tags": ["Export"], "summary": "The Export sheet forwards the assembled TGM output text into the generated .tgm model.", "details": ["The Export sheet forwards assembled TGM lines.", "The generated model changes when export-relevant construction inputs change."], "evidence": [{"description": "Final export lines are stored in the Export sheet.", "status": "verified"}]}, {"id": "visualizer", "label": "Ply Angle Visualiser / Kernfahne", "group": "Visualizer only", "tags": ["Geometry", "Angle"], "summary": "The visible Kernfahne line is a visual check. Changing only that rendering does not change the export; changing its construction inputs does.", "details": ["The visualizer line is a construction sanity check.", "It depends on construction and geometry inputs but is not itself a model object."], "evidence": [{"description": "Visualizer formulas produce chart coordinates; no exported line is based on the rendered curve itself.", "status": "verified"}]}];
+const edges = [{"source": "strand-inputs", "target": "strand-area", "tags": ["Geometry", "Thickness"]}, {"source": "strand-area", "target": "relative-area", "tags": ["Thickness"]}, {"source": "relative-area", "target": "effective-thickness", "tags": ["Thickness"]}, {"source": "effective-thickness", "target": "node-thickness", "tags": ["Thickness"]}, {"source": "span-angle-inputs", "target": "local-angle", "tags": ["Angle", "Geometry"]}, {"source": "local-angle", "target": "node-thickness", "tags": ["Angle", "Thickness"]}, {"source": "node-thickness", "target": "tgm-ply-contribution", "tags": ["Thickness", "Angle"]}, {"source": "material-selection", "target": "material-lines", "tags": ["Material"]}, {"source": "material-lines", "target": "tgm-ply-contribution", "tags": ["Material"]}, {"source": "material-selection", "target": "bulk-tread-assembly", "tags": ["Material"]}, {"source": "tgm-ply-contribution", "target": "tgm-output", "tags": ["Export", "Thickness", "Angle", "Material"]}, {"source": "bulk-tread-assembly", "target": "tgm-output", "tags": ["Export", "Material", "Geometry"]}, {"source": "tgm-output", "target": "final-export", "tags": ["Export"]}, {"source": "span-angle-inputs", "target": "visualizer", "tags": ["Angle", "Geometry"]}, {"source": "local-angle", "target": "visualizer", "tags": ["Angle", "Geometry"]}];
+const groupColors = {"Ply geometry": "#4cc9f0", "Ply thickness": "#7cda77", "Material properties": "#f0b85a", "Node-level TGM assembly": "#b090ff", "Final export": "#ff8f5c", "Visualizer only": "#8aa0b5"};
+let activeFilter = "All";
+let selectedNode = nodes[0]?.id || "";
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+}
+
+function matchesFilter(tags) {
+  return activeFilter === "All" || tags.includes(activeFilter);
+}
+
+function renderDetail(nodeId) {
+  const node = nodes.find(item => item.id === nodeId) || nodes[0];
+  if (!node) return;
+  selectedNode = node.id;
+  document.querySelectorAll(".flow-node").forEach(item => item.classList.toggle("selected", item.dataset.id === node.id));
+  const color = groupColors[node.group] || "#72b7ff";
+  const detailItems = node.details.map(item => `<li>${escapeHtml(item)}</li>`).join("");
+  const evidenceItems = node.evidence.map(item => `<li>${escapeHtml(item.description)} <span class="small">(${escapeHtml(item.status)})</span></li>`).join("");
+  const tags = node.tags.map(item => `<span class="tag">${escapeHtml(item)}</span>`).join("");
+  document.getElementById("detail-panel").innerHTML = `
+    <div class="detail-title">
+      <h2>${escapeHtml(node.label)}</h2>
+      <span class="group-pill"><span class="swatch" style="background:${color}"></span>${escapeHtml(node.group)}</span>
+    </div>
+    <p>${escapeHtml(node.summary)}</p>
+    <div class="tags">${tags}</div>
+    <ul class="detail-list">${detailItems}</ul>
+    <h2 style="margin-top:18px">Formelbelege</h2>
+    <ul class="evidence-list">${evidenceItems}</ul>
+  `;
+}
+
+function applyFilter(filter) {
+  activeFilter = filter;
+  document.querySelectorAll(".filter-button").forEach(button => button.classList.toggle("active", button.dataset.filter === filter));
+  document.querySelectorAll(".flow-node").forEach(item => {
+    const tags = item.dataset.tags.split(",");
+    item.classList.toggle("hidden", !matchesFilter(tags));
+  });
+  document.querySelectorAll(".edge").forEach(item => {
+    const tags = item.dataset.tags.split(",");
+    item.classList.toggle("hidden", !matchesFilter(tags));
+  });
+}
+
+document.querySelectorAll(".flow-node").forEach(item => item.addEventListener("click", () => renderDetail(item.dataset.id)));
+document.querySelectorAll(".filter-button").forEach(button => button.addEventListener("click", () => applyFilter(button.dataset.filter)));
+renderDetail(selectedNode);
+</script>
+</body>
+</html>
