@@ -1194,6 +1194,7 @@
     let matlabComponent = null;
     let state = null;
     let materialRecognitionCache = null;
+    const materialMahalanobisCache = new Map();
     let responsivePlotObserver = null;
     let responsivePlotTimer = null;
     const responsiveObservedSvgs = new WeakSet();
@@ -1209,6 +1210,7 @@
     const MATERIAL_RECOGNITION_TOP_N = 8;
     const MATERIAL_GLOBAL_DOMINANCE_SCOPES = new Set(["PlyMaterial", "TreadMaterial:cap", "BulkMaterial:filler"]);
     const MATERIAL_GLOBAL_DISTANCE_MARGIN = 0.08;
+    const MATERIAL_MAHALANOBIS_WEIGHT = 0.02;
     const COLORS = ["#e7eef5", "#72b7ff", "#6be675", "#f07d9d", "#b99cff", "#8ce3df", "#f0b85a", "#ff7a45"];
 
     function setup(htmlComponent) {
@@ -1226,6 +1228,7 @@
         }
         state = incoming;
         materialRecognitionCache = null;
+        materialMahalanobisCache.clear();
         viewState.materialCandidateDefaults = {};
         viewState.plyFamilyDefaults = {};
         viewState.reengineeringFamilyDefaults = {};
@@ -3641,7 +3644,7 @@
       });
 
       const global = aggregateGlobalMaterialMatches(localMatches);
-      enrichMaterialMatches(localMatches, global.byKey, global.broadByKey, global.dominantByScope, global.sourceFamily);
+      enrichMaterialMatches(localMatches, global.byKey, global.broadByKey, global.dominantByScope);
       materialRecognitionCache = {
         available: true,
         localMatches,
@@ -3769,6 +3772,8 @@
         materialName: String(material.name || "Material"),
         category: String(material.category || ""),
         score: Infinity,
+        baseScore: Infinity,
+        mahalanobisScore: NaN,
         modulusMultiplier: NaN,
         densityMultiplier: NaN,
         fieldScores: {}
@@ -3805,7 +3810,10 @@
       });
 
       if (weightSum <= 0) return null;
-      result.score = weightedScore / weightSum;
+      result.baseScore = weightedScore / weightSum;
+      result.mahalanobisScore = materialMahalanobisDistance(group, candidatePoints, group.kind, result.modulusMultiplier, result.densityMultiplier);
+      result.score = result.baseScore
+        + (Number.isFinite(result.mahalanobisScore) ? result.mahalanobisScore * MATERIAL_MAHALANOBIS_WEIGHT : 0);
       result.localLikelihood = materialCandidateLikelihood(result.score);
       return result;
     }
@@ -3887,12 +3895,124 @@
       return close + soft + hard;
     }
 
+    function materialMahalanobisDistance(group, candidatePoints, kind, modulusMultiplier = 1, densityMultiplier = 1) {
+      const model = materialMahalanobisModel(kind);
+      if (!model || !candidatePoints?.length) return NaN;
+      const distances = [];
+      asArray(group?.points).forEach(point => {
+        const observed = materialFeatureVector(point);
+        const candidate = materialFeatureVector({
+          youngsModulusPa: interpolateMaterialValue(candidatePoints, Number(point.temperatureK), "youngsModulusPa"),
+          densityKgM3: interpolateMaterialValue(candidatePoints, Number(point.temperatureK), "densityKgM3"),
+          poissonsRatio: interpolateMaterialValue(candidatePoints, Number(point.temperatureK), "poissonsRatio"),
+          compressionTensionRatio: interpolateMaterialValue(candidatePoints, Number(point.temperatureK), "compressionTensionRatio"),
+          specificHeat: interpolateMaterialValue(candidatePoints, Number(point.temperatureK), "specificHeat"),
+          thermalConductivity: interpolateMaterialValue(candidatePoints, Number(point.temperatureK), "thermalConductivity")
+        }, modulusMultiplier, densityMultiplier);
+        if (!observed || !candidate) return;
+        const diff = observed.map((value, index) => value - candidate[index]);
+        const distance = mahalanobisVectorDistance(diff, model.inverse);
+        if (Number.isFinite(distance)) distances.push(distance);
+      });
+      return distances.length ? distances.reduce((sum, value) => sum + value, 0) / distances.length : NaN;
+    }
+
+    function materialMahalanobisModel(kind) {
+      const key = String(kind || "Material");
+      if (materialMahalanobisCache.has(key)) return materialMahalanobisCache.get(key);
+      const vectors = [];
+      materialLibraryMaterials()
+        .filter(material => isMaterialCandidateForKind(key, material))
+        .forEach(material => {
+          asArray(material.points).forEach(point => {
+            const vector = materialFeatureVector(point);
+            if (vector) vectors.push(vector);
+          });
+        });
+      const model = vectors.length >= 8 ? materialCovarianceModel(vectors) : null;
+      materialMahalanobisCache.set(key, model);
+      return model;
+    }
+
+    function materialFeatureVector(point, modulusMultiplier = 1, densityMultiplier = 1) {
+      const young = Number(point?.youngsModulusPa) * (Number.isFinite(Number(modulusMultiplier)) ? Number(modulusMultiplier) : 1);
+      const density = Number(point?.densityKgM3) * (Number.isFinite(Number(densityMultiplier)) ? Number(densityMultiplier) : 1);
+      const poisson = Number(point?.poissonsRatio ?? point?.poissonRatio);
+      const compression = Number(point?.compressionTensionRatio ?? point?.compressionMultiplier);
+      const heat = Number(point?.specificHeat ?? point?.specificHeatJKgK);
+      const conductivity = Number(point?.thermalConductivity ?? point?.conductivityWMK);
+      if (!(young > 0) || !(density > 0) || !Number.isFinite(poisson) || !(compression > 0) || !(heat > 0) || !(conductivity > 0)) return null;
+      return [Math.log(young), Math.log(density), poisson, Math.log(compression), Math.log(heat), Math.log(conductivity)];
+    }
+
+    function materialCovarianceModel(vectors) {
+      const dimension = vectors[0]?.length || 0;
+      if (!dimension) return null;
+      const mean = Array.from({ length: dimension }, (_, index) =>
+        vectors.reduce((sum, vector) => sum + vector[index], 0) / vectors.length);
+      const covariance = Array.from({ length: dimension }, () => Array.from({ length: dimension }, () => 0));
+      vectors.forEach(vector => {
+        for (let row = 0; row < dimension; row += 1) {
+          for (let column = 0; column < dimension; column += 1) {
+            covariance[row][column] += (vector[row] - mean[row]) * (vector[column] - mean[column]);
+          }
+        }
+      });
+      const denom = Math.max(vectors.length - 1, 1);
+      for (let row = 0; row < dimension; row += 1) {
+        for (let column = 0; column < dimension; column += 1) covariance[row][column] /= denom;
+      }
+      const shrinkage = 0.35;
+      for (let row = 0; row < dimension; row += 1) {
+        for (let column = 0; column < dimension; column += 1) {
+          if (row !== column) covariance[row][column] *= 1 - shrinkage;
+        }
+        covariance[row][row] = covariance[row][row] * (1 - shrinkage) + Math.max(covariance[row][row], 1e-6) * shrinkage + 1e-6;
+      }
+      const inverse = invertMatrix(covariance);
+      return inverse ? { mean, inverse } : null;
+    }
+
+    function mahalanobisVectorDistance(diff, inverse) {
+      if (!inverse || !diff?.length) return NaN;
+      let value = 0;
+      for (let row = 0; row < diff.length; row += 1) {
+        for (let column = 0; column < diff.length; column += 1) {
+          value += diff[row] * inverse[row][column] * diff[column];
+        }
+      }
+      return Math.sqrt(Math.max(value, 0) / diff.length);
+    }
+
+    function invertMatrix(matrix) {
+      const size = matrix.length;
+      const augmented = matrix.map((row, index) => [
+        ...row.map(value => Number(value)),
+        ...Array.from({ length: size }, (_, column) => column === index ? 1 : 0)
+      ]);
+      for (let column = 0; column < size; column += 1) {
+        let pivot = column;
+        for (let row = column + 1; row < size; row += 1) {
+          if (Math.abs(augmented[row][column]) > Math.abs(augmented[pivot][column])) pivot = row;
+        }
+        if (Math.abs(augmented[pivot][column]) < 1e-12) return null;
+        if (pivot !== column) [augmented[column], augmented[pivot]] = [augmented[pivot], augmented[column]];
+        const divisor = augmented[column][column];
+        for (let item = 0; item < size * 2; item += 1) augmented[column][item] /= divisor;
+        for (let row = 0; row < size; row += 1) {
+          if (row === column) continue;
+          const factor = augmented[row][column];
+          for (let item = 0; item < size * 2; item += 1) augmented[row][item] -= factor * augmented[column][item];
+        }
+      }
+      return augmented.map(row => row.slice(size));
+    }
+
     function aggregateGlobalMaterialMatches(localMatches) {
       const byKey = new Map();
       const broadByKey = new Map();
       const localBestCountsByScope = new Map();
       const localBestTotalsByScope = new Map();
-      const sourceFamilyCounts = new Map();
       localMatches.forEach(match => {
         const localBest = match.candidates[0] || null;
         if (localBest && Number(localBest.score) <= 0.28) {
@@ -3900,10 +4020,6 @@
           const bestKey = `${bestScope}:${localBest.baseKey}`;
           localBestCountsByScope.set(bestKey, (localBestCountsByScope.get(bestKey) || 0) + 1);
           localBestTotalsByScope.set(bestScope, (localBestTotalsByScope.get(bestScope) || 0) + 1);
-          const familyKey = materialSourceFamilyKey(localBest);
-          if (familyKey && bestScope !== "PlyMaterial" && bestScope !== "BulkMaterial:filler") {
-            sourceFamilyCounts.set(familyKey, (sourceFamilyCounts.get(familyKey) || 0) + 1);
-          }
         }
         match.candidates.forEach(candidate => {
           const scopeKey = match.scopeKey || match.kind;
@@ -3992,12 +4108,10 @@
           dominantByScope.set(item.dominanceScope, item);
         }
       });
-      const sourceFamily = Array.from(sourceFamilyCounts.entries())
-        .sort((a, b) => b[1] - a[1] || String(a[0]).localeCompare(String(b[0])))[0]?.[0] || "";
-      return { summaries, byKey: summaryByKey, broadByKey: broadSummaryByKey, dominantByScope, sourceFamily };
+      return { summaries, byKey: summaryByKey, broadByKey: broadSummaryByKey, dominantByScope };
     }
 
-    function enrichMaterialMatches(localMatches, globalByKey, broadByKey = new Map(), dominantByScope = new Map(), sourceFamily = "") {
+    function enrichMaterialMatches(localMatches, globalByKey, broadByKey = new Map(), dominantByScope = new Map()) {
       localMatches.forEach(match => {
         const localBest = match.candidates[0] || null;
         const alternatives = match.candidates.map(candidate => {
@@ -4021,7 +4135,7 @@
             combinedLikelihood: candidate.localLikelihood * scopedSupport * sharedLayerSupport * dominanceBoost
           };
         });
-        const globalOverride = materialGlobalDominanceOverride(match, localBest, alternatives, dominantByScope, sourceFamily);
+        const globalOverride = materialGlobalDominanceOverride(match, localBest, alternatives, dominantByScope);
         if (globalOverride) globalOverride.globalOverride = true;
         alternatives.sort((a, b) => Number(b.globalOverride) - Number(a.globalOverride) || b.combinedLikelihood - a.combinedLikelihood);
         const likelihoodSum = alternatives.reduce((sum, candidate) => sum + candidate.combinedLikelihood, 0);
@@ -4045,21 +4159,10 @@
       return 1 + winnerShare * 4;
     }
 
-    function materialGlobalDominanceOverride(match, localBest, alternatives, dominantByScope, sourceFamily = "") {
+    function materialGlobalDominanceOverride(match, localBest, alternatives, dominantByScope) {
       if (!match || !localBest || !alternatives?.length || !dominantByScope) return null;
       const localScope = materialDominanceScopeKey(match.kind, localBest);
       if (!MATERIAL_GLOBAL_DOMINANCE_SCOPES.has(String(localScope || ""))) return null;
-      if (localScope === "BulkMaterial:filler" && sourceFamily) {
-        const familyCandidate = alternatives.find(item =>
-          item.globalDominanceScope === localScope && materialSourceFamilyKey(item) === sourceFamily);
-        if (familyCandidate) {
-          const candidateScore = Number(familyCandidate.score);
-          const localScore = Number(localBest.score);
-          if (Number.isFinite(candidateScore) && Number.isFinite(localScore) && candidateScore <= localScore + MATERIAL_GLOBAL_DISTANCE_MARGIN) {
-            return familyCandidate;
-          }
-        }
-      }
       const dominant = dominantByScope.get(localScope);
       if (!dominant || !dominant.baseKey || dominant.baseKey === localBest.baseKey) return null;
       const candidate = alternatives.find(item => item.baseKey === dominant.baseKey && item.globalDominanceScope === localScope);
@@ -4068,19 +4171,6 @@
       const localScore = Number(localBest.score);
       if (!Number.isFinite(candidateScore) || !Number.isFinite(localScore)) return null;
       return candidateScore <= localScore + MATERIAL_GLOBAL_DISTANCE_MARGIN ? candidate : null;
-    }
-
-    function materialSourceFamilyKey(candidate) {
-      let text = String(candidate?.materialName || candidate?.name || "");
-      if (!text) return "";
-      text = text.toLowerCase()
-        .replace(/[–—-]/g, " ")
-        .replace(/[^a-z0-9]+/g, " ")
-        .replace(/\b(tread sidewall|inner liner)\b/g, " ")
-        .replace(/\b(tread|sidewall|filler|bead|apex|bulk|belt|liner|soft|medium|hard)\b/g, " ")
-        .replace(/\s+/g, " ")
-        .trim();
-      return text.length >= 4 ? text : "";
     }
 
     function materialSecondWinnerShare(scope, activeKey, countsByScope, totalsByScope) {
