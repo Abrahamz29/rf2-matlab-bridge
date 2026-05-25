@@ -606,6 +606,10 @@
       gap: 6px;
       min-height: 26px;
     }
+    .material-recognition:empty {
+      display: none;
+      min-height: 0;
+    }
     .material-match-chip {
       min-width: 0;
       border: 1px solid var(--line);
@@ -3716,10 +3720,9 @@
           : "no pressure-dependent material rows";
       }
       drawMaterialSummary(summary, rows);
-      drawMaterialRecognition(recognition, selectedNodes);
+      if (recognition) recognition.innerHTML = "";
       const filteredRows = filterMaterialRowsByKind(rows);
-      const selectedCandidate = selectedMaterialCandidateForNodes(selectedNodes);
-      const candidate = selectedCandidate && materialKindFilters.has(selectedCandidate.kind) ? selectedCandidate : null;
+      const candidate = null;
       const candidateE = materialCandidateMultiplier(candidate, "modulusMultipliers");
       const candidateDensity = materialCandidateMultiplier(candidate, "densityMultipliers");
 
