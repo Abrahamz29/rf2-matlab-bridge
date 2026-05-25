@@ -2,23 +2,32 @@
 
 ## Purpose
 
-This repository contains a MATLAB + Python bridge for rFactor 2 telemetry,
-live plotting, and automated driving experiments.
+This repository is a MATLAB + Python workspace for tyre-model research,
+conversion, analysis, plotting, validation, and supporting tooling across tyre
+model families. rFactor 2 TGM/TBC/tTool work remains one important supported
+target, but the project scope is broader than rFactor 2 and includes market
+and research tyre models wherever useful.
 
 ## Working Rules
 
-- Keep changes scoped to telemetry, plotting, automation, documentation, and
+- Keep changes scoped to tyre models, tyre data, telemetry needed for tyre
+  validation, plotting, automation for tyre experiments, documentation, and
   supporting tooling for this project.
+- Do not expand track, car, or general vehicle-authoring features unless the
+  user explicitly asks or they are directly needed to validate a tyre model.
 - Prefer domain-first folders over language-first folders:
   - `bridge/` for shared-memory access, telemetry, automation runners, and
-    MATLAB/Python bridge code
-  - `tracks/blacklake/` for BlackLake assets, MATLAB controllers, Python
-    generators, package/export tooling, and track-local downloads/cache
+    MATLAB/Python bridge code used by tyre validation workflows
+  - `tracks/blacklake/` for legacy/reference BlackLake assets only; do not
+    grow track-authoring features without an explicit request
   - `docs/` for operational notes and workflow documentation
-  - `scenarios/` for vehicle/track maneuver batches and experiment inputs
-  - `tyres/` for TGM/TBC inputs, tyre databases, tyre references, tTool
-    scenarios, MATLAB apps, tools, generated lookup extracts, and local tyre
-    caches
+  - `scenarios/` for tyre-model experiment batches, sweeps, validation cases,
+    and reproducible test inputs
+  - `tyres/` for tyre model inputs, rFactor 2 TGM/TBC data, model databases,
+    tyre references, tTool scenarios, MATLAB apps, tools, generated lookup
+    extracts, and local tyre caches
+  - `references/` for external model documentation, papers, formula references,
+    public tool crawls, downloaded documentation, and concise source notes
 - Preserve user changes. Do not revert unrelated edits.
 - Verify changes with the narrowest relevant check before committing.
 - When external sources, papers, guides, web pages, formula references, or
@@ -50,18 +59,51 @@ live plotting, and automated driving experiments.
 
 ## Project Context
 
-- rFactor 2 shared-memory plugin is the primary data path.
-- Live telemetry requires the rFactor 2 client, not only the dedicated server.
-- Mock mode is acceptable for plot development when the simulator is not
-  running.
-- Automation is currently keyboard-actuated; future analog actuator backends
-  such as `vJoy` or `ViGEm` are valid extensions.
+- Tyre-model understanding is the primary project objective. Treat rFactor 2,
+  RMOD-K, Pacejka/Magic Formula, MF-Tyre/MF-Swift, FTire, CDTire, TMeasy,
+  brush models, finite-element belt/carcass models, and other commercial or
+  research models as comparable members of the broader tyre-model landscape.
+- rFactor 2 shared-memory telemetry and the existing rF toolchain remain
+  supported data paths, but they are no longer the only project center.
+- Live rFactor 2 telemetry still requires the rFactor 2 client, not only the
+  dedicated server.
+- Mock and offline data modes are acceptable for plot, parser, and model
+  comparison development when a simulator or solver is not running.
+- Automation should focus on repeatable tyre experiments, data extraction, and
+  validation workflows. Avoid new track/car automation unless explicitly
+  requested.
+
+## General Tyre Model Working Memory
+
+Use this section whenever discussing Reifenmodelle, model conversion,
+parameterization, measurements, contact patch behavior, force/moment curves,
+transient response, thermal behavior, wear, pressure, or validation across tyre
+model families. Treat it as standing context, not as a replacement for local
+file inspection.
+
+- Keep the distinction clear between empirical, semi-empirical, physical,
+  structural, finite-element, and simulator-specific tyre models.
+- For every model, identify its intended use: steady-state force/moment,
+  transient handling, ride/cleat response, contact patch detail, misuse/load
+  cases, thermal/wear behavior, AI guidance, or simulator runtime lookup.
+- Track units, coordinate systems, sign conventions, slip definitions, camber
+  definitions, load normalization, pressure conventions, and temperature scales
+  before comparing parameters across tools.
+- Prefer measured tyre data and published model documentation over copied
+  parameter sets. When data is incomplete, record assumptions and avoid
+  presenting fitted parameters as physical truth.
+- Separate model generation from validation. A model parser or converter is not
+  validated until force/moment curves, pressure/temperature behavior, and at
+  least one relevant transient or simulator workflow have been checked.
+- Document external sources under `references/` and keep local notes concise:
+  what was retrieved, when, which model/tool it describes, and how it informed
+  the analysis.
 
 ## rFactor 2 Tire Model Working Memory
 
-Use this section whenever discussing Reifenmodelle, TGM, TBC, tTool, tire
-geometry, tire grip, heat, wear, pressure, or AI tire behavior. It condenses
-the MotorLaps rFactor 2 tire development guide into project rules and must be
+Use this section whenever discussing rFactor 2 TGM, TBC, tTool, tire geometry,
+tire grip, heat, wear, pressure, or AI tire behavior. It condenses the
+MotorLaps rFactor 2 tire development guide into project rules and must be
 treated as standing context, not as a replacement for local file inspection.
 Source reference: https://motorlaps.com/tire-development-rfactor2.php
 
