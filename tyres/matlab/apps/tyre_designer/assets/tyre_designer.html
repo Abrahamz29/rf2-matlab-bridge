@@ -1947,7 +1947,7 @@
       const cells = [];
       const addCell = cell => {
         const materialRows = sortMaterialRows(cell.materialRows || []);
-        const signatureKey = materialFamilySignatureKey(cell.kind, materialRows);
+        const signatureKey = materialFamilySignatureKey(cell.kind, materialRows, cell);
         const familyKey = signatureKey
           ? `material-family:${cell.kind}:${signatureKey}`
           : `material-family:missing:${cell.kind}:${cell.key}`;
@@ -2265,9 +2265,20 @@
       return values.join("|");
     }
 
-    function materialFamilySignatureKey(kind, rows) {
+    function materialFamilySignatureKey(kind, rows, cell = null) {
+      const recognizedKey = recognizedMaterialFamilyKey(kind, cell);
+      if (recognizedKey) return recognizedKey;
       const signature = plyMaterialSignatureKey(rows);
-      return signature ? `${String(kind || "Material")}:${signature}` : "";
+      return signature ? `observed:${String(kind || "Material")}:${signature}` : "";
+    }
+
+    function recognizedMaterialFamilyKey(kind, cell) {
+      const candidate = cell?.match?.best;
+      const baseKey = String(candidate?.baseKey || "");
+      if (!baseKey || String(candidate?.matchType || "") === "unknown") return "";
+      const confidence = Number(candidate?.confidence);
+      if (!Number.isFinite(confidence) || confidence < 0.35) return "";
+      return `recognized:${String(kind || "Material")}:${baseKey}`;
     }
 
     function plyFamilyDefaultBaseKey(familyKey) {
