@@ -1024,10 +1024,12 @@
     }
     .reengineering-db-tools {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) auto auto;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
       gap: 5px;
     }
-    .reengineering-db-tools input {
+    .reengineering-db-tools input,
+    .reengineering-db-tools select {
+      grid-column: 1 / -1;
       width: 100%;
       min-width: 0;
     }
@@ -1258,6 +1260,9 @@
             </div>
             <div class="reengineering-db-tools">
               <input id="reengineering-db-search" type="search" placeholder="Filter" aria-label="Filter material database" />
+              <select id="reengineering-db-category" aria-label="Filter material category">
+                <option value="">All categories</option>
+              </select>
               <button type="button" data-reengineering-db-action="apply">Set</button>
               <button type="button" data-reengineering-db-action="clear">Clear</button>
             </div>
@@ -1302,7 +1307,7 @@
     const materialHiddenSeries = new Set();
     const materialKindFilters = new Set(["TreadMaterial", "BulkMaterial", "PlyMaterial"]);
     const nodeSelectionDrag = { active: false, dragging: false, plotId: "", start: null, current: null, additive: false, suppressClick: false };
-    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0, materialCandidatePanelKind: "", selectedMaterialCandidateKey: "", materialCandidateDefaults: {}, plyFamilyDefaults: {}, reengineeringFamilyDefaults: {}, reengineeringFamilyKey: "", reengineeringNodeIndex: null, reengineeringPlyIndex: null, reengineeringStackKey: "", reengineeringSelectedCellKeys: [], reengineeringSelectionAnchorKey: "", reengineeringSelectionAnchorType: "cell", reengineeringCellOverrides: {}, reengineeringDbSearch: "", reengineeringDbMaterialId: null };
+    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0, materialCandidatePanelKind: "", selectedMaterialCandidateKey: "", materialCandidateDefaults: {}, plyFamilyDefaults: {}, reengineeringFamilyDefaults: {}, reengineeringFamilyKey: "", reengineeringNodeIndex: null, reengineeringPlyIndex: null, reengineeringStackKey: "", reengineeringSelectedCellKeys: [], reengineeringSelectionAnchorKey: "", reengineeringSelectionAnchorType: "cell", reengineeringCellOverrides: {}, reengineeringDbSearch: "", reengineeringDbCategory: "", reengineeringDbMaterialId: null };
     const LAYER_EXPLODE_TARGET_MM = 30;
     const NODE_LAYER_SPREAD_TARGET_MM = 30;
     const NODE_REST_SPREAD_TARGET_MM = 30;
@@ -1387,6 +1392,11 @@
       document.addEventListener("input", event => {
         if (event.target?.id !== "reengineering-db-search") return;
         viewState.reengineeringDbSearch = event.target.value || "";
+        drawReengineeringDatabasePanel(plyReengineeringModel());
+      });
+      document.addEventListener("change", event => {
+        if (event.target?.id !== "reengineering-db-category") return;
+        viewState.reengineeringDbCategory = event.target.value || "";
         drawReengineeringDatabasePanel(plyReengineeringModel());
       });
       document.addEventListener("click", event => {
@@ -2281,10 +2291,19 @@
     function drawReengineeringDatabasePanel(model) {
       const meta = document.getElementById("reengineering-db-meta");
       const input = document.getElementById("reengineering-db-search");
+      const categorySelect = document.getElementById("reengineering-db-category");
       const list = document.getElementById("reengineering-db-list");
       if (!list) return;
       if (input && input.value !== String(viewState.reengineeringDbSearch || "")) {
         input.value = String(viewState.reengineeringDbSearch || "");
+      }
+      const categories = reengineeringDatabaseCategories();
+      const activeCategory = categories.includes(String(viewState.reengineeringDbCategory || "")) ? String(viewState.reengineeringDbCategory || "") : "";
+      viewState.reengineeringDbCategory = activeCategory;
+      if (categorySelect) {
+        const options = [`<option value="">All categories</option>`]
+          .concat(categories.map(category => `<option value="${escapeAttr(category)}" ${category === activeCategory ? "selected" : ""}>${escapeHtml(category)}</option>`));
+        categorySelect.innerHTML = options.join("");
       }
       const selectedCells = reengineeringSelectedCells(model);
       const selectedKinds = Array.from(new Set(selectedCells.map(cell => cell.kind))).sort();
@@ -2292,7 +2311,7 @@
       const materials = reengineeringDatabaseMaterialsForSelection(model);
       if (meta) {
         const kindText = selectedKinds.length === 1 ? materialKindLabel(selectedKinds[0]) : selectedKinds.length ? "Mixed" : "-";
-        meta.textContent = `${selectedCells.length} cells | ${kindText}`;
+        meta.textContent = `${selectedCells.length} cells | ${kindText} | ${materials.length}/${materialLibraryMaterials().length} materials`;
       }
       list.innerHTML = materials.length ? materials.map((material, index) => {
         const selected = selectedMaterial && Number(selectedMaterial.id) === Number(material.id);
@@ -2308,17 +2327,22 @@
     }
 
     function reengineeringDatabaseMaterialsForSelection(model) {
-      const selectedCells = reengineeringSelectedCells(model);
-      const selectedKinds = Array.from(new Set(selectedCells.map(cell => cell.kind))).sort();
       const query = String(viewState.reengineeringDbSearch || "").trim().toLowerCase();
+      const category = String(viewState.reengineeringDbCategory || "");
       return materialLibraryMaterials()
         .filter(material => {
-          if (selectedKinds.length === 1 && !isMaterialCandidateForKind(selectedKinds[0], material)) return false;
-          if (selectedKinds.length > 1 && !selectedKinds.some(kind => isMaterialCandidateForKind(kind, material))) return false;
+          if (category && String(material.category || "") !== category) return false;
           if (!query) return true;
           return `${material.name || ""} ${material.category || ""}`.toLowerCase().includes(query);
         })
         .sort((a, b) => String(a.category || "").localeCompare(String(b.category || "")) || String(a.name || "").localeCompare(String(b.name || "")));
+    }
+
+    function reengineeringDatabaseCategories() {
+      return Array.from(new Set(materialLibraryMaterials()
+        .map(material => String(material.category || "").trim())
+        .filter(Boolean)))
+        .sort((a, b) => a.localeCompare(b));
     }
 
     function drawReengineeringDecision(model) {
@@ -2588,9 +2612,7 @@
           viewState.reengineeringCellOverrides = {};
         }
         item.cells.forEach(cell => {
-          if (isMaterialCandidateForKind(cell.kind, material)) {
-            viewState.reengineeringCellOverrides[reengineeringCellKey(cell.nodeIndex, cell.stackKey)] = Number(material.id);
-          }
+          viewState.reengineeringCellOverrides[reengineeringCellKey(cell.nodeIndex, cell.stackKey)] = Number(material.id);
         });
         const overrideCandidate = materialCandidateFromLibraryMaterial(item.kind, material);
         viewState.reengineeringFamilyKey = reengineeringDisplayFamilyKey(item.kind, overrideCandidate, item.signatureKey, item.key);
@@ -2808,7 +2830,6 @@
       }
       let count = 0;
       selectedCells.forEach(cell => {
-        if (!isMaterialCandidateForKind(cell.kind, material)) return;
         viewState.reengineeringCellOverrides[reengineeringCellKey(cell.nodeIndex, cell.stackKey)] = Number(material.id);
         count += 1;
       });
@@ -2830,7 +2851,7 @@
       const id = Number(viewState.reengineeringCellOverrides?.[reengineeringCellKey(cell?.nodeIndex, cell?.stackKey)]);
       if (!Number.isFinite(id)) return null;
       const material = materialLibraryMaterials().find(item => Number(item.id) === id);
-      if (!material || !isMaterialCandidateForKind(cell.kind, material)) return null;
+      if (!material) return null;
       return materialCandidateFromLibraryMaterial(cell.kind, material);
     }
 
