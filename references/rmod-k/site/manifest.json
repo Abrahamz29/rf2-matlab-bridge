@@ -1,0 +1,571 @@
+{
+  "root": "https://www.rmod-k.com/",
+  "retrieved": "2026-05-25",
+  "robots_respected": true,
+  "page_count": 21,
+  "asset_count": 39,
+  "error_count": 0,
+  "pages": [
+    {
+      "url": "https://www.rmod-k.com/",
+      "final_url": "https://www.rmod-k.com/",
+      "local_path": "references/rmod-k/site/pages/index.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 14197,
+      "sha256": "e3230a106ee52266a3a96a1fccf229562a0db96fac76cb49ea14ce6d6a6fd425",
+      "title": "Overview",
+      "text_preview": "Overview Links FAQs Find Us Search You are here: Home Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Overview This system of tyre models allow the calculation of tyre response over a wide range of excitation frequencies and driving manoeuvers. At low to medium frequency excitations concerning inputs from the vehicle or the road, the rigid belt model RMOD-K 7 RB covers the frequency area to 100 [Hz] including the \"rigid belt\" modes of a tir"
+    },
+    {
+      "url": "https://www.rmod-k.com/links",
+      "final_url": "https://www.rmod-k.com/links",
+      "local_path": "references/rmod-k/site/pages/links.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 13864,
+      "sha256": "466dbb3411fa378263b94232a929c5c90060496240a4c9a0eb783be17c331bc4",
+      "title": "Links",
+      "text_preview": "Links Links FAQs Find Us Search You are here: Home Links Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Links IAT Ingenieurgesellschaft für Automobiltechnik mbH Technische Hochschule Brandenburg User Login Username Password Show Password Remember Me Sign in with a passkey Log in Forgot your password? Forgot your username? Impressum Disclaimer Privacy Policy © 2026 RMOD-K 7"
+    },
+    {
+      "url": "https://www.rmod-k.com/faqs",
+      "final_url": "https://www.rmod-k.com/faqs",
+      "local_path": "references/rmod-k/site/pages/faqs.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 17550,
+      "sha256": "0a2a71c1ea098a6c8f5d51f1aaca9c47a521498f1b3fb3bb4711f71bdbb105e0",
+      "title": "FAQs",
+      "text_preview": "FAQs Links FAQs Find Us Search You are here: Home FAQs Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Display # 5 10 15 20 25 30 50 100 All Articles Title First Steps to use the RMOD-K FlexView Animation tool Advantages of the RMOD-K Login User area: FB SimulationTStart time > 0.0 seconds FB Friction 3D equidistant velocity axis (linear/log) Version 7.11a3.10FlexView User Login Username Password Show Password Remember Me Sign in with a pas"
+    },
+    {
+      "url": "https://www.rmod-k.com/find-us",
+      "final_url": "https://www.rmod-k.com/find-us",
+      "local_path": "references/rmod-k/site/pages/find-us.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 13795,
+      "sha256": "86daf4206ac9c0d644e10f76cbd54faee0e615ee14c070c9477c8f6bf91368f8",
+      "title": "Find Us",
+      "text_preview": "Find Us Links FAQs Find Us Search You are here: Home Find Us Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Find Us User Login Username Password Show Password Remember Me Sign in with a passkey Log in Forgot your password? Forgot your username? Impressum Disclaimer Privacy Policy © 2026 RMOD-K 7"
+    },
+    {
+      "url": "https://www.rmod-k.com/tyre-property-lab",
+      "final_url": "https://www.rmod-k.com/tyre-property-lab",
+      "local_path": "references/rmod-k/site/pages/tyre-property-lab.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 21232,
+      "sha256": "14f42c641875647d5d43cf00679b8b54de78314554d7bf05e0716e6efaefd1b7",
+      "title": "Tyre Property Lab - TPL",
+      "text_preview": "Tyre Property Lab - TPL Links FAQs Find Us Search You are here: Home Tyre Property Lab Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Tyre Property Lab - TPL The laboratory for measuring tyre characteristics (TPL) comprises test facilities for measuring properties on non-rolling and rolling wheels. The laboratory was put into operation in 2016. In addition to the tasks in research and development, it is also used to carry out student proje"
+    },
+    {
+      "url": "https://www.rmod-k.com/measurements",
+      "final_url": "https://www.rmod-k.com/measurements",
+      "local_path": "references/rmod-k/site/pages/measurements.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 17402,
+      "sha256": "65b695eee7ffd0570b1f90703494537f0c3e706045e0b4e2a0be3b73f541f60a",
+      "title": "Measurements",
+      "text_preview": "Measurements Links FAQs Find Us Search You are here: Home Measurements Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Measurements The parameterization of the RMOD-K FB is based on a series of measurements, the scope of which depends on the use of the model in the simulations. A standard measurement has been successfully followed in the past. Nevertheless, changes can be useful in concrete projects, e.g. the reduction of certain measuremen"
+    },
+    {
+      "url": "https://www.rmod-k.com/flexible-belt-fb",
+      "final_url": "https://www.rmod-k.com/flexible-belt-fb",
+      "local_path": "references/rmod-k/site/pages/flexible-belt-fb.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 25665,
+      "sha256": "0d566c2399f0a735aaea49f4599394ba982d6df8d0af074c09fb7b4c44aac201",
+      "title": "Flexible Belt (FB)",
+      "text_preview": "Flexible Belt (FB) Links FAQs Find Us Search You are here: Home Flexible Belt (FB) Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Flexible Belt (FB) The Flexible Belt (FB) model within the RMOD-K 7.x model family follows a new modelling approach and is not based on the earlier version RMOD-K 6.1. The new model has a fundamentally larger application area than the old version because of the possibility of adapting the model’s topology and ot"
+    },
+    {
+      "url": "https://www.rmod-k.com/fb-misuse",
+      "final_url": "https://www.rmod-k.com/fb-misuse",
+      "local_path": "references/rmod-k/site/pages/fb-misuse.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 17792,
+      "sha256": "c0f827002e1a79f021d01087c8977491e5010d1a14ca643d2a6a3d1a86fdb69c",
+      "title": "FB Misuse",
+      "text_preview": "FB Misuse Links FAQs Find Us Search You are here: Home FB Misuse Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature FB Misuse Among load cases concerning vehicle suspension strength and durability, the misuse case is very special because of large obstacles. In normal rolling conditions, contact occurs between tire and road surface. To handle misuse deformations, the contact between the inner surface of the tire and the rim has to be dealt with"
+    },
+    {
+      "url": "https://www.rmod-k.com/formula",
+      "final_url": "https://www.rmod-k.com/formula",
+      "local_path": "references/rmod-k/site/pages/formula.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 16469,
+      "sha256": "fc439e471efc4729540645cb4124f18205974b237bce04d29e402eb505fefc17",
+      "title": "Formula",
+      "text_preview": "Formula Links FAQs Find Us Search You are here: Home Formula Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Formula RMOD-K Formula is an open source collection of two simple tire models and related stuff like optimisation tools and simulation interfaces. It was intended to build a package reaching from parameter optimisation based on measurements of steady state force and moment to simulation models of steady state tire behaviour in vehicl"
+    },
+    {
+      "url": "https://www.rmod-k.com/rigid-belt-rb",
+      "final_url": "https://www.rmod-k.com/rigid-belt-rb",
+      "local_path": "references/rmod-k/site/pages/rigid-belt-rb.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 25419,
+      "sha256": "5903b4b9c25668d5f1ad6ec8d3e3299a9e3caf0b03d6a5e93b6efe4a924f6df2",
+      "title": "Rigid Belt (RB)",
+      "text_preview": "Rigid Belt (RB) Links FAQs Find Us Search You are here: Home Rigid Belt (RB) Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Rigid Belt (RB) The tire model RB (Rigid Belt) simplifies, in principle, the tire belt into a rigid belt body, which is defined by a radius and a belt width. Meanwhile, the tire model RB describes the contact between the tire model and the contact area by cutting a parametrizable geometry with the ground layer or desc"
+    },
+    {
+      "url": "https://www.rmod-k.com/literature",
+      "final_url": "https://www.rmod-k.com/literature",
+      "local_path": "references/rmod-k/site/pages/literature.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 16850,
+      "sha256": "49f3259c0dbbc6bd8af73809204df008c0fb61d6308fc4c10820a68aa05025ba",
+      "title": "Literature",
+      "text_preview": "Literature Links FAQs Find Us Search You are here: Home Literature Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Literature 7. \"RMOD-K Formula Documentation\" Ch Oertel - 2011 Read article 6. \"Tyre Models in Vehicle Dynamics: Theory and Application\" Ch Oertel - 2008 - Carl-Cranz-Gesellschaft e.V - Seminar, Vienna 5. \"Kontakt- und Strukturmechanik in Reifenmodellen für die Mehrkörperdynamik MKS-Simulationen in der Automobilindustrie\" Ch Oer"
+    },
+    {
+      "url": "https://www.rmod-k.com/impressum",
+      "final_url": "https://www.rmod-k.com/impressum",
+      "local_path": "references/rmod-k/site/pages/impressum.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 14695,
+      "sha256": "ea2fc0691e0a1c5012d1b560ea13cd120ff6378c38b4bc3d12c9dedbce72b311",
+      "title": "Impressum",
+      "text_preview": "Impressum Links FAQs Find Us Search You are here: Home Impressum Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Impressum IAT Ingenieurgesellschaft für Automobiltechnik Dynamics mbH Aroser Allee 68 13407 Berlin Germany Phone: +49 (0)30 473931 000 e-mail: This email address is being protected from spambots. You need JavaScript enabled to view it. Managing Director: Thomas Deter Scientific Director: Prof. Dr. Christian Oertel Ust-ID-Nr.: DE "
+    },
+    {
+      "url": "https://www.rmod-k.com/diclaimer",
+      "final_url": "https://www.rmod-k.com/diclaimer",
+      "local_path": "references/rmod-k/site/pages/diclaimer.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 15234,
+      "sha256": "6128d844c39ae14ba12118d493bc14cab45260a4c37f1d8e8ab75ef7c349d3c5",
+      "title": "Disclaimer",
+      "text_preview": "Disclaimer Links FAQs Find Us Search You are here: Home Disclaimer Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Disclaimer The author reserves the right not to be responsible for the topicality, correctness, completeness or quality of the information provided. Liability claims regarding damage caused by the use of any information provided, including any kind of information which is incomplete or incorrect, will therefore be rejected. All"
+    },
+    {
+      "url": "https://www.rmod-k.com/privacy-policy",
+      "final_url": "https://www.rmod-k.com/privacy-policy",
+      "local_path": "references/rmod-k/site/pages/privacy-policy.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 44686,
+      "sha256": "0e54571f8f4569233a78562128680c4b62ba3e36651d87d307c26fbe98e386f0",
+      "title": "Privacy Policy",
+      "text_preview": "Privacy Policy Links FAQs Find Us Search You are here: Home Privacy Policy Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Privacy Policy We are very delighted that you have shown interest in our enterprise. Data protection is of a particularly high priority for the management of the IAT Ingenieurgesellschaft für Automobiltechnik Dynamics mbH. The use of the Internet pages of the IAT Ingenieurgesellschaft für Automobiltechnik Dynamics mbH i"
+    },
+    {
+      "url": "https://www.rmod-k.com/2016-rmod-k-7",
+      "final_url": "https://www.rmod-k.com/2016-rmod-k-7",
+      "local_path": "references/rmod-k/site/pages/2016-rmod-k-7.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 14296,
+      "sha256": "d2845eed9ad13e7611895ef7b00ccf89fcabee59839e326ebb671b5c33624b5b",
+      "title": "Copyright",
+      "text_preview": "Copyright Links FAQs Find Us Search You are here: Home © 2026 RMOD-K 7 Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Copyright All images, artwork, programming and text on this Website are copyrighted. They are authorized for private domestic use only. Any commercial use as well as non-commercial reposting or publication are prohibited without prior written permission from IAT mbH. The author intended not to use any copyrighted material f"
+    },
+    {
+      "url": "https://www.rmod-k.com/faqs/22-first-steps-to-use-the-rmod-k-flexview-animation-tool",
+      "final_url": "https://www.rmod-k.com/faqs/22-first-steps-to-use-the-rmod-k-flexview-animation-tool",
+      "local_path": "references/rmod-k/site/pages/faqs__22-first-steps-to-use-the-rmod-k-flexview-animation-tool.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 14586,
+      "sha256": "421d2f3f2334d86512fa0415e50f30ac46e42afe5076872e230970d55b525e01",
+      "title": "First Steps to use the RMOD-K FlexView Animation tool",
+      "text_preview": "First Steps to use the RMOD-K FlexView Animation tool Links FAQs Find Us Search You are here: Home FAQs First Steps to use the RMOD-K FlexView Animation tool Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature First Steps to use the RMOD-K FlexView Animation tool Could you give me some advice how should I use the RMOD-K FlexView in animation mode? To help you use this program we prepared a tutorial. If you want to watch it, click here . User Lo"
+    },
+    {
+      "url": "https://www.rmod-k.com/faqs/20-advantages-of-the-rmod-k-login-user-area",
+      "final_url": "https://www.rmod-k.com/faqs/20-advantages-of-the-rmod-k-login-user-area",
+      "local_path": "references/rmod-k/site/pages/faqs__20-advantages-of-the-rmod-k-login-user-area.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 14505,
+      "sha256": "cae82d8dfa64084167a9fe0a96abaa06983d0ab4d5fc0916f67515896b35e357",
+      "title": "Advantages of the RMOD-K Login User area:",
+      "text_preview": "Advantages of the RMOD-K Login User area: Links FAQs Find Us Search You are here: Home FAQs Advantages of the RMOD-K Login User area: Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Advantages of the RMOD-K Login User area: The RMOD-K User area is available for registered users to have access for detailed user manuals, additional pictures / animations and for a download area. Please submit a short message in the menue item Contact Us with a"
+    },
+    {
+      "url": "https://www.rmod-k.com/faqs/19-fb-simulationtstart-time-0-0-seconds",
+      "final_url": "https://www.rmod-k.com/faqs/19-fb-simulationtstart-time-0-0-seconds",
+      "local_path": "references/rmod-k/site/pages/faqs__19-fb-simulationtstart-time-0-0-seconds.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 14976,
+      "sha256": "4213e6ca0621d786471c3e770dcdf713f6474eb2ad71b36e6fe106459b5b9c4a",
+      "title": "FB SimulationTStart time > 0.0 seconds",
+      "text_preview": "FB SimulationTStart time > 0.0 seconds Links FAQs Find Us Search You are here: Home FAQs FB SimulationTStart time > 0.0 seconds Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature FB SimulationTStart time > 0.0 seconds RMOD-K FB: Simulation T-Start time should not be set to zero ! To start the mbs simulation at time 0.0 seconds with appropriate initial conditions an internally used simulation time solves loading the tire due to the road surface"
+    },
+    {
+      "url": "https://www.rmod-k.com/faqs/18-fb-friction-3d-equidistant-velocity-axis-linear-log",
+      "final_url": "https://www.rmod-k.com/faqs/18-fb-friction-3d-equidistant-velocity-axis-linear-log",
+      "local_path": "references/rmod-k/site/pages/faqs__18-fb-friction-3d-equidistant-velocity-axis-linear-log.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 14898,
+      "sha256": "123fd79754311e0a24c4ad98a3bf7cd1257fafd6a147cdee9f49434eb9a80d69",
+      "title": "FB Friction 3D equidistant velocity axis (linear/log)",
+      "text_preview": "FB Friction 3D equidistant velocity axis (linear/log) Links FAQs Find Us Search You are here: Home FAQs FB Friction 3D equidistant velocity axis (linear/log) Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature FB Friction 3D equidistant velocity axis (linear/log) Using tire data sets for the Flexible Belt model (FB) you have the possibility to change from a linear equidistant lookup table concerning the velocity direction to a equidistant logar"
+    },
+    {
+      "url": "https://www.rmod-k.com/faqs/16-version-7-09c3-flexview",
+      "final_url": "https://www.rmod-k.com/faqs/16-version-7-09c3-flexview",
+      "local_path": "references/rmod-k/site/pages/faqs__16-version-7-09c3-flexview.html",
+      "content_type": "text/html; charset=utf-8",
+      "bytes": 14457,
+      "sha256": "fd0086ee78f0683db809ba32447719f8f3b2771e1c8b55a0d2d15788a2d58254",
+      "title": "Version 7.11a3.10FlexView",
+      "text_preview": "Version 7.11a3.10FlexView Links FAQs Find Us Search You are here: Home FAQs Version 7.11a3.10FlexView Overview Tyre Property Lab Measurements Flexible Belt (FB) FB Misuse Formula Rigid Belt (RB) Literature Version 7.11a3.10FlexView GUI FlexView Windows Program is available as 7.11a3.10 version to allow simulation and animation of FB structure and road (see download in the user area). With the 3D-Editor you may load the footprint results in a separat GUI Program. An Excel based Parametersystem al"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/downloads/FlexView_Animation_Rebars.htm",
+      "final_url": "https://www.rmod-k.com/images/stories/media/downloads/FlexView_Animation_Rebars.htm",
+      "local_path": "references/rmod-k/site/pages/images__stories__media__downloads__FlexView_Animation_Rebars.htm",
+      "content_type": "text/html",
+      "bytes": 652,
+      "sha256": "3f5413bec13b61846561ff7ac4787d6e4565eb320a4159e8b9358d414c05e56b",
+      "title": "",
+      "text_preview": ""
+    }
+  ],
+  "assets": [
+    {
+      "url": "https://www.rmod-k.com/images/RMOD-K_Bild.png",
+      "final_url": "https://www.rmod-k.com/images/RMOD-K_Bild.png",
+      "source_page": "https://www.rmod-k.com/",
+      "local_path": "references/rmod-k/site/assets/images__RMOD-K_Bild.png",
+      "content_type": "image/png",
+      "bytes": 238384,
+      "sha256": "d8f795e751dc4c88d8e15fa1fe06b3a30be214f3e92ebd69c3990ec10d6715db"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/downloads/TPL/TPL-THB-E.pdf",
+      "final_url": "https://www.rmod-k.com/images/stories/media/downloads/TPL/TPL-THB-E.pdf",
+      "source_page": "https://www.rmod-k.com/tyre-property-lab",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__downloads__TPL__TPL-THB-E.pdf",
+      "content_type": "application/pdf",
+      "bytes": 1769665,
+      "sha256": "80b152c2b6ccab47f1e1dd907eb1a337d96d3db91dadbb20a9a49ea8a8207b08"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/TPL/TPL3.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/TPL/TPL3.jpg",
+      "source_page": "https://www.rmod-k.com/tyre-property-lab",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__TPL__TPL3.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 260872,
+      "sha256": "93652667ba960a272ffeee12eb1130ed0d23ea42a057ee295ac06394605e1b6c"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/TPL/TPL1.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/TPL/TPL1.jpg",
+      "source_page": "https://www.rmod-k.com/tyre-property-lab",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__TPL__TPL1.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 246903,
+      "sha256": "7857b315f026d7b8fa0dc8cccc86b2162d4ad97634c3081b57dff69e0651833d"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/TPL/TPL2.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/TPL/TPL2.jpg",
+      "source_page": "https://www.rmod-k.com/tyre-property-lab",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__TPL__TPL2.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 275057,
+      "sha256": "e80eb05e1e58c3680bf377ef621d0aeb0c5b3ebbd93f5025f2806c2e270b9651"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/downloads/measurements/RMOD-K-V7-Measurement_Packages.pdf",
+      "final_url": "https://www.rmod-k.com/images/stories/media/downloads/measurements/RMOD-K-V7-Measurement_Packages.pdf",
+      "source_page": "https://www.rmod-k.com/measurements",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__downloads__measurements__RMOD-K-V7-Measurement_Packages.pdf",
+      "content_type": "application/pdf",
+      "bytes": 812197,
+      "sha256": "3ae680da47145b2d69731db9101ad66111813ff9238b2ba2142374d2db61fc26"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/downloads/measurements/RMOD-K-V7-Measurements-TDX_Format.pdf",
+      "final_url": "https://www.rmod-k.com/images/stories/media/downloads/measurements/RMOD-K-V7-Measurements-TDX_Format.pdf",
+      "source_page": "https://www.rmod-k.com/measurements",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__downloads__measurements__RMOD-K-V7-Measurements-TDX_Format.pdf",
+      "content_type": "application/pdf",
+      "bytes": 296907,
+      "sha256": "8250d733d5a7204fd98c0952799eb4dd2bc9a5c4f169d0fdf2442922b65fc1d1"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/FB/image001.gif",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/FB/image001.gif",
+      "source_page": "https://www.rmod-k.com/flexible-belt-fb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__FB__image001.gif",
+      "content_type": "image/gif",
+      "bytes": 8774,
+      "sha256": "c54687fec5070d4b3b61288d435c5bac3a7c4a56160373bec4f6fcc0755a1db9"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/FB/image002.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/FB/image002.jpg",
+      "source_page": "https://www.rmod-k.com/flexible-belt-fb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__FB__image002.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 16848,
+      "sha256": "f93defcfb432cb442a6625475db8f184fa5b3dec18d5e87bb10b19c978629572"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/FB/image003.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/FB/image003.jpg",
+      "source_page": "https://www.rmod-k.com/flexible-belt-fb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__FB__image003.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 46809,
+      "sha256": "3ae6b7bb98fa31a6ef9767c3d844bafea52e2bb23308701dd05344ce8fa423ec"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/FB/ForceMomentsFu.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/FB/ForceMomentsFu.jpg",
+      "source_page": "https://www.rmod-k.com/flexible-belt-fb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__FB__ForceMomentsFu.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 29050,
+      "sha256": "307952f5bf92d5268f2bc18751f1a8f4ecd4362c6be4d04832c3fbf028a19aa4"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/FB/ForceMomentsFs.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/FB/ForceMomentsFs.jpg",
+      "source_page": "https://www.rmod-k.com/flexible-belt-fb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__FB__ForceMomentsFs.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 28949,
+      "sha256": "ee171e515733c1d21d7bc8dd1089a80c33e98044bacb417600f9408731707316"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/FB/3DFriction.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/FB/3DFriction.jpg",
+      "source_page": "https://www.rmod-k.com/flexible-belt-fb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__FB__3DFriction.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 29978,
+      "sha256": "6c49f2c6c2806affd377726fa243e7ead8ac308ccca4e28e548e00d285333eb6"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/FB/CleatFz.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/FB/CleatFz.jpg",
+      "source_page": "https://www.rmod-k.com/flexible-belt-fb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__FB__CleatFz.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 27034,
+      "sha256": "3f68d94288d065c5d3c24054384a6a9fdc1b5ac81e4aadeee45bb64cd91675dd"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/FB/CleatFx.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/FB/CleatFx.jpg",
+      "source_page": "https://www.rmod-k.com/flexible-belt-fb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__FB__CleatFx.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 29871,
+      "sha256": "5cd979a9662653f0c29fe12cbeaec6e74b721472c42bc00772abc5fc0afbf9c8"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/FB/image010.gif",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/FB/image010.gif",
+      "source_page": "https://www.rmod-k.com/flexible-belt-fb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__FB__image010.gif",
+      "content_type": "image/gif",
+      "bytes": 22481,
+      "sha256": "68459bbb7c65403c7433ee4f3f56949f71471f564a9bec557ac5e9a34a03dcc9"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image001.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image001.jpg",
+      "source_page": "https://www.rmod-k.com/fb-misuse",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__misuse__image001.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 19101,
+      "sha256": "00f448a75bba69ac6fadae8e33b75735bb8aeb5795c9afe74e4f16aa13f056aa"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image002.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image002.jpg",
+      "source_page": "https://www.rmod-k.com/fb-misuse",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__misuse__image002.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 38627,
+      "sha256": "ae50dc21b897f9c9841b297c59d5eddd24c0f753bf521dc4606a9ecf31414d24"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image003.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image003.jpg",
+      "source_page": "https://www.rmod-k.com/fb-misuse",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__misuse__image003.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 11537,
+      "sha256": "3935bfb34244ad9e2a36e33e9a7c7a352688ebf15b7884dbc6b72143d7ab6960"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image006.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image006.jpg",
+      "source_page": "https://www.rmod-k.com/fb-misuse",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__misuse__image006.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 8230,
+      "sha256": "3c497ac83fb78bbdcea53ccaa613515e68399d23ebad7e7f12b736f6b33cca2b"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image000.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image000.jpg",
+      "source_page": "https://www.rmod-k.com/fb-misuse",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__misuse__image000.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 15164,
+      "sha256": "9e08e415a59936e5c18622ea18643f91c531ead656b0718349f245c165ce0054"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image008.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image008.jpg",
+      "source_page": "https://www.rmod-k.com/fb-misuse",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__misuse__image008.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 24690,
+      "sha256": "7f7b1ca66627ffb5e2fe15091e4e38d3d470e3fb910f203cd19d88f642490384"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image009.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image009.jpg",
+      "source_page": "https://www.rmod-k.com/fb-misuse",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__misuse__image009.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 15659,
+      "sha256": "e21d70f4595069076dfa1a2e3b515edefd1ccc802f19fdd0c506e586600c787a"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image010.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/misuse/image010.jpg",
+      "source_page": "https://www.rmod-k.com/fb-misuse",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__misuse__image010.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 19856,
+      "sha256": "dd185e3b9e25a9fdea2b7e99f295413925b0171bc8c8afe49a205e22faaad098"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/downloads/Formula/RMOD-K-Formula-Documentation.pdf",
+      "final_url": "https://www.rmod-k.com/images/stories/media/downloads/Formula/RMOD-K-Formula-Documentation.pdf",
+      "source_page": "https://www.rmod-k.com/formula",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__downloads__Formula__RMOD-K-Formula-Documentation.pdf",
+      "content_type": "application/pdf",
+      "bytes": 3277047,
+      "sha256": "39718b669a307d7ee81b9c7126dc71ee005d5a79fa15e6eaf0d0ca1c1bb89828"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/downloads/Formula/Formula-C++VS2013.7z",
+      "final_url": "https://www.rmod-k.com/images/stories/media/downloads/Formula/Formula-C++VS2013.7z",
+      "source_page": "https://www.rmod-k.com/formula",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__downloads__Formula__Formula-C_VS2013.7z",
+      "content_type": "application/x-7z-compressed",
+      "bytes": 4811840,
+      "sha256": "d0ed58141c8cc80aa0efe1f07bed4f07283d488291559c3a885fb3beb0181cb0"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/downloads/Formula/Formula-C++VS2017.7z",
+      "final_url": "https://www.rmod-k.com/images/stories/media/downloads/Formula/Formula-C++VS2017.7z",
+      "source_page": "https://www.rmod-k.com/formula",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__downloads__Formula__Formula-C_VS2017.7z",
+      "content_type": "application/x-7z-compressed",
+      "bytes": 4932978,
+      "sha256": "8e79d05ae202bf5972850875a160566446414ff00117f96a70a60a29c3074653"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/Formula/Formula0x.png",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/Formula/Formula0x.png",
+      "source_page": "https://www.rmod-k.com/formula",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__Formula__Formula0x.png",
+      "content_type": "image/png",
+      "bytes": 13670,
+      "sha256": "7a56cb98a9fe92648a7e0aa58cfc0ad319a012414677e32bf34e1448a3812013"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/RB/image001.gif",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/RB/image001.gif",
+      "source_page": "https://www.rmod-k.com/rigid-belt-rb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__RB__image001.gif",
+      "content_type": "image/gif",
+      "bytes": 18021,
+      "sha256": "eee2a884438dee7cf82e8145dc7c46b39dd76fc294eb663dc266e3d669a08e78"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/RB/table001.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/RB/table001.jpg",
+      "source_page": "https://www.rmod-k.com/rigid-belt-rb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__RB__table001.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 13842,
+      "sha256": "2995fdafc57d40a97e92b2513cd30171bf3424e584ad36e6b79a15cb93296320"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/RB/image004.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/RB/image004.jpg",
+      "source_page": "https://www.rmod-k.com/rigid-belt-rb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__RB__image004.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 11017,
+      "sha256": "7eb47508037a42d03d5aaeae29430aa99dc58109dad2fa8871daaef22b00d7af"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/RB/image006.gif",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/RB/image006.gif",
+      "source_page": "https://www.rmod-k.com/rigid-belt-rb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__RB__image006.gif",
+      "content_type": "image/gif",
+      "bytes": 1572,
+      "sha256": "0fdaec5c5891dd027681d9d0388629d5630ae8254fc84602e82800b532d06a9e"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/RB/image007.gif",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/RB/image007.gif",
+      "source_page": "https://www.rmod-k.com/rigid-belt-rb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__RB__image007.gif",
+      "content_type": "image/gif",
+      "bytes": 16183,
+      "sha256": "11060be4855d6d998f26751174fdafc19ec497cb9575eebbcfea2e769cb43843"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/RB/LongForceAni.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/RB/LongForceAni.jpg",
+      "source_page": "https://www.rmod-k.com/rigid-belt-rb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__RB__LongForceAni.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 25328,
+      "sha256": "250b302f3d7a754bc830ae5ce466040a8893c172fc79c2345c2881578d3cde80"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/pic/RB/DeltaFzCamber.jpg",
+      "final_url": "https://www.rmod-k.com/images/stories/media/pic/RB/DeltaFzCamber.jpg",
+      "source_page": "https://www.rmod-k.com/rigid-belt-rb",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__pic__RB__DeltaFzCamber.jpg",
+      "content_type": "image/jpeg",
+      "bytes": 35355,
+      "sha256": "80f790cdb167d921d76dd3286d1c2013ae2532906c4e3080d72ba16c8d97e1fc"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/downloads/Formula/formula.pdf",
+      "final_url": "https://www.rmod-k.com/images/stories/media/downloads/Formula/formula.pdf",
+      "source_page": "https://www.rmod-k.com/literature",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__downloads__Formula__formula.pdf",
+      "content_type": "application/pdf",
+      "bytes": 2170280,
+      "sha256": "8d07e6968a46be3d9839c8359dbea0e3e0d3945b6cd28dcc2573abf9ab4336ba"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/downloads/measurements/Date_Measurement_Package_Request_Example.xlsx",
+      "final_url": "https://www.rmod-k.com/images/stories/media/downloads/measurements/Date_Measurement_Package_Request_Example.xlsx",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__downloads__measurements__Date_Measurement_Package_Request_Example.xlsx",
+      "content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "bytes": 14803,
+      "sha256": "96bd724c220d796e9217eba518f4188ec1589db44c03436daf9b554f4fcaf350"
+    },
+    {
+      "url": "https://www.rmod-k.com/images/stories/media/downloads/FlexView_Animation_Rebars.swf",
+      "final_url": "https://www.rmod-k.com/images/stories/media/downloads/FlexView_Animation_Rebars.swf",
+      "local_path": "references/rmod-k/site/assets/images__stories__media__downloads__FlexView_Animation_Rebars.swf",
+      "content_type": "application/vnd.adobe.flash.movie",
+      "bytes": 3038026,
+      "sha256": "75b1f5c8b5d623ec3b727332d28a56354dee1c5b17642e3a6fa28f1d34899099"
+    },
+    {
+      "url": "https://www.rmod-k.com/robots.txt",
+      "final_url": "https://www.rmod-k.com/robots.txt",
+      "local_path": "references/rmod-k/site/assets/robots.txt",
+      "content_type": "text/plain",
+      "bytes": 882,
+      "sha256": "003c762cd392e7c377ff5c39c42832f09d206a28a79aff436fa28395b498204d"
+    }
+  ],
+  "errors": []
+}

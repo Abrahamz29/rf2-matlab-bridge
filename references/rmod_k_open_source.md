@@ -18,6 +18,12 @@
   source files, and Visual Studio 2013/2017 projects.
   Local copy: `references/rmod-k/RMOD-K-Formula-Documentation.pdf`
   SHA256: `39718B669A307D7EE81B9C7126DC71EE005D5A79FA15E6EAF0D0CA1C1BB89828`
+- Source: rmod-k.com public site mirror, URL: https://www.rmod-k.com/
+  Retrieved: 2026-05-25.
+  Used for: Full public-site inventory of RMOD-K pages, downloads, Formula
+  archives, measurement documents, TPL documents, and FlexView tutorial media.
+  Local manifest: `references/rmod-k/site/manifest.json`
+  Analysis: `references/rmod-k/site_inventory.md`
 
 ## License inspection
 
