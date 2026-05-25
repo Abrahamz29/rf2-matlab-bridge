@@ -21,8 +21,7 @@ DEFAULT_OUT = REPO_ROOT / "tyres" / "analysis" / "tgm_gen_material_recognition_c
 KIND_COLUMNS = ["Tread", "Bulk"]
 MATERIAL_RECOGNITION_TOP_N = 12
 GLOBAL_DOMINANT_SCOPES = {"PlyMaterial", "TreadMaterial:cap", "BulkMaterial:filler"}
-GLOBAL_OVERRIDE_MAX_SCORE = 0.16
-GLOBAL_OVERRIDE_SCORE_MARGIN = 0.08
+GLOBAL_MATERIAL_DISTANCE_MARGIN = 0.08
 UNKNOWN_SCORE_MAX = 0.28
 
 
@@ -348,8 +347,7 @@ def apply_global_material_probability(groups: list[dict[str, Any]]) -> list[dict
                 dominant_candidate
                 and dominant_material != local["material"]
                 and dominant["dominant"]
-                and dominant_candidate.get("score", math.inf) <= GLOBAL_OVERRIDE_MAX_SCORE
-                and dominant_candidate.get("score", math.inf) <= local.get("score", math.inf) + GLOBAL_OVERRIDE_SCORE_MARGIN
+                and dominant_candidate.get("score", math.inf) <= local.get("score", math.inf) + GLOBAL_MATERIAL_DISTANCE_MARGIN
             ):
                 final = dict(dominant_candidate)
                 final["localMaterial"] = local["material"]
@@ -763,7 +761,7 @@ def render_html(report: dict[str, Any]) -> str:
 </header>
 <main>
   <section class="note">
-    Links steht, was aus den Excel-/ODS-Selections und bekannten Generatorformeln kommt. Rechts steht, welches Einzelmaterial unser Recognizer aus den generierten TGM-Materialwerten ableitet. Ply, Cap/Tread und Filler werden zusätzlich mit einer globalen Dominanzwahrscheinlichkeit stabilisiert, damit einzelne lokale Ausreißer nicht als Materialwechsel erscheinen.
+    Links steht, was aus den Excel-/ODS-Selections und bekannten Generatorformeln kommt. Rechts steht, welches Einzelmaterial unser Recognizer aus den generierten TGM-Materialwerten ableitet. Ply, Cap/Tread und Filler werden zusätzlich mit einer globalen Dominanzwahrscheinlichkeit stabilisiert; ein lokaler Ausreißer bleibt nur als weiteres Material stehen, wenn sein Score mehr als {GLOBAL_MATERIAL_DISTANCE_MARGIN:g} vom globalen Material abweicht.
   </section>
 
   <h2>Querschnitt-Materialbelegung</h2>

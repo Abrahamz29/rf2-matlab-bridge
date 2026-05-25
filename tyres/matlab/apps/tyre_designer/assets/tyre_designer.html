@@ -1208,8 +1208,7 @@
     const NODE_SLICE_LABEL_MIN_GAP_PX = 4;
     const MATERIAL_RECOGNITION_TOP_N = 8;
     const MATERIAL_GLOBAL_DOMINANCE_SCOPES = new Set(["PlyMaterial", "TreadMaterial:cap", "BulkMaterial:filler"]);
-    const MATERIAL_GLOBAL_OVERRIDE_MAX_SCORE = 0.16;
-    const MATERIAL_GLOBAL_OVERRIDE_SCORE_MARGIN = 0.08;
+    const MATERIAL_GLOBAL_DISTANCE_MARGIN = 0.08;
     const COLORS = ["#e7eef5", "#72b7ff", "#6be675", "#f07d9d", "#b99cff", "#8ce3df", "#f0b85a", "#ff7a45"];
 
     function setup(htmlComponent) {
@@ -4008,8 +4007,7 @@
       const candidateScore = Number(candidate.score);
       const localScore = Number(localBest.score);
       if (!Number.isFinite(candidateScore) || !Number.isFinite(localScore)) return 1;
-      if (candidateScore > MATERIAL_GLOBAL_OVERRIDE_MAX_SCORE) return 1;
-      if (candidateScore > localScore + MATERIAL_GLOBAL_OVERRIDE_SCORE_MARGIN) return 1;
+      if (candidateScore > localScore + MATERIAL_GLOBAL_DISTANCE_MARGIN) return 1;
       return 1 + winnerShare * 4;
     }
 
