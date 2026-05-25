@@ -1206,7 +1206,10 @@
     const NODE_LAYER_SPREAD_TARGET_MM = 30;
     const NODE_REST_SPREAD_TARGET_MM = 30;
     const NODE_SLICE_LABEL_MIN_GAP_PX = 4;
-    const MATERIAL_RECOGNITION_TOP_N = 5;
+    const MATERIAL_RECOGNITION_TOP_N = 8;
+    const MATERIAL_GLOBAL_DOMINANCE_MIN = 0.8;
+    const MATERIAL_GLOBAL_OVERRIDE_MAX_SCORE = 0.16;
+    const MATERIAL_GLOBAL_OVERRIDE_SCORE_MARGIN = 0.08;
     const COLORS = ["#e7eef5", "#72b7ff", "#6be675", "#f07d9d", "#b99cff", "#8ce3df", "#f0b85a", "#ff7a45"];
 
     function setup(htmlComponent) {
@@ -3878,7 +3881,15 @@
     function aggregateGlobalMaterialMatches(localMatches) {
       const byKey = new Map();
       const broadByKey = new Map();
+      const localBestCountsByKind = new Map();
+      const localBestTotalsByKind = new Map();
       localMatches.forEach(match => {
+        const localBest = match.candidates[0] || null;
+        if (localBest && Number(localBest.score) <= 0.28) {
+          const bestKey = `${match.kind}:${localBest.baseKey}`;
+          localBestCountsByKind.set(bestKey, (localBestCountsByKind.get(bestKey) || 0) + 1);
+          localBestTotalsByKind.set(match.kind, (localBestTotalsByKind.get(match.kind) || 0) + 1);
+        }
         match.candidates.forEach(candidate => {
           const scopeKey = match.scopeKey || match.kind;
           const key = `${scopeKey}:${candidate.baseKey}`;
@@ -3928,6 +3939,8 @@
 
       const totalsByScope = new Map();
       byKey.forEach(item => totalsByScope.set(item.scopeKey, (totalsByScope.get(item.scopeKey) || 0) + item.likelihood));
+      const totalsByKind = new Map();
+      broadByKey.forEach(item => totalsByKind.set(item.kind, (totalsByKind.get(item.kind) || 0) + item.likelihood));
       const summaries = Array.from(byKey.values()).map(item => ({
         ...item,
         nodeCount: item.nodes.size,
@@ -3940,6 +3953,9 @@
         ...item,
         nodeCount: item.nodes.size,
         scopeCount: item.scopes.size,
+        probability: item.likelihood / Math.max(totalsByKind.get(item.kind) || 0, 1e-12),
+        winnerCount: localBestCountsByKind.get(item.key) || 0,
+        winnerShare: (localBestCountsByKind.get(item.key) || 0) / Math.max(localBestTotalsByKind.get(item.kind) || 0, 1),
         nodes: Array.from(item.nodes).sort((a, b) => a - b),
         scopes: Array.from(item.scopes).sort()
       }]));
@@ -3948,18 +3964,23 @@
 
     function enrichMaterialMatches(localMatches, globalByKey, broadByKey = new Map()) {
       localMatches.forEach(match => {
+        const localBest = match.candidates[0] || null;
         const alternatives = match.candidates.map(candidate => {
           const global = globalByKey.get(`${match.scopeKey || match.kind}:${candidate.baseKey}`);
           const broad = broadByKey.get(`${match.kind}:${candidate.baseKey}`);
           const scopedSupport = global ? 1 + Math.log1p(global.groupCount) * 0.35 + global.probability : 1;
-          const sharedLayerSupport = broad ? 1 + Math.log1p(broad.scopeCount) * 0.18 + Math.log1p(broad.groupCount) * 0.08 : 1;
+          const broadProbability = Math.max(Number(broad?.winnerShare) || 0, Number(broad?.probability) || 0);
+          const sharedLayerSupport = broad ? 1 + Math.log1p(broad.scopeCount) * 0.18 + Math.log1p(broad.groupCount) * 0.08 + broadProbability * 0.55 : 1;
+          const dominanceBoost = materialGlobalDominanceBoost(match, candidate, localBest, broad);
           return {
             ...candidate,
-            globalProbability: global?.probability || 0,
+            globalProbability: Math.max(global?.probability || 0, broadProbability),
             globalGroupCount: global?.groupCount || 0,
+            globalWinnerShare: broad?.winnerShare || 0,
+            globalWinnerCount: broad?.winnerCount || 0,
             globalScopeLabel: global?.scopeLabel || match.scopeLabel || "",
             sharedScopeCount: broad?.scopeCount || 0,
-            combinedLikelihood: candidate.localLikelihood * scopedSupport * sharedLayerSupport
+            combinedLikelihood: candidate.localLikelihood * scopedSupport * sharedLayerSupport * dominanceBoost
           };
         }).sort((a, b) => b.combinedLikelihood - a.combinedLikelihood);
         const likelihoodSum = alternatives.reduce((sum, candidate) => sum + candidate.combinedLikelihood, 0);
@@ -3970,6 +3991,19 @@
         }));
         match.best = match.alternatives[0] || null;
       });
+    }
+
+    function materialGlobalDominanceBoost(match, candidate, localBest, broad) {
+      if (!match || !candidate || !localBest || !broad) return 1;
+      if (String(match.kind || "") !== "PlyMaterial") return 1;
+      const winnerShare = Number(broad.winnerShare) || 0;
+      if (winnerShare < MATERIAL_GLOBAL_DOMINANCE_MIN) return 1;
+      const candidateScore = Number(candidate.score);
+      const localScore = Number(localBest.score);
+      if (!Number.isFinite(candidateScore) || !Number.isFinite(localScore)) return 1;
+      if (candidateScore > MATERIAL_GLOBAL_OVERRIDE_MAX_SCORE) return 1;
+      if (candidateScore > localScore + MATERIAL_GLOBAL_OVERRIDE_SCORE_MARGIN) return 1;
+      return 1 + winnerShare * 4;
     }
 
     function materialCandidateLikelihood(score) {

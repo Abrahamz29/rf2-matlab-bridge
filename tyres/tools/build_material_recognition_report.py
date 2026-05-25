@@ -19,6 +19,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_ODS = REPO_ROOT / "input" / "TGM Gen V0.33 - GY F1 1975 Front.ods"
 DEFAULT_OUT = REPO_ROOT / "tyres" / "analysis" / "tgm_gen_material_recognition_compare.html"
 KIND_COLUMNS = ["Tread", "Bulk"]
+MATERIAL_RECOGNITION_TOP_N = 12
+GLOBAL_DOMINANT_KINDS = {"PlyMaterial"}
+GLOBAL_DOMINANCE_MIN = 0.80
+GLOBAL_OVERRIDE_MAX_SCORE = 0.16
+GLOBAL_OVERRIDE_SCORE_MARGIN = 0.08
+UNKNOWN_SCORE_MAX = 0.28
 
 
 def main() -> int:
@@ -45,8 +51,11 @@ def build_report(ods: Path) -> dict[str, Any]:
 
     used = selected_materials(cells)
     for group in tgm_groups:
-        group["best"] = best_material_match(group, library["materials"])
+        group["candidates"] = material_candidate_matches(group, library["materials"])
+        group["localBest"] = group["candidates"][0] if group["candidates"] else None
+        group["best"] = group["localBest"]
         group["excel"] = expected_excel_material(group, used)
+    global_probabilities = apply_global_material_probability(tgm_groups)
 
     recognized_summary = summarize_groups(tgm_groups, "best")
     excel_summary = summarize_groups(tgm_groups, "excel")
@@ -59,6 +68,7 @@ def build_report(ods: Path) -> dict[str, Any]:
         "used": used,
         "recognized_summary": recognized_summary,
         "excel_summary": excel_summary,
+        "global_probabilities": global_probabilities,
         "differences": differences,
         "matrices": matrices,
         "geometry": geometry,
@@ -247,6 +257,11 @@ def first_used_material(used: list[dict[str, Any]], role: str) -> dict[str, Any]
 
 
 def best_material_match(group: dict[str, Any], materials: list[dict[str, Any]]) -> dict[str, Any] | None:
+    matches = material_candidate_matches(group, materials)
+    return matches[0] if matches else None
+
+
+def material_candidate_matches(group: dict[str, Any], materials: list[dict[str, Any]]) -> list[dict[str, Any]]:
     candidates = []
     for material in materials:
         if not material_candidate_for_kind(group["kind"], material):
@@ -255,7 +270,86 @@ def best_material_match(group: dict[str, Any], materials: list[dict[str, Any]]) 
         if match:
             candidates.append(match)
     candidates.sort(key=lambda item: item["score"])
-    return candidates[0] if candidates else None
+    return dedupe_material_candidates(candidates)[:MATERIAL_RECOGNITION_TOP_N]
+
+
+def dedupe_material_candidates(candidates: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    by_key: dict[str, dict[str, Any]] = {}
+    for candidate in candidates:
+        key = material_identity_key(candidate)
+        existing = by_key.get(key)
+        if existing is None or candidate["score"] < existing["score"]:
+            by_key[key] = candidate
+    return sorted(by_key.values(), key=lambda item: item["score"])
+
+
+def material_identity_key(candidate: dict[str, Any]) -> str:
+    return f"{candidate.get('category', '')}|{candidate.get('material', '')}".lower()
+
+
+def apply_global_material_probability(groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    counts: Counter[tuple[str, str]] = Counter()
+    totals: Counter[str] = Counter()
+    for group in groups:
+        local = group.get("localBest")
+        if not local or local.get("score", math.inf) > UNKNOWN_SCORE_MAX:
+            continue
+        counts[(group["kind"], local["material"])] += 1
+        totals[group["kind"]] += 1
+
+    dominant_by_kind: dict[str, tuple[str, float, int]] = {}
+    for kind in totals:
+        material, count = max(
+            ((material, count) for (candidate_kind, material), count in counts.items() if candidate_kind == kind),
+            key=lambda item: item[1],
+        )
+        probability = count / max(totals[kind], 1)
+        dominant_by_kind[kind] = (material, probability, count)
+
+    for group in groups:
+        kind = group["kind"]
+        local = group.get("localBest")
+        if not local:
+            continue
+        final = dict(local)
+        final["localMaterial"] = local["material"]
+        final["globalProbability"] = counts[(kind, local["material"])] / max(totals[kind], 1) if totals[kind] else 0
+        final["globalGroupCount"] = counts[(kind, local["material"])]
+        final["globalOverride"] = False
+
+        dominant = dominant_by_kind.get(kind)
+        if dominant and kind in GLOBAL_DOMINANT_KINDS:
+            dominant_material, dominant_probability, dominant_count = dominant
+            dominant_candidate = next((candidate for candidate in group.get("candidates", []) if candidate["material"] == dominant_material), None)
+            if (
+                dominant_candidate
+                and dominant_material != local["material"]
+                and dominant_probability >= GLOBAL_DOMINANCE_MIN
+                and dominant_candidate.get("score", math.inf) <= GLOBAL_OVERRIDE_MAX_SCORE
+                and dominant_candidate.get("score", math.inf) <= local.get("score", math.inf) + GLOBAL_OVERRIDE_SCORE_MARGIN
+            ):
+                final = dict(dominant_candidate)
+                final["localMaterial"] = local["material"]
+                final["globalProbability"] = dominant_probability
+                final["globalGroupCount"] = dominant_count
+                final["globalOverride"] = True
+
+        group["best"] = final
+
+    rows = []
+    for (kind, material), count in sorted(counts.items(), key=lambda item: (item[0][0], -item[1], item[0][1])):
+        rows.append(
+            {
+                "kind": kind,
+                "material": material,
+                "localWinnerCount": count,
+                "total": totals[kind],
+                "probability": count / max(totals[kind], 1),
+                "dominant": count / max(totals[kind], 1) >= GLOBAL_DOMINANCE_MIN,
+                "stabilized": kind in GLOBAL_DOMINANT_KINDS and count / max(totals[kind], 1) >= GLOBAL_DOMINANCE_MIN,
+            }
+        )
+    return rows
 
 
 def material_candidate_for_kind(kind: str, material: dict[str, Any]) -> bool:
@@ -430,6 +524,7 @@ def summarize_groups(groups: list[dict[str, Any]], key: str) -> list[dict[str, A
         e_values = [item[key].get("eMultiplier") for item in items if item.get(key) and item[key].get("eMultiplier") is not None]
         density_values = [item[key].get("densityMultiplier") for item in items if item.get(key) and item[key].get("densityMultiplier") is not None]
         scores = [item[key].get("score") for item in items if item.get(key) and item[key].get("score") is not None]
+        global_probabilities = [item[key].get("globalProbability") for item in items if item.get(key) and item[key].get("globalProbability") is not None]
         categories = Counter(item[key].get("category", "") for item in items if item.get(key))
         rows.append(
             {
@@ -446,6 +541,9 @@ def summarize_groups(groups: list[dict[str, Any]], key: str) -> list[dict[str, A
                 "eMultiplierMax": max(e_values) if e_values else None,
                 "densityMultiplierMin": min(density_values) if density_values else None,
                 "densityMultiplierMax": max(density_values) if density_values else None,
+                "globalProbabilityMin": min(global_probabilities) if global_probabilities else None,
+                "globalProbabilityMax": max(global_probabilities) if global_probabilities else None,
+                "globalOverrideCount": sum(1 for item in items if item.get(key) and item[key].get("globalOverride")),
             }
         )
     return rows
@@ -502,6 +600,9 @@ def matrix_rows(values: dict[tuple[int, str], dict[str, Any] | None], columns: l
                     "score": item.get("score") if item else None,
                     "eMultiplier": item.get("eMultiplier") if item else None,
                     "densityMultiplier": item.get("densityMultiplier") if item else None,
+                    "globalProbability": item.get("globalProbability") if item else None,
+                    "globalOverride": bool(item.get("globalOverride")) if item else False,
+                    "localMaterial": item.get("localMaterial") if item else "",
                 }
             )
         rows.append({"node": node, "cells": cells})
@@ -593,7 +694,7 @@ def render_html(report: dict[str, Any]) -> str:
 </header>
 <main>
   <section class="note">
-    Links steht, was aus den Excel-/ODS-Selections und bekannten Generatorformeln kommt. Rechts steht, welches Einzelmaterial unser Recognizer aus den generierten TGM-Materialwerten als besten Treffer ableitet.
+    Links steht, was aus den Excel-/ODS-Selections und bekannten Generatorformeln kommt. Rechts steht, welches Einzelmaterial unser Recognizer aus den generierten TGM-Materialwerten ableitet. Ply-Materialien werden zusätzlich mit einer globalen Dominanzwahrscheinlichkeit stabilisiert, damit einzelne lokale Ausreißer nicht als Materialwechsel erscheinen.
   </section>
 
   <h2>Querschnitt-Materialbelegung</h2>
@@ -617,13 +718,16 @@ def render_html(report: dict[str, Any]) -> str:
     </section>
     <section class="panel">
       <h2>Unsere Erkennung</h2>
-      <p>Bester Einzelmaterialtreffer aus den TGM-Materialwerten.</p>
+      <p>Global stabilisierter Einzelmaterialtreffer aus den TGM-Materialwerten.</p>
       {render_matrix(report["matrices"]["recognized"], report["matrices"]["columns"], palette)}
     </section>
   </div>
 
   <h2>Excel-Auswahl</h2>
   <section class="panel">{render_used_table(report["used"])}</section>
+
+  <h2>Globale Material-Wahrscheinlichkeit</h2>
+  <section class="panel">{render_global_probability_table(report["global_probabilities"])}</section>
 
   <div class="grid">
     <section class="panel">
@@ -739,6 +843,10 @@ def render_matrix(rows: list[dict[str, Any]], columns: list[str], palette: dict[
                 title_parts.append(f"E x{fmt(cell['eMultiplier'])}")
             if cell.get("densityMultiplier") is not None:
                 title_parts.append(f"rho x{fmt(cell['densityMultiplier'])}")
+            if cell.get("globalProbability") is not None:
+                title_parts.append(f"global {fmt_percent(cell['globalProbability'])}")
+            if cell.get("globalOverride"):
+                title_parts.append(f"local {cell.get('localMaterial', '')}")
             cells.append(
                 f'<td><span class="cell" style="background:{color}" title="{escape(" | ".join(title_parts))}">{escape(label)}</span></td>'
             )
@@ -754,11 +862,34 @@ def render_used_table(rows: list[dict[str, Any]]) -> str:
     return f"<table><thead><tr><th>Rolle</th><th>TGM-Art</th><th>Excel-Material</th><th>E-Mult.</th><th>Dichte-Mult.</th></tr></thead><tbody>{body}</tbody></table>"
 
 
+def render_global_probability_table(rows: list[dict[str, Any]]) -> str:
+    body = "".join(
+        "<tr>"
+        f"<td>{escape(row['kind'])}</td>"
+        f"<td>{escape(row['material'])}</td>"
+        f"<td>{row['localWinnerCount']}</td>"
+        f"<td>{row['total']}</td>"
+        f"<td>{fmt_percent(row['probability'])}</td>"
+        f"<td>{'ja' if row.get('dominant') else ''}</td>"
+        f"<td>{'ja' if row.get('stabilized') else ''}</td>"
+        "</tr>"
+        for row in rows
+    )
+    return f"<table><thead><tr><th>TGM-Art</th><th>Lokaler Gewinner</th><th>Gruppen</th><th>Gesamt</th><th>Global</th><th>Dominant</th><th>Korrektur aktiv</th></tr></thead><tbody>{body}</tbody></table>"
+
+
 def render_summary_table(rows: list[dict[str, Any]], include_scores: bool) -> str:
     score_header = "<th>Score</th>" if include_scores else ""
+    global_header = "<th>Global</th><th>Korrektur</th>" if include_scores else ""
     body = []
     for row in rows:
         score_cell = f"<td>{fmt(row.get('scoreMean'))}</td>" if include_scores else ""
+        global_cell = (
+            f"<td>{mult_range_percent(row.get('globalProbabilityMin'), row.get('globalProbabilityMax'))}</td>"
+            f"<td>{row.get('globalOverrideCount', 0)}</td>"
+            if include_scores
+            else ""
+        )
         body.append(
             "<tr>"
             f"<td>{escape(row['kind'])}</td>"
@@ -768,9 +899,9 @@ def render_summary_table(rows: list[dict[str, Any]], include_scores: bool) -> st
             f"<td>{escape(', '.join(str(index) for index in row['indices']))}</td>"
             f"<td>{mult_range(row.get('eMultiplierMin'), row.get('eMultiplierMax'))}</td>"
             f"<td>{mult_range(row.get('densityMultiplierMin'), row.get('densityMultiplierMax'))}</td>"
-            f"{score_cell}</tr>"
+            f"{score_cell}{global_cell}</tr>"
         )
-    return f"<table><thead><tr><th>TGM-Art</th><th>Material</th><th>Gruppen</th><th>Nodes</th><th>Index/Lage</th><th>E-Mult.</th><th>Dichte-Mult.</th>{score_header}</tr></thead><tbody>{''.join(body)}</tbody></table>"
+    return f"<table><thead><tr><th>TGM-Art</th><th>Material</th><th>Gruppen</th><th>Nodes</th><th>Index/Lage</th><th>E-Mult.</th><th>Dichte-Mult.</th>{score_header}{global_header}</tr></thead><tbody>{''.join(body)}</tbody></table>"
 
 
 def render_difference_table(rows: list[dict[str, Any]]) -> str:
@@ -872,6 +1003,21 @@ def mult_range(left: Any, right: Any) -> str:
     if right is None or left == right:
         return fmt(left)
     return f"{fmt(left)}..{fmt(right)}"
+
+
+def fmt_percent(value: Any) -> str:
+    parsed = parse_float(value)
+    if parsed is None:
+        return "-"
+    return f"{parsed * 100:.0f}%"
+
+
+def mult_range_percent(left: Any, right: Any) -> str:
+    if left is None and right is None:
+        return "-"
+    if right is None or left == right:
+        return fmt_percent(left)
+    return f"{fmt_percent(left)}..{fmt_percent(right)}"
 
 
 def escape(value: Any) -> str:
