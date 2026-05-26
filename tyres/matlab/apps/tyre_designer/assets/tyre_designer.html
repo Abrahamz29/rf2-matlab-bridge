@@ -2003,20 +2003,28 @@
       svg.innerHTML = "";
       syncSvgViewBox(svg, 1100, 620);
 
-      const allRows = model.nodes.concat(model.innerNodes).concat(model.guides);
+      const display = generatorDisplayModel(model);
+      const allRows = display.nodes
+        .concat(display.innerNodes)
+        .concat(display.treadBaseNodes)
+        .concat(display.guides)
+        .concat(display.rim.outerRows)
+        .concat(display.rim.innerRows);
       const xs = allRows.map(row => Number(row.xMm)).filter(Number.isFinite);
       const ys = allRows.map(row => Number(row.yMm)).filter(Number.isFinite);
       const frame = makeFrame(svg, xs, ys, true, { left: 68, right: 28, top: 30, bottom: 54 });
-      drawAxes(svg, frame, "Radial X [mm]", "Lateral Y [mm]");
+      drawAxes(svg, frame, "Lateral coordinate Y [mm]", "Radial depth [mm]");
 
-      const surfacePath = pointPath(model.nodes, frame, "xMm", "yMm");
-      const innerPath = pointPath(model.innerNodes, frame, "xMm", "yMm");
-      const treadBasePath = pointPath(model.treadBaseNodes, frame, "xMm", "yMm");
-      const shellPath = bandPath(model.nodes.map((row, index) => ({
+      drawGeneratorRim(svg, frame, display.rim);
+
+      const surfacePath = pointPath(display.nodes, frame, "xMm", "yMm");
+      const innerPath = pointPath(display.innerNodes, frame, "xMm", "yMm");
+      const treadBasePath = pointPath(display.treadBaseNodes, frame, "xMm", "yMm");
+      const shellPath = bandPath(display.nodes.map((row, index) => ({
         surfaceXMm: row.xMm,
         surfaceYMm: row.yMm,
-        innerXMm: model.innerNodes[index]?.xMm,
-        innerYMm: model.innerNodes[index]?.yMm,
+        innerXMm: display.innerNodes[index]?.xMm,
+        innerYMm: display.innerNodes[index]?.yMm,
       })), frame, "innerXMm", "innerYMm", "surfaceXMm", "surfaceYMm");
 
       svg.insertAdjacentHTML("beforeend", `
@@ -2026,11 +2034,11 @@
         <path d="${innerPath}" fill="none" stroke="#8ce3df" stroke-width="1.4" stroke-dasharray="5 4"></path>
       `);
 
-      drawGeneratorGuideLine(svg, frame, model.guideLines.tread, "#72b7ff", "Tread arc width");
-      drawGeneratorGuideLine(svg, frame, model.guideLines.section, "#e7eef5", "Section width");
-      drawGeneratorGuideLine(svg, frame, model.guideLines.rim, "#b99cff", "Rim width");
+      drawGeneratorGuideLine(svg, frame, display.guideLines.tread, "#72b7ff", "Tread arc width");
+      drawGeneratorGuideLine(svg, frame, display.guideLines.section, "#e7eef5", "Section width");
+      drawGeneratorGuideLine(svg, frame, display.guideLines.rim, "#b99cff", "Rim width");
 
-      model.nodes.forEach(row => {
+      display.nodes.forEach(row => {
         const r = row.nodeIndex % 5 === 0 || row.nodeIndex === 1 || row.nodeIndex === model.nodes.length ? 3.1 : 2.1;
         svg.insertAdjacentHTML("beforeend", `<circle cx="${frame.sx(row.xMm).toFixed(1)}" cy="${frame.sy(row.yMm).toFixed(1)}" r="${r}" fill="#e7eef5" stroke="#0b0f12" stroke-width="0.8"></circle>`);
       });
@@ -2038,7 +2046,68 @@
         { color: "#f0b85a", label: "Outer contour" },
         { color: "#6be675", label: "Tread depth" },
         { color: "#8ce3df", label: "Inner thickness offset" },
+        { color: "#b8c2cc", label: "ETRTO H2 rim" },
       ]);
+    }
+
+    function generatorDisplayModel(model) {
+      const rim = generateEtrtoRimProfile(model);
+      return {
+        nodes: generatorDisplayRows(model.nodes, model),
+        innerNodes: generatorDisplayRows(model.innerNodes, model),
+        treadBaseNodes: generatorDisplayRows(model.treadBaseNodes, model),
+        guides: generatorDisplayRows(model.guides, model),
+        guideLines: {
+          tread: generatorDisplayLine(model.guideLines.tread, model),
+          section: generatorDisplayLine(model.guideLines.section, model),
+          rim: generatorDisplayLine(model.guideLines.rim, model),
+        },
+        rim: {
+          outerRows: generatorDisplayRows(rim.outerRows, model),
+          innerRows: generatorDisplayRows(rim.innerRows, model),
+          humps: rim.humps.map(rows => generatorDisplayRows(rows, model)),
+        },
+      };
+    }
+
+    function generatorDisplayRows(rows, model) {
+      return (rows || []).map(row => generatorDisplayPoint(row, model));
+    }
+
+    function generatorDisplayLine(line, model) {
+      return line ? { a: generatorDisplayPoint(line.a, model), b: generatorDisplayPoint(line.b, model) } : null;
+    }
+
+    function generatorDisplayPoint(point, model) {
+      const radialX = Number(point?.xMm);
+      const lateralY = Number(point?.yMm);
+      const outerR = Number(model?.metrics?.outerRadiusMm) || 0;
+      return {
+        ...(point || {}),
+        radialXMm: radialX,
+        lateralYMm: lateralY,
+        xMm: lateralY,
+        yMm: outerR - radialX,
+      };
+    }
+
+    function drawGeneratorRim(svg, frame, rim) {
+      if (!rim?.outerRows?.length || !rim?.innerRows?.length) return;
+      const rimPath = bandPath(rim.outerRows.map((row, index) => ({
+        surfaceXMm: row.xMm,
+        surfaceYMm: row.yMm,
+        innerXMm: rim.innerRows[index]?.xMm,
+        innerYMm: rim.innerRows[index]?.yMm,
+      })), frame, "innerXMm", "innerYMm", "surfaceXMm", "surfaceYMm");
+      const beadSeatPath = pointPath(rim.outerRows, frame, "xMm", "yMm");
+      svg.insertAdjacentHTML("beforeend", `
+        <path d="${rimPath}" fill="#242c33" fill-opacity="0.96" stroke="#7f8d99" stroke-width="1.2"></path>
+        <path d="${beadSeatPath}" fill="none" stroke="#b8c2cc" stroke-width="2"></path>
+      `);
+      rim.humps.forEach(rows => {
+        const humpPath = pointPath(rows, frame, "xMm", "yMm");
+        svg.insertAdjacentHTML("beforeend", `<path d="${humpPath}" fill="none" stroke="#f0b85a" stroke-width="2.6" stroke-linecap="round"></path>`);
+      });
     }
 
     function drawGeneratorGuideLine(svg, frame, line, color, label) {
@@ -2145,6 +2214,9 @@
         },
         metrics: {
           nodeCount: sampled.length,
+          outerRadiusMm: outerR,
+          rimRadiusMm: rimR,
+          rimHalfWidthMm: beadY,
           sectionHeightMm: sectionHeight,
           crownSagMm: crownSag,
           treadArcWidthMm: treadHalf * 2,
@@ -2152,6 +2224,50 @@
           rimWidthMm: beadY * 2,
         },
       };
+    }
+
+    function generateEtrtoRimProfile(model) {
+      const metrics = model?.metrics || {};
+      const rimR = Math.max(40, Number(metrics.rimRadiusMm) || GENERATOR_DEFAULT_PARAMS.rimDiameterMm / 2);
+      const rimHalf = Math.max(20, Number(metrics.rimHalfWidthMm) || GENERATOR_DEFAULT_PARAMS.rimWidthMm / 2);
+      const flangeHalf = rimHalf + clamp(rimHalf * 0.10, 9, 18);
+      const metalThickness = clamp(rimR * 0.08, 8, 18);
+      const humpInset = clamp(rimHalf * 0.18, 16, 34);
+      const beadSeatInset = clamp(rimHalf * 0.07, 7, 14);
+      const centerWellHalf = clamp(rimHalf * 0.40, 32, Math.max(34, rimHalf - 44));
+
+      const rightProfile = [
+        { xMm: rimR - 34, yMm: 0 },
+        { xMm: rimR - 34, yMm: centerWellHalf },
+        { xMm: rimR - 21, yMm: centerWellHalf + 12 },
+        { xMm: rimR - 6, yMm: rimHalf - humpInset - 10 },
+        { xMm: rimR + 8, yMm: rimHalf - humpInset - 4 },
+        { xMm: rimR + 15, yMm: rimHalf - humpInset },
+        { xMm: rimR + 8, yMm: rimHalf - humpInset + 6 },
+        { xMm: rimR + 9, yMm: rimHalf - beadSeatInset },
+        { xMm: rimR + 12, yMm: rimHalf + 2 },
+        { xMm: rimR + 29, yMm: flangeHalf - 2 },
+        { xMm: rimR + 8, yMm: flangeHalf + 8 },
+      ];
+      const outerRows = mirrorGeneratorHalfProfile(rightProfile);
+      const innerRows = outerRows.map(row => ({
+        xMm: row.xMm - metalThickness,
+        yMm: row.yMm * 0.93,
+      }));
+      const rightHump = sampleCubicBezier(
+        { xMm: rimR + 8, yMm: rimHalf - humpInset - 4 },
+        { xMm: rimR + 16, yMm: rimHalf - humpInset - 2 },
+        { xMm: rimR + 16, yMm: rimHalf - humpInset + 2 },
+        { xMm: rimR + 8, yMm: rimHalf - humpInset + 6 },
+        8
+      );
+      const leftHump = rightHump.map(row => ({ xMm: row.xMm, yMm: -row.yMm })).reverse();
+      return { outerRows, innerRows, humps: [leftHump, rightHump] };
+    }
+
+    function mirrorGeneratorHalfProfile(rightProfile) {
+      return rightProfile.slice().reverse().map(row => ({ xMm: row.xMm, yMm: -row.yMm }))
+        .concat(rightProfile.slice(1).map(row => ({ xMm: row.xMm, yMm: row.yMm })));
     }
 
     function sampleCubicBezier(p0, p1, p2, p3, steps) {
