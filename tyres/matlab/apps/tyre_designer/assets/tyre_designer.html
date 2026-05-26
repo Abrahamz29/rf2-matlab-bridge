@@ -2250,7 +2250,7 @@
       const beadSeatOuterX = rimR + beadSeatLength * beadSeatSlope;
       const wellShoulder = { xMm: dropCenterX, yMm: centerWellHalf };
       const wellRamp = { xMm: rimR - dropCenterDepth * 0.52, yMm: centerWellHalf + 13 };
-      const beadShelf = { xMm: rimR - 3.2, yMm: beadSeatInnerY - humpWidth * 1.75 };
+      const preHumpShelf = { xMm: rimR - 3.2, yMm: beadSeatInnerY - humpWidth * 1.75 };
       const humpEntry = { xMm: rimR - 1.4, yMm: beadSeatInnerY - humpWidth };
       const humpApex = { xMm: rimR + humpHeight, yMm: beadSeatInnerY - humpWidth * 0.30 };
       const humpExit = { xMm: rimR, yMm: beadSeatInnerY + 1.5 };
@@ -2260,30 +2260,25 @@
       const flangeTip = { xMm: rimR + flangeHeight, yMm: flangeHalf + 2 };
       const flangeReturn = { xMm: rimR + flangeHeight * 0.48, yMm: flangeHalf + 7 };
 
-      const rightProfile = joinGeneratorSegments([
-        sampleLine({ xMm: dropCenterX, yMm: 0 }, wellShoulder, 8),
-        sampleCubicBezier(wellShoulder, { xMm: dropCenterX + 1.5, yMm: wellShoulder.yMm + 8 }, { xMm: wellRamp.xMm - 10, yMm: wellRamp.yMm - 8 }, wellRamp, 12),
-        sampleCubicBezier(wellRamp, { xMm: rimR - dropCenterDepth * 0.40, yMm: wellRamp.yMm + 7 }, { xMm: rimR - 8, yMm: beadShelf.yMm - 6 }, beadShelf, 14),
-        sampleCubicBezier(beadShelf, { xMm: rimR - 3.5, yMm: beadShelf.yMm + 1.5 }, { xMm: rimR - 2, yMm: humpEntry.yMm - 1.5 }, humpEntry, 8),
-        sampleCubicBezier(humpEntry, { xMm: rimR + humpHeight * 0.45, yMm: humpEntry.yMm - 1.2 }, { xMm: rimR + humpHeight * 1.08, yMm: humpApex.yMm - 0.8 }, humpApex, 8),
-        sampleCubicBezier(humpApex, { xMm: rimR + humpHeight * 1.10, yMm: humpApex.yMm + 3.8 }, { xMm: rimR + humpHeight * 0.35, yMm: humpExit.yMm - 3 }, humpExit, 8),
-        sampleLine(humpExit, beadSeatOuter, 12),
-        sampleCubicBezier(beadSeatOuter, { xMm: beadSeatOuter.xMm + 1.2, yMm: rimHalf + 0.5 }, { xMm: flangeRoot.xMm + 1, yMm: flangeRoot.yMm - 1 }, flangeRoot, 8),
-        sampleCubicBezier(flangeRoot, { xMm: rimR + flangeHeight * 0.58, yMm: rimHalf + 4.5 }, { xMm: flangeBulge.xMm + 4, yMm: flangeBulge.yMm - 2 }, flangeBulge, 10),
-        sampleCubicBezier(flangeBulge, { xMm: rimR + flangeHeight * 1.10, yMm: flangeHalf - 1 }, { xMm: rimR + flangeHeight * 1.12, yMm: flangeHalf + 3 }, flangeTip, 10),
-        sampleCubicBezier(flangeTip, { xMm: rimR + flangeHeight * 0.82, yMm: flangeHalf + 8 }, { xMm: rimR + flangeHeight * 0.56, yMm: flangeHalf + 9 }, flangeReturn, 8),
-      ]);
+      const rightGauge = [
+        { xMm: dropCenterX, yMm: 0 },
+        wellShoulder,
+        wellRamp,
+        preHumpShelf,
+        humpEntry,
+        humpApex,
+        humpExit,
+        beadSeatOuter,
+        flangeRoot,
+        flangeBulge,
+        flangeTip,
+        flangeReturn,
+      ];
+      const rightProfile = sampleSmoothGeneratorProfile(rightGauge, 28, 0.38);
       const outerRows = mirrorGeneratorHalfProfile(rightProfile);
-      const rightHump = joinGeneratorSegments([
-        sampleCubicBezier(humpEntry, { xMm: rimR + humpHeight * 0.45, yMm: humpEntry.yMm - 1.2 }, { xMm: rimR + humpHeight * 1.08, yMm: humpApex.yMm - 0.8 }, humpApex, 8),
-        sampleCubicBezier(humpApex, { xMm: rimR + humpHeight * 1.10, yMm: humpApex.yMm + 3.8 }, { xMm: rimR + humpHeight * 0.35, yMm: humpExit.yMm - 3 }, humpExit, 8),
-      ]);
-      const rightBeadSeat = sampleLine(humpExit, beadSeatOuter, 14);
-      const rightFlangeLip = joinGeneratorSegments([
-        sampleCubicBezier(flangeRoot, { xMm: rimR + flangeHeight * 0.58, yMm: rimHalf + 4.5 }, { xMm: flangeBulge.xMm + 4, yMm: flangeBulge.yMm - 2 }, flangeBulge, 10),
-        sampleCubicBezier(flangeBulge, { xMm: rimR + flangeHeight * 1.10, yMm: flangeHalf - 1 }, { xMm: rimR + flangeHeight * 1.12, yMm: flangeHalf + 3 }, flangeTip, 10),
-        sampleCubicBezier(flangeTip, { xMm: rimR + flangeHeight * 0.82, yMm: flangeHalf + 8 }, { xMm: rimR + flangeHeight * 0.56, yMm: flangeHalf + 9 }, flangeReturn, 8),
-      ]);
+      const rightHump = sampleSmoothGeneratorProfile([humpEntry, humpApex, humpExit], 24, 0.38);
+      const rightBeadSeat = sampleLine(humpExit, beadSeatOuter, 20);
+      const rightFlangeLip = sampleSmoothGeneratorProfile([flangeRoot, flangeBulge, flangeTip, flangeReturn], 24, 0.38);
       return {
         outerRows,
         humps: [mirrorGeneratorRightFeature(rightHump), rightHump],
@@ -2343,6 +2338,50 @@
         points.push({
           xMm: p0.xMm + (p1.xMm - p0.xMm) * t,
           yMm: p0.yMm + (p1.yMm - p0.yMm) * t,
+        });
+      }
+      return points;
+    }
+
+    function sampleSmoothGeneratorProfile(points, stepsPerSegment = 12, tension = 0.5) {
+      const clean = dedupeClosePoints((points || []).filter(point => Number.isFinite(point.xMm) && Number.isFinite(point.yMm)));
+      if (clean.length <= 2) return clean;
+      const steps = Math.max(2, Math.round(Number(stepsPerSegment) || 12));
+      const k = clamp(Number(tension), 0, 1);
+      const result = [];
+      for (let index = 0; index < clean.length - 1; index++) {
+        const p0 = clean[index];
+        const p1 = clean[index + 1];
+        const prev = clean[Math.max(0, index - 1)];
+        const next = clean[Math.min(clean.length - 1, index + 2)];
+        const tangent0 = generatorProfileTangent(prev, p1, k);
+        const tangent1 = generatorProfileTangent(p0, next, k);
+        const segment = sampleHermiteSegment(p0, p1, tangent0, tangent1, steps);
+        result.push(...(index ? segment.slice(1) : segment));
+      }
+      return dedupeClosePoints(result);
+    }
+
+    function generatorProfileTangent(previous, next, tension) {
+      return {
+        xMm: (Number(next.xMm) - Number(previous.xMm)) * tension,
+        yMm: (Number(next.yMm) - Number(previous.yMm)) * tension,
+      };
+    }
+
+    function sampleHermiteSegment(p0, p1, tangent0, tangent1, steps) {
+      const points = [];
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const t2 = t * t;
+        const t3 = t2 * t;
+        const h00 = 2 * t3 - 3 * t2 + 1;
+        const h10 = t3 - 2 * t2 + t;
+        const h01 = -2 * t3 + 3 * t2;
+        const h11 = t3 - t2;
+        points.push({
+          xMm: h00 * p0.xMm + h10 * tangent0.xMm + h01 * p1.xMm + h11 * tangent1.xMm,
+          yMm: h00 * p0.yMm + h10 * tangent0.yMm + h01 * p1.yMm + h11 * tangent1.yMm,
         });
       }
       return points;

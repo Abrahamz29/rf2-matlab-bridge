@@ -57,6 +57,34 @@ produce TGM node coordinates and construction-layer positions.
   using restricted standard dimensions, maximum-width point, belt/carcass
   demarcation point, flat vs curved belt, and belt radius effects.
 
+- ETRTO, *Standards Manual 2024 - Rims*, public index extract.
+  URL: https://www.etrto.org/media/40gnsylb/etrto-sm-2024-rims.pdf
+  Retrieved: 2026-05-26
+  Used to identify the relevant passenger-car rim sections for 5 degree
+  drop-centre rims, B/J contours, and bead-retention contours H/FH/EH2/EH2+.
+
+- ISO 4000-2:2007 preview, *Passenger car tyres and rims - Part 2: Rims*.
+  URL: https://cdn.standards.iteh.ai/samples/45065/af0a2a7d31c54b2b83542ce98527664b/ISO-4000-2-2007.pdf
+  Retrieved: 2026-05-26
+  Used for open-preview constraints on 5 degree tapered drop-centre rims,
+  J-type rim dimension vocabulary, minimum well-depth concepts, and optional
+  bead-seat/round-hump contour references. The implementation remains an
+  approximate visual/generator contour, not a certified standard drawing.
+
+- Tire Rack, *Matching Wheel Diameters and Bead Seat Contours*.
+  URL: https://www.tirerack.com/upgrade-garage/matching-wheel-diameters-and-bead-seat-contours
+  Retrieved: 2026-05-26
+  Used as a practical summary that inch passenger-car rims use ISO J contour,
+  5 degree bead-seat taper, bead-seat safety humps, tall flanges, and drop
+  centre.
+
+- Justia Patents, US 20080277996, *Light Alloy Wheel*.
+  URL: https://patents.justia.com/patent/20080277996
+  Retrieved: 2026-05-26
+  Used only as public descriptive support for standard rim regions: bead seat,
+  hump, slope to rim well, inner flange face, and typical standard constraints
+  such as bead-seat inclination and well/hump relationships.
+
 - Costco Tire Glossary, "Crown radius", "Section width", "Free radius",
   "Flat tread profile".
   URL: https://tires.costco.ca/TireGlossary?lang=en-ca
@@ -77,4 +105,3 @@ construction controls:
   bead filler/apex height and width;
 - reinforcement controls: belt width, belt radius/curvature, belt edge drop,
   ply turn-up height, chafer extent, cap-strip/full-cap width.
-
