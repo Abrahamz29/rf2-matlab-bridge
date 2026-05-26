@@ -2143,6 +2143,8 @@
       const sectionHeight = Math.max(18, outerR - rimR);
       const sectionHalf = clamp(Number(params.sectionWidthMm) / 2, 25, 420);
       const rimHalf = clamp(rimWidthMm / 2, 20, Math.max(22, sectionHalf + 50));
+      const rimProfile = generateEtrtoRimProfile({ metrics: { rimRadiusMm: rimR, rimHalfWidthMm: rimHalf } });
+      const beadAnchor = rimProfile.beadAnchors?.right || { xMm: rimR, yMm: rimHalf };
       const treadHalf = clamp(Number(params.treadArcWidthMm) / 2, 15, Math.max(16, sectionHalf - 3));
       const crownRadius = Math.max(80, Number(params.crownRadiusMm) || GENERATOR_DEFAULT_PARAMS.crownRadiusMm);
       const shoulderRadius = clamp(Number(params.shoulderRadiusMm), 5, sectionHeight);
@@ -2150,12 +2152,13 @@
       const nodeThickness = clamp(Number(params.nodeThicknessMm), 0.5, Math.max(0.5, sectionHeight * 0.75));
       const treadDepth = clamp(Number(params.treadDepthMm), 0, nodeThickness);
       const nodeCount = Math.max(3, Math.round(Number(params.nodeCount) || GENERATOR_DEFAULT_PARAMS.nodeCount));
-      const beadX = rimR + beadRadius;
-      const beadY = clamp(rimHalf, 15, sectionHalf + 55);
       const crownSag = clamp((treadHalf * treadHalf) / (2 * crownRadius), 0.4, sectionHeight * 0.26);
       const shoulderX = outerR - crownSag;
       const maxSectionPct = clamp(Number(params.maxSectionHeightPct), 20, 95) / 100;
-      const maxSectionX = clamp(rimR + sectionHeight * maxSectionPct, beadX + 6, shoulderX - 5);
+      const beadX = Number(beadAnchor.xMm);
+      const beadY = clamp(Number(beadAnchor.yMm), 15, sectionHalf + 55);
+      const beadToShoulderHeight = Math.max(12, shoulderX - beadX);
+      const maxSectionX = clamp(beadX + beadToShoulderHeight * maxSectionPct, beadX + 6, shoulderX - 5);
       const maxSectionY = clamp(sectionHalf + Number(params.sidewallBulgeMm), Math.max(treadHalf + 5, beadY + 3), sectionHalf + 95);
 
       const crown = [];
@@ -2215,7 +2218,7 @@
         guideLines: {
           tread: { a: { xMm: outerR + 6, yMm: -treadHalf }, b: { xMm: outerR + 6, yMm: treadHalf } },
           section: { a: { xMm: maxSectionX, yMm: -maxSectionY }, b: { xMm: maxSectionX, yMm: maxSectionY } },
-          rim: { a: { xMm: beadX - 7, yMm: -beadY }, b: { xMm: beadX - 7, yMm: beadY } },
+          rim: { a: { xMm: rimR - 7, yMm: -rimHalf }, b: { xMm: rimR - 7, yMm: rimHalf } },
         },
         metrics: {
           nodeCount: sampled.length,
@@ -2223,12 +2226,14 @@
           rimRadiusMm: rimR,
           rimDiameterIn: Number(params.rimDiameterIn),
           rimWidthIn: Number(params.rimWidthIn),
-          rimHalfWidthMm: beadY,
+          rimHalfWidthMm: rimHalf,
+          beadAnchorXMm: beadX,
+          beadAnchorYMm: beadY,
           sectionHeightMm: sectionHeight,
           crownSagMm: crownSag,
           treadArcWidthMm: treadHalf * 2,
           treadDepthMm: treadDepth,
-          rimWidthMm: beadY * 2,
+          rimWidthMm: rimHalf * 2,
         },
       };
     }
@@ -2285,6 +2290,10 @@
         beadSeats: [mirrorGeneratorRightFeature(rightBeadSeat), rightBeadSeat],
         flangeLips: [mirrorGeneratorRightFeature(rightFlangeLip), rightFlangeLip],
         dropCenter: sampleLine({ xMm: dropCenterX, yMm: -centerWellHalf }, { xMm: dropCenterX, yMm: centerWellHalf }, 18),
+        beadAnchors: {
+          left: { xMm: flangeRoot.xMm, yMm: -flangeRoot.yMm },
+          right: { xMm: flangeRoot.xMm, yMm: flangeRoot.yMm },
+        },
       };
     }
 

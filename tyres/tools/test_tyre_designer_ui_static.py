@@ -74,6 +74,7 @@ def run_check() -> dict:
         "rimDiameterIn",
         "rimWidthIn",
         "ETRTO H2 rim",
+        "beadAnchors",
         "Radial depth [mm]",
         'id="materials-workspace"',
         "materials-page",
