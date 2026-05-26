@@ -1590,7 +1590,7 @@
     const materialHiddenSeries = new Set();
     const materialKindFilters = new Set(["TreadMaterial", "BulkMaterial", "PlyMaterial"]);
     const nodeSelectionDrag = { active: false, dragging: false, plotId: "", start: null, current: null, additive: false, suppressClick: false };
-    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0, materialCandidatePanelKind: "", selectedMaterialCandidateKey: "", materialCandidateDefaults: {}, plyFamilyDefaults: {}, reengineeringFamilyDefaults: {}, reengineeringFamilyKey: "", reengineeringNodeIndex: null, reengineeringPlyIndex: null, reengineeringStackKey: "", reengineeringSelectedCellKeys: [], reengineeringSelectionAnchorKey: "", reengineeringSelectionAnchorType: "cell", reengineeringCellOverrides: {}, reengineeringDbSearch: "", reengineeringDbCategory: "", reengineeringDbRoleFilter: true, reengineeringDbMaterialId: null };
+    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0, materialCandidatePanelKind: "", selectedMaterialCandidateKey: "", materialCandidateDefaults: {}, plyFamilyDefaults: {}, reengineeringFamilyDefaults: {}, reengineeringFamilyKey: "", reengineeringNodeIndex: null, reengineeringPlyIndex: null, reengineeringStackKey: "", reengineeringSelectedCellKeys: [], reengineeringSelectionAnchorKey: "", reengineeringSelectionAnchorType: "cell", reengineeringCellOverrides: {}, reengineeringDbSearch: "", reengineeringDbCategory: "", reengineeringDbRoleFilter: true, reengineeringDbMaterialId: null, activeGeneratorControlKey: "" };
     const LAYER_EXPLODE_TARGET_MM = 30;
     const NODE_LAYER_SPREAD_TARGET_MM = 30;
     const NODE_REST_SPREAD_TARGET_MM = 30;
@@ -1600,6 +1600,7 @@
     const MATERIAL_GLOBAL_DISTANCE_MARGIN = 0.08;
     const MATERIAL_MAHALANOBIS_WEIGHT = 0.02;
     const COLORS = ["#e7eef5", "#72b7ff", "#6be675", "#f07d9d", "#b99cff", "#8ce3df", "#f0b85a", "#ff7a45"];
+    const GENERATOR_RADIUS_CONTROL_KEYS = new Set(["crownRadiusMm", "shoulderRadiusMm", "beadRadiusMm"]);
     const GENERATOR_DEFAULT_PARAMS = Object.freeze({
       rimDiameterIn: 21,
       sectionWidthMm: 315,
@@ -1722,6 +1723,7 @@
       document.addEventListener("input", event => {
         const generatorControl = event.target?.closest("[data-generator-param], [data-generator-slider]");
         if (generatorControl) {
+          setActiveGeneratorControl(generatorControl, { redraw: false });
           syncGeneratorControl(generatorControl, { commit: false });
           drawGenerator({ constrain: false });
           return;
@@ -1734,6 +1736,7 @@
         const generatorControl = event.target?.closest("[data-generator-param], [data-generator-slider]");
         if (generatorControl) {
           const key = generatorControl.dataset.generatorParam || generatorControl.dataset.generatorSlider || "";
+          setActiveGeneratorControl(generatorControl, { redraw: false });
           syncGeneratorControl(generatorControl, { commit: true });
           drawGenerator({ constrain: GENERATOR_ETRTO_CONTROL_KEYS.has(key) });
           return;
@@ -1844,6 +1847,18 @@
         const target = event.target.closest("[data-material-series-key]");
         if (!target) return;
         toggleMaterialSeries(target.dataset.materialChartKey || "", target.dataset.materialSeriesKey || "");
+      });
+      document.addEventListener("pointerdown", event => {
+        const generatorControl = event.target?.closest("[data-generator-param], [data-generator-slider]");
+        if (generatorControl) {
+          setActiveGeneratorControl(generatorControl);
+          return;
+        }
+        if (viewState.currentView === "generator") setActiveGeneratorControl(null);
+      });
+      document.addEventListener("focusin", event => {
+        const generatorControl = event.target?.closest("[data-generator-param], [data-generator-slider]");
+        if (generatorControl) setActiveGeneratorControl(generatorControl);
       });
       document.addEventListener("contextmenu", event => {
         const matchTarget = event.target.closest("[data-material-match-kind]");
@@ -2045,7 +2060,20 @@
           input.value = GENERATOR_DEFAULT_PARAMS[key];
         }
       });
+      setActiveGeneratorControl(null, { redraw: false });
       applyGeneratorEtrtoConstraints("");
+    }
+
+    function setActiveGeneratorControl(control, options = {}) {
+      const key = control?.dataset?.generatorParam || control?.dataset?.generatorSlider || "";
+      const next = GENERATOR_RADIUS_CONTROL_KEYS.has(key) ? key : "";
+      if (viewState.activeGeneratorControlKey === next) return;
+      viewState.activeGeneratorControlKey = next;
+      if (options.redraw !== false && viewState.currentView === "generator") drawGenerator({ constrain: false });
+    }
+
+    function activeGeneratorRadiusKey() {
+      return GENERATOR_RADIUS_CONTROL_KEYS.has(viewState.activeGeneratorControlKey) ? viewState.activeGeneratorControlKey : "";
     }
 
     function syncGeneratorControl(control, options = {}) {
@@ -2400,6 +2428,7 @@
       drawGeneratorGuideLine(svg, frame, display.guideLines.tread, "#72b7ff", "Tread arc width");
       drawGeneratorGuideLine(svg, frame, display.guideLines.section, "#e7eef5", "Section width");
       drawGeneratorGuideLine(svg, frame, display.guideLines.rim, "#b99cff", "Rim width");
+      drawGeneratorActiveRadius(svg, frame, model);
 
       display.nodes.forEach(row => {
         const r = row.nodeIndex % 5 === 0 || row.nodeIndex === 1 || row.nodeIndex === model.nodes.length ? 3.1 : 2.1;
@@ -2502,6 +2531,39 @@
       `);
     }
 
+    function drawGeneratorActiveRadius(svg, frame, model) {
+      const key = activeGeneratorRadiusKey();
+      const guide = key ? model?.radiusGuides?.[key] : null;
+      if (!guide) return;
+      const color = "#ffcf6b";
+      const rowsList = (guide.rows || []).filter(rows => Array.isArray(rows) && rows.length > 1);
+      rowsList.forEach(rows => {
+        const path = pointPath(generatorDisplayRows(rows, model), frame, "xMm", "yMm");
+        if (!path) return;
+        svg.insertAdjacentHTML("beforeend", `<path d="${path}" fill="none" stroke="${color}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="7 5"></path>`);
+      });
+      (guide.spokes || []).forEach(spoke => {
+        if (!spoke?.a || !spoke?.b) return;
+        const a = generatorDisplayPoint(spoke.a, model);
+        const b = generatorDisplayPoint(spoke.b, model);
+        if (![a.xMm, a.yMm, b.xMm, b.yMm].every(Number.isFinite)) return;
+        const x1 = frame.sx(a.xMm);
+        const y1 = frame.sy(a.yMm);
+        const x2 = frame.sx(b.xMm);
+        const y2 = frame.sy(b.yMm);
+        svg.insertAdjacentHTML("beforeend", `
+          <line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="1.2" stroke-dasharray="3 4"></line>
+          <circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="3" fill="${color}" stroke="#061016" stroke-width="1"></circle>
+        `);
+      });
+      const fallbackRows = rowsList[0] || [];
+      const labelPoint = generatorDisplayPoint(guide.labelPoint || fallbackRows[Math.floor(fallbackRows.length / 2)], model);
+      if (![labelPoint.xMm, labelPoint.yMm].every(Number.isFinite)) return;
+      svg.insertAdjacentHTML("beforeend", `
+        <text x="${frame.sx(labelPoint.xMm).toFixed(1)}" y="${frame.sy(labelPoint.yMm).toFixed(1)}" fill="${color}" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#061016" stroke-width="4">${escapeHtml(guide.label || "")}</text>
+      `);
+    }
+
     function generateTyreContour(inputParams) {
       const params = { ...GENERATOR_DEFAULT_PARAMS, ...(inputParams || {}) };
       const etrtoSize = etrtoSelectedTyreSize(params);
@@ -2586,6 +2648,17 @@
       const treadBaseNodes = offsetGeneratorRowsAlongNormals(sampled, contourNormals, treadDepth)
         .filter(row => Math.abs(sampled[row.nodeIndex - 1]?.yMm) <= treadHalf + 1e-6)
         .map(row => ({ ...row }));
+      const crownFullGuide = crown.slice().reverse().map(point => ({ xMm: point.xMm, yMm: -point.yMm }))
+        .concat(crown.slice(1).map(point => ({ xMm: point.xMm, yMm: point.yMm })));
+      const crownCenter = { xMm: outerR - crownRadius, yMm: 0 };
+      const crownCenterVisible = crownRadius <= sectionHeight * 4.5;
+      const shoulderCenterRight = { xMm: shoulder.xMm - shoulderRadius, yMm: shoulder.yMm };
+      const shoulderArcRight = sampleCircularArc(shoulderCenterRight, shoulderRadius, -0.08, Math.PI * 0.62, 26);
+      const shoulderArcLeft = mirrorGeneratorRightFeature(shoulderArcRight);
+      const beadTargetRight = { xMm: beadX, yMm: beadY };
+      const beadCenterRight = { xMm: beadX + beadRadius, yMm: beadY };
+      const beadArcRight = sampleCircularArc(beadCenterRight, beadRadius, Math.PI, Math.PI * 0.5, 20);
+      const beadArcLeft = mirrorGeneratorRightFeature(beadArcRight);
 
       return {
         params,
@@ -2608,6 +2681,26 @@
           tread: { a: { xMm: outerR + 6, yMm: -treadHalf }, b: { xMm: outerR + 6, yMm: treadHalf } },
           section: { a: { xMm: maxSectionX, yMm: -maxSectionY }, b: { xMm: maxSectionX, yMm: maxSectionY } },
           rim: { a: { xMm: rimR - 7, yMm: -rimHalf }, b: { xMm: rimR - 7, yMm: rimHalf } },
+        },
+        radiusGuides: {
+          crownRadiusMm: {
+            label: `Crown R ${fmt(crownRadius)} mm`,
+            rows: [crownFullGuide],
+            labelPoint: { xMm: outerR + 8, yMm: 0 },
+            spokes: crownCenterVisible ? [{ a: crownCenter, b: { xMm: outerR, yMm: 0 } }] : [],
+          },
+          shoulderRadiusMm: {
+            label: `Shoulder R ${fmt(shoulderRadius)} mm`,
+            rows: [shoulderArcLeft, shoulderArcRight],
+            labelPoint: { xMm: shoulder.xMm - shoulderRadius * 0.52, yMm: shoulder.yMm + shoulderRadius * 0.82 },
+            spokes: [{ a: shoulderCenterRight, b: shoulder }],
+          },
+          beadRadiusMm: {
+            label: `Bead transition R ${fmt(beadRadius)} mm`,
+            rows: [beadArcLeft, beadArcRight],
+            labelPoint: { xMm: beadX + beadRadius * 0.68, yMm: beadY + beadRadius * 1.18 },
+            spokes: [{ a: beadCenterRight, b: beadTargetRight }],
+          },
         },
         metrics: {
           nodeCount: sampled.length,
@@ -2765,6 +2858,21 @@
         points.push({
           xMm: p0.xMm + (p1.xMm - p0.xMm) * t,
           yMm: p0.yMm + (p1.yMm - p0.yMm) * t,
+        });
+      }
+      return points;
+    }
+
+    function sampleCircularArc(center, radius, startAngle, endAngle, steps) {
+      const points = [];
+      const count = Math.max(1, Math.round(Number(steps) || 1));
+      const r = Math.max(0, Number(radius) || 0);
+      for (let i = 0; i <= count; i++) {
+        const t = i / count;
+        const angle = Number(startAngle) + (Number(endAngle) - Number(startAngle)) * t;
+        points.push({
+          xMm: Number(center.xMm) + Math.cos(angle) * r,
+          yMm: Number(center.yMm) + Math.sin(angle) * r,
         });
       }
       return points;
