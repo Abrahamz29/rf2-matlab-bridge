@@ -284,6 +284,8 @@ def run_check() -> dict:
         "generateTyreContour",
         "generateEtrtoRimProfile",
         "mirrorGeneratorHalfProfile",
+        "generatorInwardNormals",
+        "offsetGeneratorRowsAlongNormals",
         "sampleCubicBezier",
         "dedupeClosePoints",
         "resamplePolyline",

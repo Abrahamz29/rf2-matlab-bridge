@@ -2177,18 +2177,11 @@
         xMm: point.xMm,
         yMm: point.yMm,
       }));
-      const innerNodes = sampled.map(row => ({
-        nodeIndex: row.nodeIndex,
-        xMm: row.xMm - nodeThickness,
-        yMm: row.yMm,
-      }));
-      const treadBaseNodes = sampled
-        .filter(row => Math.abs(row.yMm) <= treadHalf + 1e-6)
-        .map(row => ({
-          nodeIndex: row.nodeIndex,
-          xMm: row.xMm - treadDepth,
-          yMm: row.yMm,
-        }));
+      const contourNormals = generatorInwardNormals(sampled);
+      const innerNodes = offsetGeneratorRowsAlongNormals(sampled, contourNormals, nodeThickness);
+      const treadBaseNodes = offsetGeneratorRowsAlongNormals(sampled, contourNormals, treadDepth)
+        .filter(row => Math.abs(sampled[row.nodeIndex - 1]?.yMm) <= treadHalf + 1e-6)
+        .map(row => ({ ...row }));
 
       return {
         params,
@@ -2268,6 +2261,35 @@
     function mirrorGeneratorHalfProfile(rightProfile) {
       return rightProfile.slice().reverse().map(row => ({ xMm: row.xMm, yMm: -row.yMm }))
         .concat(rightProfile.slice(1).map(row => ({ xMm: row.xMm, yMm: row.yMm })));
+    }
+
+    function generatorInwardNormals(rows) {
+      return (rows || []).map((row, index) => {
+        const previous = rows[Math.max(0, index - 1)] || row;
+        const next = rows[Math.min(rows.length - 1, index + 1)] || row;
+        const tangentX = Number(next.xMm) - Number(previous.xMm);
+        const tangentY = Number(next.yMm) - Number(previous.yMm);
+        const length = Math.hypot(tangentX, tangentY);
+        if (!(length > 1e-9)) return { x: -1, y: 0 };
+        return {
+          x: -tangentY / length,
+          y: tangentX / length,
+        };
+      });
+    }
+
+    function offsetGeneratorRowsAlongNormals(rows, normals, offsetMm) {
+      const offset = Math.max(0, Number(offsetMm) || 0);
+      return (rows || []).map((row, index) => {
+        const normal = normals?.[index] || { x: -1, y: 0 };
+        return {
+          ...row,
+          normalXMm: normal.x,
+          normalYMm: normal.y,
+          xMm: Number(row.xMm) + normal.x * offset,
+          yMm: Number(row.yMm) + normal.y * offset,
+        };
+      });
     }
 
     function sampleCubicBezier(p0, p1, p2, p3, steps) {
