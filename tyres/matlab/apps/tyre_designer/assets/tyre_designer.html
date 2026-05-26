@@ -2287,7 +2287,7 @@
         ["Rim", `${fmt(m.rimWidthIn)}J x ${fmt(m.rimDiameterIn)}`],
         ["OD", `${fmt(m.outerDiameterMm)} mm`],
         ["Section", `${fmt(m.drawnSectionWidthMm)} / ${fmt(m.designSectionWidthMm)} mm`],
-        ["Nodes", m.nodeCount],
+        ["Contact nodes", `${fmt(m.rimContactNodeCount)} / ${fmt(m.nodeCount)}`],
       ];
       summary.innerHTML = items.map(([label, value]) => `
         <div class="metric">
@@ -2310,6 +2310,7 @@
         .concat(display.rim.outerRows)
         .concat(display.rim.humps.flat())
         .concat(display.rim.beadSeats.flat())
+        .concat(display.rim.beadContacts.flat())
         .concat(display.rim.flangeLips.flat())
         .concat(display.rim.dropCenter);
       const xs = allRows.map(row => Number(row.xMm)).filter(Number.isFinite);
@@ -2342,12 +2343,15 @@
 
       display.nodes.forEach(row => {
         const r = row.nodeIndex % 5 === 0 || row.nodeIndex === 1 || row.nodeIndex === model.nodes.length ? 3.1 : 2.1;
-        svg.insertAdjacentHTML("beforeend", `<circle cx="${frame.sx(row.xMm).toFixed(1)}" cy="${frame.sy(row.yMm).toFixed(1)}" r="${r}" fill="#e7eef5" stroke="#0b0f12" stroke-width="0.8"></circle>`);
+        const fill = row.rimContact ? "#72b7ff" : "#e7eef5";
+        const stroke = row.rimContact ? "#d9ecff" : "#0b0f12";
+        svg.insertAdjacentHTML("beforeend", `<circle cx="${frame.sx(row.xMm).toFixed(1)}" cy="${frame.sy(row.yMm).toFixed(1)}" r="${(row.rimContact ? r + 1 : r).toFixed(1)}" fill="${fill}" stroke="${stroke}" stroke-width="0.8"></circle>`);
       });
       drawLegend(svg, [
         { color: "#f0b85a", label: "Outer contour" },
         { color: "#6be675", label: "Tread depth" },
         { color: "#8ce3df", label: "Inner thickness offset" },
+        { color: "#72b7ff", label: "Rim contact nodes" },
         { color: "#b8c2cc", label: "ETRTO J/H2 aluminium rim" },
       ]);
     }
@@ -2368,6 +2372,7 @@
           outerRows: generatorDisplayRows(rim.outerRows, model),
           humps: rim.humps.map(rows => generatorDisplayRows(rows, model)),
           beadSeats: rim.beadSeats.map(rows => generatorDisplayRows(rows, model)),
+          beadContacts: rim.beadContacts.map(rows => generatorDisplayRows(rows, model)),
           flangeLips: rim.flangeLips.map(rows => generatorDisplayRows(rows, model)),
           dropCenter: generatorDisplayRows(rim.dropCenter, model),
         },
@@ -2408,6 +2413,10 @@
       rim.beadSeats.forEach(rows => {
         const beadSeat = pointPath(rows, frame, "xMm", "yMm");
         svg.insertAdjacentHTML("beforeend", `<path d="${beadSeat}" fill="none" stroke="#dce6ef" stroke-width="1.7" stroke-linecap="round"></path>`);
+      });
+      rim.beadContacts.forEach(rows => {
+        const beadContact = pointPath(rows, frame, "xMm", "yMm");
+        svg.insertAdjacentHTML("beforeend", `<path d="${beadContact}" fill="none" stroke="#72b7ff" stroke-width="2.2" stroke-linecap="round" stroke-dasharray="4 3"></path>`);
       });
       rim.flangeLips.forEach(rows => {
         const flangeLip = pointPath(rows, frame, "xMm", "yMm");
@@ -2450,6 +2459,9 @@
       const rimHalf = clamp(rimWidthMm / 2, 20, Math.max(22, maxOverallHalf + 50));
       const rimProfile = generateEtrtoRimProfile({ metrics: { rimRadiusMm: rimR, rimHalfWidthMm: rimHalf, rimWidthIn, rimDiameterIn: etrtoSize.rimDiameterIn } });
       const beadAnchor = rimProfile.beadAnchors?.right || { xMm: rimR, yMm: rimHalf };
+      const rightBeadContact = rimProfile.beadContactRows?.right || [beadAnchor];
+      const leftBeadContact = rimProfile.beadContactRows?.left || mirrorGeneratorRightFeature(rightBeadContact);
+      const beadContactPaths = [leftBeadContact, rightBeadContact];
       const treadHalf = clamp(Number(params.treadArcWidthMm) / 2, 15, Math.max(16, Math.min(sectionHalf - 3, maxOverallHalf - 4)));
       const crownRadius = Math.max(80, Number(params.crownRadiusMm) || GENERATOR_DEFAULT_PARAMS.crownRadiusMm);
       const shoulderRadius = clamp(Number(params.shoulderRadiusMm), 5, sectionHeight);
@@ -2490,14 +2502,16 @@
         18
       );
 
-      const rightHalf = dedupeClosePoints(crown.concat(upperSidewall.slice(1), lowerSidewall.slice(1)));
+      const rightHalf = dedupeClosePoints(crown.concat(upperSidewall.slice(1), lowerSidewall.slice(1), rightBeadContact.slice(1)));
       const fullContour = rightHalf.slice().reverse().map(point => ({ xMm: point.xMm, yMm: -point.yMm }))
         .concat(rightHalf.slice(1).map(point => ({ xMm: point.xMm, yMm: point.yMm })));
       const sampled = resamplePolyline(fullContour, nodeCount).map((point, index) => ({
         nodeIndex: index + 1,
         xMm: point.xMm,
         yMm: point.yMm,
+        rimContact: pointToPolylineDistance(point, beadContactPaths) <= 0.8,
       }));
+      const rimContactNodeCount = sampled.filter(row => row.rimContact).length;
       const contourNormals = generatorInwardNormals(sampled);
       const innerNodes = offsetGeneratorRowsAlongNormals(sampled, contourNormals, nodeThickness);
       const treadBaseNodes = offsetGeneratorRowsAlongNormals(sampled, contourNormals, treadDepth)
@@ -2546,6 +2560,8 @@
           rimContour: rimProfile.contour,
           beadAnchorXMm: beadX,
           beadAnchorYMm: beadY,
+          beadContactLengthMm: polylineLength(rightBeadContact),
+          rimContactNodeCount,
           sectionHeightMm: sectionHeight,
           crownSagMm: crownSag,
           treadArcWidthMm: treadHalf * 2,
@@ -2602,16 +2618,22 @@
       const rightHump = sampleSmoothGeneratorProfile([humpEntry, humpApex, humpExit], 24, 0.38);
       const rightBeadSeat = sampleLine(humpExit, beadSeatOuter, 20);
       const rightFlangeLip = sampleSmoothGeneratorProfile([flangeRoot, flangeBulge, flangeTip, flangeReturn], 24, 0.38);
+      const rightBeadContact = sampleSmoothGeneratorProfile([flangeBulge, flangeRoot, beadSeatOuter, humpExit], 10, 0.32);
       return {
         contour: rimDims.profile,
         outerRows,
         humps: [mirrorGeneratorRightFeature(rightHump), rightHump],
         beadSeats: [mirrorGeneratorRightFeature(rightBeadSeat), rightBeadSeat],
+        beadContacts: [mirrorGeneratorRightFeature(rightBeadContact), rightBeadContact],
+        beadContactRows: {
+          left: mirrorGeneratorRightFeature(rightBeadContact),
+          right: rightBeadContact,
+        },
         flangeLips: [mirrorGeneratorRightFeature(rightFlangeLip), rightFlangeLip],
         dropCenter: sampleLine({ xMm: dropCenterX, yMm: -centerWellHalf }, { xMm: dropCenterX, yMm: centerWellHalf }, 18),
         beadAnchors: {
-          left: { xMm: flangeRoot.xMm, yMm: -flangeRoot.yMm },
-          right: { xMm: flangeRoot.xMm, yMm: flangeRoot.yMm },
+          left: { xMm: flangeBulge.xMm, yMm: -flangeBulge.yMm },
+          right: { xMm: flangeBulge.xMm, yMm: flangeBulge.yMm },
         },
       };
     }
@@ -7583,6 +7605,34 @@
         .map(row => `L${frame.sx(Number(row[outerXKey])).toFixed(1)},${frame.sy(Number(row[outerYKey])).toFixed(1)}`)
         .join(" ");
       return `${first} ${second} Z`;
+    }
+
+    function polylineLength(rows) {
+      return (rows || []).slice(1).reduce((total, row, index) => {
+        const previous = rows[index];
+        return total + Math.hypot(Number(row.xMm) - Number(previous.xMm), Number(row.yMm) - Number(previous.yMm));
+      }, 0);
+    }
+
+    function pointToPolylineDistance(point, polylines) {
+      const paths = Array.isArray(polylines?.[0]) ? polylines : [polylines || []];
+      return paths.reduce((best, rows) => {
+        if (!rows?.length) return best;
+        if (rows.length === 1) return Math.min(best, Math.hypot(Number(point.xMm) - Number(rows[0].xMm), Number(point.yMm) - Number(rows[0].yMm)));
+        return rows.slice(1).reduce((pathBest, row, index) =>
+          Math.min(pathBest, pointToSegmentDistance(point, rows[index], row)), best);
+      }, Infinity);
+    }
+
+    function pointToSegmentDistance(point, a, b) {
+      const px = Number(point.xMm), py = Number(point.yMm);
+      const ax = Number(a.xMm), ay = Number(a.yMm);
+      const bx = Number(b.xMm), by = Number(b.yMm);
+      const dx = bx - ax, dy = by - ay;
+      const lengthSq = dx * dx + dy * dy;
+      if (!(lengthSq > 1e-12)) return Math.hypot(px - ax, py - ay);
+      const t = clamp(((px - ax) * dx + (py - ay) * dy) / lengthSq, 0, 1);
+      return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
     }
 
     function drawLegend(svg, items) {
