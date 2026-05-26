@@ -2618,7 +2618,7 @@
       const rightHump = sampleSmoothGeneratorProfile([humpEntry, humpApex, humpExit], 24, 0.38);
       const rightBeadSeat = sampleLine(humpExit, beadSeatOuter, 20);
       const rightFlangeLip = sampleSmoothGeneratorProfile([flangeRoot, flangeBulge, flangeTip, flangeReturn], 24, 0.38);
-      const rightBeadContact = sampleSmoothGeneratorProfile([flangeBulge, flangeRoot, beadSeatOuter, humpExit], 10, 0.32);
+      const rightBeadContact = sampleLine(flangeRoot, beadSeatOuter, 6);
       return {
         contour: rimDims.profile,
         outerRows,
@@ -2632,8 +2632,8 @@
         flangeLips: [mirrorGeneratorRightFeature(rightFlangeLip), rightFlangeLip],
         dropCenter: sampleLine({ xMm: dropCenterX, yMm: -centerWellHalf }, { xMm: dropCenterX, yMm: centerWellHalf }, 18),
         beadAnchors: {
-          left: { xMm: flangeBulge.xMm, yMm: -flangeBulge.yMm },
-          right: { xMm: flangeBulge.xMm, yMm: flangeBulge.yMm },
+          left: { xMm: flangeRoot.xMm, yMm: -flangeRoot.yMm },
+          right: { xMm: flangeRoot.xMm, yMm: flangeRoot.yMm },
         },
       };
     }
