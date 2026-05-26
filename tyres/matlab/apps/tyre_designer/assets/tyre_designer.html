@@ -331,6 +331,16 @@
       color: var(--text);
       font: inherit;
     }
+    .generator-output-field output {
+      display: block;
+      width: 100%;
+      padding: 6px 8px;
+      background: #111820;
+      border: 1px solid var(--line);
+      border-radius: 5px;
+      color: var(--text);
+      font-weight: 800;
+    }
     .generator-field input[type="range"] {
       width: 100%;
       min-width: 0;
@@ -1368,7 +1378,7 @@
               <div class="generator-task"><span class="task-index">5</span><div><strong>Fitted profile</strong><br>Use imported model data as a generator starting point.</div></div>
             </div>
             <div class="generator-form">
-              <div class="generator-field"><label for="generator-outer-diameter">Outer diameter mm</label><div class="generator-value-row"><input data-generator-slider="outerDiameterMm" type="range" min="250" max="1200" step="1" value="660" aria-label="Outer diameter mm slider"><input id="generator-outer-diameter" data-generator-param="outerDiameterMm" type="number" min="250" max="1200" step="1" value="660"></div></div>
+              <div class="generator-field generator-output-field"><label for="generator-outer-diameter">Outer diameter mm</label><output id="generator-outer-diameter" data-generator-output="outerDiameterMm">612.2 mm</output></div>
               <div class="generator-field"><label for="generator-rim-diameter">Rim diameter in</label><div class="generator-value-row"><input data-generator-slider="rimDiameterIn" type="range" min="10" max="30" step="1" value="13" aria-label="Rim diameter inch slider"><input id="generator-rim-diameter" data-generator-param="rimDiameterIn" type="number" min="10" max="30" step="1" value="13"></div></div>
               <div class="generator-field"><label for="generator-section-width">Section width mm</label><div class="generator-value-row"><input data-generator-slider="sectionWidthMm" type="range" min="125" max="605" step="10" value="235" aria-label="Section width mm slider"><input id="generator-section-width" data-generator-param="sectionWidthMm" type="number" min="125" max="605" step="10" value="235"></div></div>
               <div class="generator-field"><label for="generator-rim-width">Rim width in</label><div class="generator-value-row"><input data-generator-slider="rimWidthIn" type="range" min="6.5" max="8.5" step="0.5" value="8.5" aria-label="Rim width inch slider"><input id="generator-rim-width" data-generator-param="rimWidthIn" type="number" min="6.5" max="8.5" step="0.5" value="8.5"></div></div>
@@ -1376,7 +1386,7 @@
               <div class="generator-field"><label for="generator-crown-radius">Crown radius mm</label><div class="generator-value-row"><input data-generator-slider="crownRadiusMm" type="range" min="120" max="6000" step="10" value="900" aria-label="Crown radius mm slider"><input id="generator-crown-radius" data-generator-param="crownRadiusMm" type="number" min="120" max="6000" step="10" value="900"></div></div>
               <div class="generator-field"><label for="generator-shoulder-radius">Shoulder radius mm</label><div class="generator-value-row"><input data-generator-slider="shoulderRadiusMm" type="range" min="5" max="220" step="1" value="55" aria-label="Shoulder radius mm slider"><input id="generator-shoulder-radius" data-generator-param="shoulderRadiusMm" type="number" min="5" max="220" step="1" value="55"></div></div>
               <div class="generator-field"><label for="generator-sidewall-bulge">Sidewall bulge mm</label><div class="generator-value-row"><input data-generator-slider="sidewallBulgeMm" type="range" min="-40" max="90" step="1" value="22" aria-label="Sidewall bulge mm slider"><input id="generator-sidewall-bulge" data-generator-param="sidewallBulgeMm" type="number" min="-40" max="90" step="1" value="22"></div></div>
-              <div class="generator-field"><label for="generator-section-height">Max section height %</label><div class="generator-value-row"><input data-generator-slider="maxSectionHeightPct" type="range" min="20" max="95" step="5" value="60" aria-label="Max section height percent slider"><input id="generator-section-height" data-generator-param="maxSectionHeightPct" type="number" min="20" max="95" step="5" value="60"></div></div>
+              <div class="generator-field"><label for="generator-section-height">Aspect ratio %</label><div class="generator-value-row"><input data-generator-slider="maxSectionHeightPct" type="range" min="20" max="95" step="5" value="60" aria-label="Aspect ratio percent slider"><input id="generator-section-height" data-generator-param="maxSectionHeightPct" type="number" min="20" max="95" step="5" value="60"></div></div>
               <div class="generator-field"><label for="generator-bead-radius">Bead radius mm</label><div class="generator-value-row"><input data-generator-slider="beadRadiusMm" type="range" min="2" max="60" step="1" value="12" aria-label="Bead radius mm slider"><input id="generator-bead-radius" data-generator-param="beadRadiusMm" type="number" min="2" max="60" step="1" value="12"></div></div>
               <div class="generator-field"><label for="generator-thickness">Node thickness mm</label><div class="generator-value-row"><input data-generator-slider="nodeThicknessMm" type="range" min="1" max="80" step="0.1" value="9" aria-label="Node thickness mm slider"><input id="generator-thickness" data-generator-param="nodeThicknessMm" type="number" min="1" max="80" step="0.1" value="9"></div></div>
               <div class="generator-field"><label for="generator-tread-depth">Tread depth mm</label><div class="generator-value-row"><input data-generator-slider="treadDepthMm" type="range" min="0" max="30" step="0.1" value="4.5" aria-label="Tread depth mm slider"><input id="generator-tread-depth" data-generator-param="treadDepthMm" type="number" min="0" max="30" step="0.1" value="4.5"></div></div>
@@ -1524,7 +1534,6 @@
     const MATERIAL_MAHALANOBIS_WEIGHT = 0.02;
     const COLORS = ["#e7eef5", "#72b7ff", "#6be675", "#f07d9d", "#b99cff", "#8ce3df", "#f0b85a", "#ff7a45"];
     const GENERATOR_DEFAULT_PARAMS = Object.freeze({
-      outerDiameterMm: 660,
       rimDiameterIn: 13,
       sectionWidthMm: 235,
       rimWidthIn: 8.5,
@@ -1919,6 +1928,7 @@
       applyGeneratorEtrtoConstraints("");
       const params = generatorParamsFromControls();
       const model = generateTyreContour(params);
+      drawGeneratorDerivedOutputs(model);
       drawGeneratorSummary(model);
       drawGeneratorPlot(model);
     }
@@ -2024,7 +2034,8 @@
       const note = document.getElementById("generator-etrto-note");
       if (note) {
         const range = etrtoApprovedRimRange(section, aspect);
-        note.textContent = `ISO/ETRTO: ${section}/${aspect} R${rimDiameter} accepts ${fmt(range.min)}-${fmt(range.max)} in rim width.`;
+        const outerDiameter = etrtoOuterDiameterMm(section, aspect, rimDiameter);
+        note.textContent = `ISO/ETRTO: ${section}/${aspect} R${rimDiameter}, OD ${fmt(outerDiameter)} mm, rim width ${fmt(range.min)}-${fmt(range.max)} in.`;
       }
     }
 
@@ -2089,6 +2100,10 @@
       return { min: 0.85, max: 1.0 };
     }
 
+    function etrtoOuterDiameterMm(sectionWidthMm, aspectPct, rimDiameterIn) {
+      return Number(rimDiameterIn) * 25.4 + 2 * Number(sectionWidthMm) * Number(aspectPct) / 100;
+    }
+
     function roundHalfIn(value) {
       return Math.round(Number(value) * 2) / 2;
     }
@@ -2109,6 +2124,12 @@
       return text === "" || text === "-" ? "0" : text;
     }
 
+    function drawGeneratorDerivedOutputs(model) {
+      const output = document.querySelector('[data-generator-output="outerDiameterMm"]');
+      if (!output) return;
+      output.textContent = `${fmt(model?.metrics?.outerDiameterMm)} mm`;
+    }
+
     function drawGeneratorSummary(model) {
       const summary = document.getElementById("generator-summary");
       if (!summary) return;
@@ -2116,9 +2137,9 @@
       const items = [
         ["Nodes", m.nodeCount],
         ["Rim", `${fmt(m.rimDiameterIn)} x ${fmt(m.rimWidthIn)} in`],
+        ["Outer diameter", `${fmt(m.outerDiameterMm)} mm`],
         ["Section height", `${fmt(m.sectionHeightMm)} mm`],
         ["Tread width", `${fmt(m.treadArcWidthMm)} mm`],
-        ["Tread depth", `${fmt(m.treadDepthMm)} mm`],
       ];
       summary.innerHTML = items.map(([label, value]) => `
         <div class="metric">
@@ -2266,12 +2287,15 @@
 
     function generateTyreContour(inputParams) {
       const params = { ...GENERATOR_DEFAULT_PARAMS, ...(inputParams || {}) };
-      const outerR = Math.max(80, Number(params.outerDiameterMm) / 2);
       const rimDiameterMm = Number(params.rimDiameterIn) * 25.4;
       const rimWidthMm = Number(params.rimWidthIn) * 25.4;
+      const sectionWidth = Number(params.sectionWidthMm);
+      const aspectPct = clamp(Math.round(Number(params.maxSectionHeightPct) / 5) * 5, 20, 95);
+      const sectionHeight = Math.max(18, sectionWidth * aspectPct / 100);
+      const outerDiameterMm = Math.max(160, rimDiameterMm + 2 * sectionHeight);
+      const outerR = Math.max(80, outerDiameterMm / 2);
       const rimR = clamp(rimDiameterMm / 2, 40, outerR - 18);
-      const sectionHeight = Math.max(18, outerR - rimR);
-      const sectionHalf = clamp(Number(params.sectionWidthMm) / 2, 25, 420);
+      const sectionHalf = clamp(sectionWidth / 2, 25, 420);
       const rimHalf = clamp(rimWidthMm / 2, 20, Math.max(22, sectionHalf + 50));
       const rimProfile = generateEtrtoRimProfile({ metrics: { rimRadiusMm: rimR, rimHalfWidthMm: rimHalf } });
       const beadAnchor = rimProfile.beadAnchors?.right || { xMm: rimR, yMm: rimHalf };
@@ -2284,11 +2308,10 @@
       const nodeCount = Math.max(3, Math.round(Number(params.nodeCount) || GENERATOR_DEFAULT_PARAMS.nodeCount));
       const crownSag = clamp((treadHalf * treadHalf) / (2 * crownRadius), 0.4, sectionHeight * 0.26);
       const shoulderX = outerR - crownSag;
-      const maxSectionPct = clamp(Number(params.maxSectionHeightPct), 20, 95) / 100;
       const beadX = Number(beadAnchor.xMm);
       const beadY = clamp(Number(beadAnchor.yMm), 15, sectionHalf + 55);
       const beadToShoulderHeight = Math.max(12, shoulderX - beadX);
-      const maxSectionX = clamp(beadX + beadToShoulderHeight * maxSectionPct, beadX + 6, shoulderX - 5);
+      const maxSectionX = clamp(beadX + beadToShoulderHeight * 0.62, beadX + 6, shoulderX - 5);
       const maxSectionY = clamp(sectionHalf + Number(params.sidewallBulgeMm), Math.max(treadHalf + 5, beadY + 3), sectionHalf + 95);
 
       const crown = [];
@@ -2354,8 +2377,10 @@
           nodeCount: sampled.length,
           outerRadiusMm: outerR,
           rimRadiusMm: rimR,
+          outerDiameterMm,
           rimDiameterIn: Number(params.rimDiameterIn),
           rimWidthIn: Number(params.rimWidthIn),
+          aspectRatioPct: aspectPct,
           rimHalfWidthMm: rimHalf,
           beadAnchorXMm: beadX,
           beadAnchorYMm: beadY,
