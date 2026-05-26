@@ -81,6 +81,7 @@ def run_check() -> dict:
         "rimDiameterIn",
         "rimWidthIn",
         "sidewallShapePct",
+        "GENERATOR_ETRTO_CONTROL_KEYS",
         "ETRTO_PASSENGER_METRIC_SIZE_ROWS",
         "ETRTO_PASSENGER_METRIC_SIZES",
         "ETRTO_RIM_DIAMETER_CODES_IN",

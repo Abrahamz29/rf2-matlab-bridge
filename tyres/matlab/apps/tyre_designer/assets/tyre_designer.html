@@ -1622,6 +1622,7 @@
     const ETRTO_RIM_DIAMETER_CODES_IN = Object.freeze([...new Set(ETRTO_PASSENGER_METRIC_SIZES.map(row => row.rimDiameterIn))].sort((a, b) => a - b));
     const ETRTO_SECTION_WIDTHS_MM = Object.freeze([...new Set(ETRTO_PASSENGER_METRIC_SIZES.map(row => row.sectionWidthMm))].sort((a, b) => a - b));
     const ETRTO_ASPECT_RATIOS_PCT = Object.freeze([...new Set(ETRTO_PASSENGER_METRIC_SIZES.map(row => row.aspectRatioPct))].sort((a, b) => a - b));
+    const GENERATOR_ETRTO_CONTROL_KEYS = new Set(["sectionWidthMm", "maxSectionHeightPct", "rimDiameterIn", "rimWidthIn"]);
 
     function setup(htmlComponent) {
       matlabComponent = htmlComponent;
@@ -1720,8 +1721,9 @@
       document.addEventListener("change", event => {
         const generatorControl = event.target?.closest("[data-generator-param], [data-generator-slider]");
         if (generatorControl) {
+          const key = generatorControl.dataset.generatorParam || generatorControl.dataset.generatorSlider || "";
           syncGeneratorControl(generatorControl, { commit: true });
-          drawGenerator({ constrain: true });
+          drawGenerator({ constrain: GENERATOR_ETRTO_CONTROL_KEYS.has(key) });
           return;
         }
         if (event.target?.id === "reengineering-db-category") {
@@ -2039,12 +2041,12 @@
       if (!key) return;
       const numberInput = generatorNumberInput(key);
       const sliderInput = generatorSliderInput(key);
-      const referenceInput = numberInput || sliderInput || control;
+      const referenceInput = control || numberInput || sliderInput;
       const value = normalizedGeneratorControlValue(key, Number(control.value), referenceInput);
       const text = generatorControlValueText(value, referenceInput?.getAttribute("step"));
       if (numberInput && numberInput.value !== text) numberInput.value = text;
       if (sliderInput && sliderInput.value !== text) sliderInput.value = text;
-      if (options.commit !== false) applyGeneratorEtrtoConstraints(key);
+      if (options.commit !== false && GENERATOR_ETRTO_CONTROL_KEYS.has(key)) applyGeneratorEtrtoConstraints(key);
     }
 
     function generatorNumberInput(key) {
@@ -2260,7 +2262,8 @@
       if (!Number.isFinite(n)) return "";
       const step = String(stepText || "");
       const decimals = step.includes(".") ? Math.min(6, step.split(".")[1].length) : 0;
-      const text = n.toFixed(decimals).replace(/\.?0+$/, "");
+      const fixed = n.toFixed(decimals);
+      const text = decimals > 0 ? fixed.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "") : fixed;
       return text === "" || text === "-" ? "0" : text;
     }
 
