@@ -1424,8 +1424,9 @@
             </div>
             <div id="generator-derived" class="generator-derived-grid" aria-label="Derived generator values">
               <div class="generator-derived-item generator-output-field"><span>ETRTO size</span><output data-generator-output="tyreSize">235/60 R15</output></div>
-              <div class="generator-derived-item generator-output-field"><span>Outer diameter</span><output id="generator-outer-diameter" data-generator-output="outerDiameterMm">663 mm</output></div>
-              <div class="generator-derived-item generator-output-field"><span>Design width</span><output data-generator-output="designSectionWidthMm">240 mm</output></div>
+              <div class="generator-derived-item generator-output-field"><span>Actual OD</span><output id="generator-outer-diameter" data-generator-output="outerDiameterMm">663 mm</output></div>
+              <div class="generator-derived-item generator-output-field"><span>Actual width</span><output data-generator-output="actualSectionWidthMm">240 mm</output></div>
+              <div class="generator-derived-item generator-output-field"><span>ETRTO box</span><output data-generator-output="etrtoDesignBox">W 240-250 | OD 663-675 mm</output></div>
               <div class="generator-derived-item generator-output-field"><span>Approved rim</span><output data-generator-output="approvedRimWidthIn">6.5-8.5 in</output></div>
             </div>
             <div class="generator-form">
@@ -1435,6 +1436,12 @@
                 <div class="generator-field"><label for="generator-section-height">Aspect ratio [%]</label><div class="generator-value-row"><input data-generator-slider="maxSectionHeightPct" type="range" min="20" max="80" step="5" value="60" aria-label="Aspect ratio percent slider"><input id="generator-section-height" data-generator-param="maxSectionHeightPct" type="number" min="20" max="80" step="5" value="60"></div><div class="generator-range-meta" data-generator-range-label="maxSectionHeightPct"></div></div>
                 <div class="generator-field"><label for="generator-rim-diameter">Rim diameter [in]</label><div class="generator-value-row"><input data-generator-slider="rimDiameterIn" type="range" min="10" max="30" step="1" value="15" aria-label="Rim diameter inch slider"><input id="generator-rim-diameter" data-generator-param="rimDiameterIn" type="number" min="10" max="30" step="1" value="15"></div><div class="generator-range-meta" data-generator-range-label="rimDiameterIn"></div></div>
                 <div class="generator-field"><label for="generator-rim-width">Rim width [in]</label><div class="generator-value-row"><input data-generator-slider="rimWidthIn" type="range" min="6.5" max="8.5" step="0.5" value="7" aria-label="Rim width inch slider"><input id="generator-rim-width" data-generator-param="rimWidthIn" type="number" min="6.5" max="8.5" step="0.5" value="7"></div><div class="generator-range-meta" data-generator-range-label="rimWidthIn"></div></div>
+              </div>
+              <div class="generator-control-group">
+                <h3>Actual tyre</h3>
+                <div class="generator-field"><label for="generator-actual-outer-diameter">Outer diameter [mm]</label><div class="generator-value-row"><input data-generator-slider="actualOuterDiameterMm" type="range" min="663" max="675" step="1" value="663" aria-label="Actual outer diameter mm slider"><input id="generator-actual-outer-diameter" data-generator-param="actualOuterDiameterMm" type="number" min="663" max="675" step="1" value="663"></div><div class="generator-range-meta" data-generator-range-label="actualOuterDiameterMm"></div></div>
+                <div class="generator-field"><label for="generator-actual-section-width">Section width [mm]</label><div class="generator-value-row"><input data-generator-slider="actualSectionWidthMm" type="range" min="240" max="250" step="1" value="240" aria-label="Actual section width mm slider"><input id="generator-actual-section-width" data-generator-param="actualSectionWidthMm" type="number" min="240" max="250" step="1" value="240"></div><div class="generator-range-meta" data-generator-range-label="actualSectionWidthMm"></div></div>
+                <div class="generator-field"><label for="generator-section-position">Section position [%]</label><div class="generator-value-row"><input data-generator-slider="sectionPositionPct" type="range" min="25" max="85" step="1" value="62" aria-label="Section position percent slider"><input id="generator-section-position" data-generator-param="sectionPositionPct" type="number" min="25" max="85" step="1" value="62"></div><div class="generator-range-meta" data-generator-range-label="sectionPositionPct"></div></div>
               </div>
               <div class="generator-control-group">
                 <h3>Profile shape</h3>
@@ -1596,6 +1603,9 @@
       rimDiameterIn: 15,
       sectionWidthMm: 235,
       rimWidthIn: 7,
+      actualOuterDiameterMm: 663,
+      actualSectionWidthMm: 240,
+      sectionPositionPct: 62,
       treadArcWidthMm: 205,
       crownRadiusMm: 900,
       shoulderRadiusMm: 55,
@@ -2107,11 +2117,24 @@
       setGeneratorControlRange("rimWidthIn", approvedRimWidths[0], approvedRimWidths[approvedRimWidths.length - 1], 0.5);
       setGeneratorControlValue("rimWidthIn", rimWidth);
 
-      const maxTreadArc = Math.max(40, selected.designSectionWidthMm);
+      const minActualOuter = Number(selected.designOverallDiameterMm);
+      const maxActualOuter = Number(selected.maxOverallDiameterMm);
+      const minActualWidth = Number(selected.designSectionWidthMm);
+      const maxActualWidth = Number(selected.maxOverallWidthMm);
+      setGeneratorControlRange("actualOuterDiameterMm", minActualOuter, maxActualOuter, 1);
+      setGeneratorControlRange("actualSectionWidthMm", minActualWidth, maxActualWidth, 1);
+      setGeneratorControlRange("sectionPositionPct", 25, 85, 1);
+      setGeneratorControlValue("actualOuterDiameterMm", clamp(Number(generatorNumberInput("actualOuterDiameterMm")?.value), minActualOuter, maxActualOuter));
+      setGeneratorControlValue("actualSectionWidthMm", clamp(Number(generatorNumberInput("actualSectionWidthMm")?.value), minActualWidth, maxActualWidth));
+      setGeneratorControlValue("sectionPositionPct", clamp(Number(generatorNumberInput("sectionPositionPct")?.value), 25, 85));
+
+      const actualOuterDiameter = Number(generatorNumberInput("actualOuterDiameterMm")?.value) || minActualOuter;
+      const actualSectionWidth = Number(generatorNumberInput("actualSectionWidthMm")?.value) || minActualWidth;
+      const maxTreadArc = Math.max(40, actualSectionWidth);
       setGeneratorControlRange("treadArcWidthMm", 40, maxTreadArc, 1);
       setGeneratorControlValue("treadArcWidthMm", Math.min(Number(generatorNumberInput("treadArcWidthMm")?.value), maxTreadArc));
 
-      const sectionHeight = Math.max(18, Number(selected.designOverallDiameterMm) / 2 - Number(selected.rimDiameterIn) * 25.4 / 2);
+      const sectionHeight = Math.max(18, actualOuterDiameter / 2 - Number(selected.rimDiameterIn) * 25.4 / 2);
       const maxNodeThickness = clamp(sectionHeight * 0.28, 8, 35);
       setGeneratorControlRange("nodeThicknessMm", 1, maxNodeThickness, 0.1);
       setGeneratorControlValue("nodeThicknessMm", clamp(Number(generatorNumberInput("nodeThicknessMm")?.value), 1, maxNodeThickness));
@@ -2121,12 +2144,15 @@
       const note = document.getElementById("generator-etrto-note");
       if (note) {
         const range = etrtoApprovedRimRange(selected.sectionWidthMm, selected.aspectRatioPct, selected.rimDiameterIn);
-        note.textContent = `ETRTO: ${selected.sectionWidthMm}/${selected.aspectRatioPct} R${selected.rimDiameterIn}, design OD ${fmt(selected.designOverallDiameterMm)} mm, max service ${fmt(selected.maxOverallDiameterMm)} mm, J/H2 aluminium rim ${fmt(range.min)}-${fmt(range.max)} in.`;
+        note.textContent = `ETRTO: ${selected.sectionWidthMm}/${selected.aspectRatioPct} R${selected.rimDiameterIn}, allowed actual box W ${fmt(minActualWidth)}-${fmt(maxActualWidth)} mm, OD ${fmt(minActualOuter)}-${fmt(maxActualOuter)} mm, J/H2 aluminium rim ${fmt(range.min)}-${fmt(range.max)} in.`;
       }
       setGeneratorRangeLabel("sectionWidthMm", `${fmt(widthRange[0])}-${fmt(widthRange[1])} mm`);
       setGeneratorRangeLabel("maxSectionHeightPct", `${fmt(ETRTO_ASPECT_RATIOS_PCT[0])}-${fmt(ETRTO_ASPECT_RATIOS_PCT[ETRTO_ASPECT_RATIOS_PCT.length - 1])} %`);
       setGeneratorRangeLabel("rimDiameterIn", `${fmt(rimDiameterRange[0])}-${fmt(rimDiameterRange[1])} in`);
       setGeneratorRangeLabel("rimWidthIn", `${fmt(approvedRimWidths[0])}-${fmt(approvedRimWidths[approvedRimWidths.length - 1])} in`);
+      setGeneratorRangeLabel("actualOuterDiameterMm", `${fmt(minActualOuter)}-${fmt(maxActualOuter)} mm`);
+      setGeneratorRangeLabel("actualSectionWidthMm", `${fmt(minActualWidth)}-${fmt(maxActualWidth)} mm`);
+      setGeneratorRangeLabel("sectionPositionPct", "25-85 %");
       setGeneratorRangeLabel("treadArcWidthMm", `40-${fmt(maxTreadArc)} mm`);
       setGeneratorRangeLabel("crownRadiusMm", "180-2500 mm");
       setGeneratorRangeLabel("shoulderRadiusMm", "5-180 mm");
@@ -2272,7 +2298,8 @@
       const outputs = {
         tyreSize: `${fmt(m.nominalSectionWidthMm)}/${fmt(m.aspectRatioPct)} R${fmt(m.rimDiameterIn)}`,
         outerDiameterMm: `${fmt(m.outerDiameterMm)} mm`,
-        designSectionWidthMm: `${fmt(m.designSectionWidthMm)} mm`,
+        actualSectionWidthMm: `${fmt(m.actualSectionWidthMm)} mm`,
+        etrtoDesignBox: `W ${fmt(m.designSectionWidthMm)}-${fmt(m.maxOverallWidthMm)} | OD ${fmt(m.designOverallDiameterMm)}-${fmt(m.maxOverallDiameterMm)} mm`,
         approvedRimWidthIn: `${fmt(m.approvedRimWidthMinIn)}-${fmt(m.approvedRimWidthMaxIn)} in`,
       };
       Object.entries(outputs).forEach(([key, value]) => {
@@ -2289,7 +2316,8 @@
         ["Size", `${fmt(m.nominalSectionWidthMm)}/${fmt(m.aspectRatioPct)} R${fmt(m.rimDiameterIn)}`],
         ["Rim", `${fmt(m.rimWidthIn)}J x ${fmt(m.rimDiameterIn)}`],
         ["OD", `${fmt(m.outerDiameterMm)} mm`],
-        ["Section", `${fmt(m.drawnSectionWidthMm)} / ${fmt(m.designSectionWidthMm)} mm`],
+        ["Section", `${fmt(m.drawnSectionWidthMm)} / ${fmt(m.actualSectionWidthMm)} mm`],
+        ["ETRTO box", `W ${fmt(m.designSectionWidthMm)}-${fmt(m.maxOverallWidthMm)} | OD ${fmt(m.designOverallDiameterMm)}-${fmt(m.maxOverallDiameterMm)}`],
         ["Contact nodes", `${fmt(m.rimContactNodeCount)} / ${fmt(m.nodeCount)}`],
       ];
       summary.innerHTML = items.map(([label, value]) => `
@@ -2451,14 +2479,18 @@
       const rimWidthIn = nearestValue(Number(params.rimWidthIn), etrtoSize.approvedRimWidthsIn);
       const rimDiameterMm = Number(etrtoSize.rimDiameterIn) * 25.4;
       const rimWidthMm = etrtoRimWidthMmFromCode(rimWidthIn);
-      const sectionWidth = Number(etrtoSize.designSectionWidthMm);
+      const designSectionWidth = Number(etrtoSize.designSectionWidthMm);
+      const maxOverallWidth = Number(etrtoSize.maxOverallWidthMm);
+      const designOverallDiameter = Number(etrtoSize.designOverallDiameterMm);
+      const maxOverallDiameter = Number(etrtoSize.maxOverallDiameterMm);
+      const sectionWidth = clamp(Number(params.actualSectionWidthMm), designSectionWidth, maxOverallWidth);
       const aspectPct = Number(etrtoSize.aspectRatioPct);
-      const outerDiameterMm = Number(etrtoSize.designOverallDiameterMm);
+      const outerDiameterMm = clamp(Number(params.actualOuterDiameterMm), designOverallDiameter, maxOverallDiameter);
       const outerR = Math.max(80, outerDiameterMm / 2);
       const rimR = clamp(rimDiameterMm / 2, 40, outerR - 18);
       const sectionHeight = Math.max(18, outerR - rimR);
-      const sectionHalf = clamp(sectionWidth / 2, 25, 420);
-      const maxOverallHalf = Math.max(sectionHalf, Number(etrtoSize.maxOverallWidthMm) / 2);
+      const sectionHalf = clamp(sectionWidth / 2, 25, Math.max(25, maxOverallWidth / 2));
+      const maxOverallHalf = Math.max(sectionHalf, maxOverallWidth / 2);
       const rimHalf = clamp(rimWidthMm / 2, 20, Math.max(22, maxOverallHalf + 50));
       const rimProfile = generateEtrtoRimProfile({ metrics: { rimRadiusMm: rimR, rimHalfWidthMm: rimHalf, rimWidthIn, rimDiameterIn: etrtoSize.rimDiameterIn } });
       const beadAnchor = rimProfile.beadAnchors?.right || { xMm: rimR, yMm: rimHalf };
@@ -2477,10 +2509,14 @@
       const beadX = Number(beadAnchor.xMm);
       const beadY = clamp(Number(beadAnchor.yMm), 15, maxOverallHalf - 2);
       const beadToShoulderHeight = Math.max(12, shoulderX - beadX);
-      const maxSectionX = clamp(beadX + beadToShoulderHeight * 0.62, beadX + 6, shoulderX - 5);
+      const sectionPosition = clamp(Number(params.sectionPositionPct), 25, 85) / 100;
+      const maxSectionX = clamp(beadX + beadToShoulderHeight * sectionPosition, beadX + 6, shoulderX - 5);
       const sidewallShape = clamp(Number(params.sidewallShapePct), 0, 100) / 100;
-      const maxSectionMinY = Math.min(Math.max(treadHalf + 5, beadY + 3), sectionHalf);
-      const maxSectionY = maxSectionMinY + (sectionHalf - maxSectionMinY) * sidewallShape;
+      const maxSectionY = sectionHalf;
+      const shoulderBlendY = shoulderRadius * (0.22 + sidewallShape * 0.26);
+      const sectionBlendY = (maxSectionY - treadHalf) * (0.06 + (1 - sidewallShape) * 0.12);
+      const lowerBlendY = (maxSectionY - beadY) * (0.02 + (1 - sidewallShape) * 0.16);
+      const beadBlendY = beadRadius * (0.45 + sidewallShape * 0.25);
 
       const crown = [];
       const crownSteps = 18;
@@ -2492,15 +2528,15 @@
       const shoulder = crown[crown.length - 1];
       const upperSidewall = sampleCubicBezier(
         shoulder,
-        { xMm: shoulder.xMm - shoulderRadius * 0.25, yMm: shoulder.yMm + shoulderRadius * 0.48 },
-        { xMm: maxSectionX + shoulderRadius * 0.18, yMm: maxSectionY },
+        { xMm: shoulder.xMm - shoulderRadius * 0.25, yMm: Math.min(maxSectionY, shoulder.yMm + shoulderBlendY) },
+        { xMm: maxSectionX + shoulderRadius * 0.18, yMm: Math.max(treadHalf, maxSectionY - sectionBlendY) },
         { xMm: maxSectionX, yMm: maxSectionY },
         14
       );
       const lowerSidewall = sampleCubicBezier(
         { xMm: maxSectionX, yMm: maxSectionY },
-        { xMm: maxSectionX - shoulderRadius * 0.20, yMm: maxSectionY - shoulderRadius * 0.04 },
-        { xMm: beadX + beadRadius * 1.35, yMm: beadY + beadRadius * 0.65 },
+        { xMm: maxSectionX - shoulderRadius * (0.12 + (1 - sidewallShape) * 0.16), yMm: maxSectionY - lowerBlendY },
+        { xMm: beadX + beadRadius * (1.0 + sidewallShape * 0.35), yMm: beadY + beadBlendY },
         { xMm: beadX, yMm: beadY },
         18
       );
@@ -2548,9 +2584,11 @@
           outerRadiusMm: outerR,
           rimRadiusMm: rimR,
           outerDiameterMm,
-          maxOverallDiameterMm: Number(etrtoSize.maxOverallDiameterMm),
-          maxOverallWidthMm: Number(etrtoSize.maxOverallWidthMm),
-          designSectionWidthMm: sectionWidth,
+          designOverallDiameterMm: designOverallDiameter,
+          maxOverallDiameterMm: maxOverallDiameter,
+          maxOverallWidthMm: maxOverallWidth,
+          designSectionWidthMm: designSectionWidth,
+          actualSectionWidthMm: sectionWidth,
           drawnSectionWidthMm: maxSectionY * 2,
           nominalSectionWidthMm: Number(etrtoSize.sectionWidthMm),
           rimDiameterIn: Number(etrtoSize.rimDiameterIn),
@@ -2566,6 +2604,9 @@
           beadContactLengthMm: polylineLength(rightBeadContact),
           rimContactNodeCount,
           sectionHeightMm: sectionHeight,
+          sectionPositionPct: sectionPosition * 100,
+          maxSectionXMm: maxSectionX,
+          maxSectionYMm: maxSectionY,
           crownSagMm: crownSag,
           treadArcWidthMm: treadHalf * 2,
           treadDepthMm: treadDepth,
