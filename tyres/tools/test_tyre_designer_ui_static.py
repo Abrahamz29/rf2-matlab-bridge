@@ -74,6 +74,8 @@ def run_check() -> dict:
         "data-generator-action",
         "Tyre Generator",
         "Parametric contour",
+        "315/35 R21",
+        "W 320-333 | OD 753-761 mm",
         "Actual tyre",
         "Actual OD",
         "Actual width",
