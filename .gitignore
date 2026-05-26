@@ -27,6 +27,7 @@ tyres/downloads/
 tyres/cache/
 tyres/output/
 input/.~lock*
+input/ETRTO-Standards-Manual2017.pdf
 tyres/input/ods/.~lock*
 *.sqlite-journal
 *.sqlite-shm

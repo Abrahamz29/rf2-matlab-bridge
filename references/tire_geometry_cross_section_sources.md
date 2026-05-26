@@ -63,6 +63,14 @@ produce TGM node coordinates and construction-layer positions.
   Used to identify the relevant passenger-car rim sections for 5 degree
   drop-centre rims, B/J contours, and bead-retention contours H/FH/EH2/EH2+.
 
+- ETRTO, *Standards Manual 2017*.
+  Local path: `input/ETRTO-Standards-Manual2017.pdf`
+  Added locally: 2026-05-26
+  Used as the primary local reference for passenger-car metric tyre tables,
+  measuring rim width codes, and approved rim contours by size series. Current
+  generator limits use the table/formula logic as an approximation; exact
+  per-size lookup extraction from this PDF is a follow-up task.
+
 - ISO 4000-2:2007 preview, *Passenger car tyres and rims - Part 2: Rims*.
   URL: https://cdn.standards.iteh.ai/samples/45065/af0a2a7d31c54b2b83542ce98527664b/ISO-4000-2-2007.pdf
   Retrieved: 2026-05-26
@@ -70,6 +78,28 @@ produce TGM node coordinates and construction-layer positions.
   J-type rim dimension vocabulary, minimum well-depth concepts, and optional
   bead-seat/round-hump contour references. The implementation remains an
   approximate visual/generator contour, not a certified standard drawing.
+
+- ISO 4000-1:2015 preview, *Passenger car tyres and rims - Part 1: Tyres
+  (metric series)*.
+  URL: https://cdn.standards.iteh.ai/samples/iso/iso-4000-1-2015/35fc9c0d62a54b3b91ca6979af752693/iso-4000-1-2015.pdf
+  Retrieved: 2026-05-26
+  Used for public formulas and coefficients for measuring rim width, design
+  tyre section width/height, and approved rim width ranges as a function of
+  nominal section width and aspect ratio.
+
+- ISO 4000-1:2021 preview, *Passenger car tyres and rims - Part 1: Tyres
+  (metric series)*.
+  URL: https://www.normsplash.com/Samples/ISO/197545882/ISO-4000-1-2021-en.pdf
+  Retrieved: 2026-05-26
+  Used for public designation constraints: 5 degree tapered rim tyre section
+  widths ending in 5, aspect ratios as multiples of 5, and nominal rim
+  diameter code list.
+
+- Tire Size Calculator, *Rim Width and Tyre Size Matching*.
+  URL: https://tire-size-calculator.net/Rim-width-and-tyre-size
+  Retrieved: 2026-05-26
+  Used only as a public sanity check for common passenger-car rim width and
+  tyre width ranges. ISO 4000-1 formulas are the implementation basis.
 
 - Tire Rack, *Matching Wheel Diameters and Bead Seat Contours*.
   URL: https://www.tirerack.com/upgrade-garage/matching-wheel-diameters-and-bead-seat-contours
