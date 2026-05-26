@@ -65,11 +65,12 @@ produce TGM node coordinates and construction-layer positions.
 
 - ETRTO, *Standards Manual 2017*.
   Local path: `input/ETRTO-Standards-Manual2017.pdf`
-  Added locally: 2026-05-26
-  Used as the primary local reference for passenger-car metric tyre tables,
-  measuring rim width codes, and approved rim contours by size series. Current
-  generator limits use the table/formula logic as an approximation; exact
-  per-size lookup extraction from this PDF is a follow-up task.
+  Inspected locally: 2026-05-26
+  Used as the primary local reference for passenger-car metric tyre tables
+  P.19-P.40 and rim contour sections R.8-R.14. The generator now constrains
+  metric passenger-car tyre size, design overall diameter, design/max service
+  section dimensions, measuring rim width, and approved J/H2 aluminium rim
+  widths through exact per-size lookups extracted from the local PDF.
 
 - ISO 4000-2:2007 preview, *Passenger car tyres and rims - Part 2: Rims*.
   URL: https://cdn.standards.iteh.ai/samples/45065/af0a2a7d31c54b2b83542ce98527664b/ISO-4000-2-2007.pdf
