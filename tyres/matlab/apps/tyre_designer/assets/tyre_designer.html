@@ -315,7 +315,13 @@
       font-size: 11px;
       font-weight: 700;
     }
-    .generator-field input {
+    .generator-value-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 82px;
+      gap: 8px;
+      align-items: center;
+    }
+    .generator-field input[type="number"] {
       width: 100%;
       min-width: 0;
       padding: 6px 8px;
@@ -324,6 +330,15 @@
       border-radius: 5px;
       color: var(--text);
       font: inherit;
+    }
+    .generator-field input[type="range"] {
+      width: 100%;
+      min-width: 0;
+      height: 22px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      accent-color: var(--accent);
     }
     .generator-actions {
       display: flex;
@@ -1346,19 +1361,19 @@
               <div class="generator-task"><span class="task-index">5</span><div><strong>Fitted profile</strong><br>Use imported model data as a generator starting point.</div></div>
             </div>
             <div class="generator-form">
-              <div class="generator-field"><label for="generator-outer-diameter">Outer diameter mm</label><input id="generator-outer-diameter" data-generator-param="outerDiameterMm" type="number" min="250" max="1200" step="1" value="660"></div>
-              <div class="generator-field"><label for="generator-rim-diameter">Rim diameter mm</label><input id="generator-rim-diameter" data-generator-param="rimDiameterMm" type="number" min="100" max="700" step="1" value="330"></div>
-              <div class="generator-field"><label for="generator-section-width">Section width mm</label><input id="generator-section-width" data-generator-param="sectionWidthMm" type="number" min="60" max="600" step="1" value="235"></div>
-              <div class="generator-field"><label for="generator-rim-width">Rim width mm</label><input id="generator-rim-width" data-generator-param="rimWidthMm" type="number" min="40" max="520" step="1" value="254"></div>
-              <div class="generator-field"><label for="generator-tread-width">Tread arc width mm</label><input id="generator-tread-width" data-generator-param="treadArcWidthMm" type="number" min="40" max="560" step="1" value="205"></div>
-              <div class="generator-field"><label for="generator-crown-radius">Crown radius mm</label><input id="generator-crown-radius" data-generator-param="crownRadiusMm" type="number" min="120" max="6000" step="10" value="900"></div>
-              <div class="generator-field"><label for="generator-shoulder-radius">Shoulder radius mm</label><input id="generator-shoulder-radius" data-generator-param="shoulderRadiusMm" type="number" min="5" max="220" step="1" value="55"></div>
-              <div class="generator-field"><label for="generator-sidewall-bulge">Sidewall bulge mm</label><input id="generator-sidewall-bulge" data-generator-param="sidewallBulgeMm" type="number" min="-40" max="90" step="1" value="22"></div>
-              <div class="generator-field"><label for="generator-section-height">Max section height %</label><input id="generator-section-height" data-generator-param="maxSectionHeightPct" type="number" min="20" max="95" step="1" value="58"></div>
-              <div class="generator-field"><label for="generator-bead-radius">Bead radius mm</label><input id="generator-bead-radius" data-generator-param="beadRadiusMm" type="number" min="2" max="60" step="1" value="12"></div>
-              <div class="generator-field"><label for="generator-thickness">Node thickness mm</label><input id="generator-thickness" data-generator-param="nodeThicknessMm" type="number" min="1" max="80" step="0.1" value="9"></div>
-              <div class="generator-field"><label for="generator-tread-depth">Tread depth mm</label><input id="generator-tread-depth" data-generator-param="treadDepthMm" type="number" min="0" max="30" step="0.1" value="4.5"></div>
-              <div class="generator-field"><label for="generator-node-count">Node count</label><input id="generator-node-count" data-generator-param="nodeCount" type="number" min="25" max="151" step="2" value="75"></div>
+              <div class="generator-field"><label for="generator-outer-diameter">Outer diameter mm</label><div class="generator-value-row"><input data-generator-slider="outerDiameterMm" type="range" min="250" max="1200" step="1" value="660" aria-label="Outer diameter mm slider"><input id="generator-outer-diameter" data-generator-param="outerDiameterMm" type="number" min="250" max="1200" step="1" value="660"></div></div>
+              <div class="generator-field"><label for="generator-rim-diameter">Rim diameter mm</label><div class="generator-value-row"><input data-generator-slider="rimDiameterMm" type="range" min="100" max="700" step="1" value="330" aria-label="Rim diameter mm slider"><input id="generator-rim-diameter" data-generator-param="rimDiameterMm" type="number" min="100" max="700" step="1" value="330"></div></div>
+              <div class="generator-field"><label for="generator-section-width">Section width mm</label><div class="generator-value-row"><input data-generator-slider="sectionWidthMm" type="range" min="60" max="600" step="1" value="235" aria-label="Section width mm slider"><input id="generator-section-width" data-generator-param="sectionWidthMm" type="number" min="60" max="600" step="1" value="235"></div></div>
+              <div class="generator-field"><label for="generator-rim-width">Rim width mm</label><div class="generator-value-row"><input data-generator-slider="rimWidthMm" type="range" min="40" max="520" step="1" value="254" aria-label="Rim width mm slider"><input id="generator-rim-width" data-generator-param="rimWidthMm" type="number" min="40" max="520" step="1" value="254"></div></div>
+              <div class="generator-field"><label for="generator-tread-width">Tread arc width mm</label><div class="generator-value-row"><input data-generator-slider="treadArcWidthMm" type="range" min="40" max="560" step="1" value="205" aria-label="Tread arc width mm slider"><input id="generator-tread-width" data-generator-param="treadArcWidthMm" type="number" min="40" max="560" step="1" value="205"></div></div>
+              <div class="generator-field"><label for="generator-crown-radius">Crown radius mm</label><div class="generator-value-row"><input data-generator-slider="crownRadiusMm" type="range" min="120" max="6000" step="10" value="900" aria-label="Crown radius mm slider"><input id="generator-crown-radius" data-generator-param="crownRadiusMm" type="number" min="120" max="6000" step="10" value="900"></div></div>
+              <div class="generator-field"><label for="generator-shoulder-radius">Shoulder radius mm</label><div class="generator-value-row"><input data-generator-slider="shoulderRadiusMm" type="range" min="5" max="220" step="1" value="55" aria-label="Shoulder radius mm slider"><input id="generator-shoulder-radius" data-generator-param="shoulderRadiusMm" type="number" min="5" max="220" step="1" value="55"></div></div>
+              <div class="generator-field"><label for="generator-sidewall-bulge">Sidewall bulge mm</label><div class="generator-value-row"><input data-generator-slider="sidewallBulgeMm" type="range" min="-40" max="90" step="1" value="22" aria-label="Sidewall bulge mm slider"><input id="generator-sidewall-bulge" data-generator-param="sidewallBulgeMm" type="number" min="-40" max="90" step="1" value="22"></div></div>
+              <div class="generator-field"><label for="generator-section-height">Max section height %</label><div class="generator-value-row"><input data-generator-slider="maxSectionHeightPct" type="range" min="20" max="95" step="1" value="58" aria-label="Max section height percent slider"><input id="generator-section-height" data-generator-param="maxSectionHeightPct" type="number" min="20" max="95" step="1" value="58"></div></div>
+              <div class="generator-field"><label for="generator-bead-radius">Bead radius mm</label><div class="generator-value-row"><input data-generator-slider="beadRadiusMm" type="range" min="2" max="60" step="1" value="12" aria-label="Bead radius mm slider"><input id="generator-bead-radius" data-generator-param="beadRadiusMm" type="number" min="2" max="60" step="1" value="12"></div></div>
+              <div class="generator-field"><label for="generator-thickness">Node thickness mm</label><div class="generator-value-row"><input data-generator-slider="nodeThicknessMm" type="range" min="1" max="80" step="0.1" value="9" aria-label="Node thickness mm slider"><input id="generator-thickness" data-generator-param="nodeThicknessMm" type="number" min="1" max="80" step="0.1" value="9"></div></div>
+              <div class="generator-field"><label for="generator-tread-depth">Tread depth mm</label><div class="generator-value-row"><input data-generator-slider="treadDepthMm" type="range" min="0" max="30" step="0.1" value="4.5" aria-label="Tread depth mm slider"><input id="generator-tread-depth" data-generator-param="treadDepthMm" type="number" min="0" max="30" step="0.1" value="4.5"></div></div>
+              <div class="generator-field"><label for="generator-node-count">Node count</label><div class="generator-value-row"><input data-generator-slider="nodeCount" type="range" min="25" max="151" step="2" value="75" aria-label="Node count slider"><input id="generator-node-count" data-generator-param="nodeCount" type="number" min="25" max="151" step="2" value="75"></div></div>
             </div>
             <div class="generator-actions">
               <button type="button" data-generator-action="reset">Reset</button>
@@ -1600,7 +1615,9 @@
         });
       });
       document.addEventListener("input", event => {
-        if (event.target?.closest("[data-generator-param]")) {
+        const generatorControl = event.target?.closest("[data-generator-param], [data-generator-slider]");
+        if (generatorControl) {
+          syncGeneratorControl(generatorControl);
           drawGenerator();
           return;
         }
@@ -1899,11 +1916,9 @@
       const params = { ...GENERATOR_DEFAULT_PARAMS };
       document.querySelectorAll("[data-generator-param]").forEach(input => {
         const key = input.dataset.generatorParam;
-        const value = Number(input.value);
+        const value = normalizedGeneratorControlValue(key, Number(input.value), input);
         if (!Number.isFinite(value)) return;
-        const min = Number(input.getAttribute("min"));
-        const max = Number(input.getAttribute("max"));
-        params[key] = clamp(value, Number.isFinite(min) ? min : -Infinity, Number.isFinite(max) ? max : Infinity);
+        params[key] = value;
       });
       params.nodeCount = Math.max(3, Math.round(params.nodeCount));
       return params;
@@ -1914,8 +1929,54 @@
         const key = input.dataset.generatorParam;
         if (Object.prototype.hasOwnProperty.call(GENERATOR_DEFAULT_PARAMS, key)) {
           input.value = GENERATOR_DEFAULT_PARAMS[key];
+          syncGeneratorControl(input);
         }
       });
+    }
+
+    function syncGeneratorControl(control) {
+      const key = control?.dataset?.generatorParam || control?.dataset?.generatorSlider || "";
+      if (!key) return;
+      const numberInput = generatorNumberInput(key);
+      const sliderInput = generatorSliderInput(key);
+      const referenceInput = numberInput || sliderInput || control;
+      const value = normalizedGeneratorControlValue(key, Number(control.value), referenceInput);
+      const text = generatorControlValueText(value, referenceInput?.getAttribute("step"));
+      if (numberInput && numberInput.value !== text) numberInput.value = text;
+      if (sliderInput && sliderInput.value !== text) sliderInput.value = text;
+    }
+
+    function generatorNumberInput(key) {
+      return Array.from(document.querySelectorAll("[data-generator-param]"))
+        .find(input => input.dataset.generatorParam === key) || null;
+    }
+
+    function generatorSliderInput(key) {
+      return Array.from(document.querySelectorAll("[data-generator-slider]"))
+        .find(input => input.dataset.generatorSlider === key) || null;
+    }
+
+    function normalizedGeneratorControlValue(key, value, input) {
+      const fallback = GENERATOR_DEFAULT_PARAMS[key];
+      const min = Number(input?.getAttribute("min"));
+      const max = Number(input?.getAttribute("max"));
+      const step = Number(input?.getAttribute("step"));
+      let next = Number.isFinite(value) ? value : Number(fallback);
+      next = clamp(next, Number.isFinite(min) ? min : -Infinity, Number.isFinite(max) ? max : Infinity);
+      if (Number.isFinite(step) && step > 0 && Number.isFinite(min)) {
+        next = min + Math.round((next - min) / step) * step;
+        next = clamp(next, min, Number.isFinite(max) ? max : Infinity);
+      }
+      return key === "nodeCount" ? Math.round(next) : next;
+    }
+
+    function generatorControlValueText(value, stepText) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "";
+      const step = String(stepText || "");
+      const decimals = step.includes(".") ? Math.min(6, step.split(".")[1].length) : 0;
+      const text = n.toFixed(decimals).replace(/\.?0+$/, "");
+      return text === "" || text === "-" ? "0" : text;
     }
 
     function drawGeneratorSummary(model) {
