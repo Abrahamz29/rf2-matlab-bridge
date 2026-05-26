@@ -2009,7 +2009,10 @@
         .concat(display.treadBaseNodes)
         .concat(display.guides)
         .concat(display.rim.outerRows)
-        .concat(display.rim.innerRows);
+        .concat(display.rim.humps.flat())
+        .concat(display.rim.beadSeats.flat())
+        .concat(display.rim.flangeLips.flat())
+        .concat(display.rim.dropCenter);
       const xs = allRows.map(row => Number(row.xMm)).filter(Number.isFinite);
       const ys = allRows.map(row => Number(row.yMm)).filter(Number.isFinite);
       const frame = makeFrame(svg, xs, ys, true, { left: 68, right: 28, top: 30, bottom: 54 });
@@ -2064,7 +2067,6 @@
         },
         rim: {
           outerRows: generatorDisplayRows(rim.outerRows, model),
-          innerRows: generatorDisplayRows(rim.innerRows, model),
           humps: rim.humps.map(rows => generatorDisplayRows(rows, model)),
           beadSeats: rim.beadSeats.map(rows => generatorDisplayRows(rows, model)),
           flangeLips: rim.flangeLips.map(rows => generatorDisplayRows(rows, model)),
@@ -2095,17 +2097,10 @@
     }
 
     function drawGeneratorRim(svg, frame, rim) {
-      if (!rim?.outerRows?.length || !rim?.innerRows?.length) return;
-      const rimPath = bandPath(rim.outerRows.map((row, index) => ({
-        surfaceXMm: row.xMm,
-        surfaceYMm: row.yMm,
-        innerXMm: rim.innerRows[index]?.xMm,
-        innerYMm: rim.innerRows[index]?.yMm,
-      })), frame, "innerXMm", "innerYMm", "surfaceXMm", "surfaceYMm");
+      if (!rim?.outerRows?.length) return;
       const beadSeatPath = pointPath(rim.outerRows, frame, "xMm", "yMm");
       svg.insertAdjacentHTML("beforeend", `
-        <path d="${rimPath}" fill="#242c33" fill-opacity="0.96" stroke="#7f8d99" stroke-width="1.2"></path>
-        <path d="${beadSeatPath}" fill="none" stroke="#b8c2cc" stroke-width="2"></path>
+        <path d="${beadSeatPath}" fill="none" stroke="#b8c2cc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>
       `);
       rim.humps.forEach(rows => {
         const humpPath = pointPath(rows, frame, "xMm", "yMm");
@@ -2242,55 +2237,55 @@
       const metrics = model?.metrics || {};
       const rimR = Math.max(40, Number(metrics.rimRadiusMm) || GENERATOR_DEFAULT_PARAMS.rimDiameterIn * 25.4 / 2);
       const rimHalf = Math.max(20, Number(metrics.rimHalfWidthMm) || GENERATOR_DEFAULT_PARAMS.rimWidthIn * 25.4 / 2);
-      const flangeHalf = rimHalf + clamp(rimHalf * 0.10, 10, 19);
-      const metalThickness = clamp(rimR * 0.08, 8, 18);
-      const humpInset = clamp(rimHalf * 0.18, 18, 34);
+      const flangeHalf = rimHalf + clamp(rimHalf * 0.085, 9, 16);
+      const beadSeatSlope = Math.tan(5 * Math.PI / 180);
       const beadSeatLength = clamp(rimHalf * 0.15, 18, 28);
+      const humpHeight = clamp(rimR * 0.032, 4.5, 6.4);
+      const humpWidth = clamp(rimHalf * 0.075, 8, 12);
+      const flangeHeight = clamp(rimR * 0.105, 14, 19);
       const centerWellHalf = clamp(rimHalf * 0.36, 30, Math.max(34, rimHalf - 50));
-      const dropCenterX = rimR - clamp(rimR * 0.25, 34, 48);
+      const dropCenterDepth = clamp(rimR * 0.18, 22, 36);
+      const dropCenterX = rimR - dropCenterDepth;
+      const beadSeatInnerY = rimHalf - beadSeatLength;
+      const beadSeatOuterX = rimR + beadSeatLength * beadSeatSlope;
       const wellShoulder = { xMm: dropCenterX, yMm: centerWellHalf };
-      const wellRamp = { xMm: rimR - 27, yMm: centerWellHalf + 14 };
-      const beadShelf = { xMm: rimR - 11, yMm: rimHalf - humpInset - 12 };
-      const humpEntry = { xMm: rimR + 1.5, yMm: rimHalf - humpInset - 5 };
-      const humpApex = { xMm: rimR + 8.5, yMm: rimHalf - humpInset };
-      const humpExit = { xMm: rimR + 2.5, yMm: rimHalf - humpInset + 8 };
-      const beadSeatOuter = { xMm: rimR + 7.5, yMm: rimHalf + 2.5 };
-      const flangeRoot = { xMm: rimR + 11, yMm: rimHalf + 6 };
-      const flangeBulge = { xMm: rimR + 28, yMm: flangeHalf - 3 };
-      const flangeTip = { xMm: rimR + 25, yMm: flangeHalf + 11 };
-      const flangeReturn = { xMm: rimR + 10, yMm: flangeHalf + 16 };
+      const wellRamp = { xMm: rimR - dropCenterDepth * 0.52, yMm: centerWellHalf + 13 };
+      const beadShelf = { xMm: rimR - 3.2, yMm: beadSeatInnerY - humpWidth * 1.75 };
+      const humpEntry = { xMm: rimR - 1.4, yMm: beadSeatInnerY - humpWidth };
+      const humpApex = { xMm: rimR + humpHeight, yMm: beadSeatInnerY - humpWidth * 0.30 };
+      const humpExit = { xMm: rimR, yMm: beadSeatInnerY + 1.5 };
+      const beadSeatOuter = { xMm: beadSeatOuterX, yMm: rimHalf - 1.5 };
+      const flangeRoot = { xMm: beadSeatOuterX + 1.5, yMm: rimHalf + 1.8 };
+      const flangeBulge = { xMm: rimR + flangeHeight * 0.92, yMm: rimHalf + flangeHeight * 0.35 };
+      const flangeTip = { xMm: rimR + flangeHeight, yMm: flangeHalf + 2 };
+      const flangeReturn = { xMm: rimR + flangeHeight * 0.48, yMm: flangeHalf + 7 };
 
       const rightProfile = joinGeneratorSegments([
         sampleLine({ xMm: dropCenterX, yMm: 0 }, wellShoulder, 8),
-        sampleCubicBezier(wellShoulder, { xMm: dropCenterX + 2, yMm: wellShoulder.yMm + 8 }, { xMm: rimR - 33, yMm: wellRamp.yMm - 8 }, wellRamp, 12),
-        sampleCubicBezier(wellRamp, { xMm: rimR - 20, yMm: wellRamp.yMm + 8 }, { xMm: rimR - 15, yMm: beadShelf.yMm - 8 }, beadShelf, 14),
-        sampleCubicBezier(beadShelf, { xMm: rimR - 5, yMm: beadShelf.yMm + 2 }, { xMm: rimR - 2, yMm: humpEntry.yMm - 2 }, humpEntry, 8),
-        sampleCubicBezier(humpEntry, { xMm: rimR + 6, yMm: humpEntry.yMm - 1 }, { xMm: rimR + 10, yMm: humpApex.yMm - 1 }, humpApex, 8),
-        sampleCubicBezier(humpApex, { xMm: rimR + 11, yMm: humpApex.yMm + 4 }, { xMm: rimR + 6, yMm: humpExit.yMm - 3 }, humpExit, 8),
+        sampleCubicBezier(wellShoulder, { xMm: dropCenterX + 1.5, yMm: wellShoulder.yMm + 8 }, { xMm: wellRamp.xMm - 10, yMm: wellRamp.yMm - 8 }, wellRamp, 12),
+        sampleCubicBezier(wellRamp, { xMm: rimR - dropCenterDepth * 0.40, yMm: wellRamp.yMm + 7 }, { xMm: rimR - 8, yMm: beadShelf.yMm - 6 }, beadShelf, 14),
+        sampleCubicBezier(beadShelf, { xMm: rimR - 3.5, yMm: beadShelf.yMm + 1.5 }, { xMm: rimR - 2, yMm: humpEntry.yMm - 1.5 }, humpEntry, 8),
+        sampleCubicBezier(humpEntry, { xMm: rimR + humpHeight * 0.45, yMm: humpEntry.yMm - 1.2 }, { xMm: rimR + humpHeight * 1.08, yMm: humpApex.yMm - 0.8 }, humpApex, 8),
+        sampleCubicBezier(humpApex, { xMm: rimR + humpHeight * 1.10, yMm: humpApex.yMm + 3.8 }, { xMm: rimR + humpHeight * 0.35, yMm: humpExit.yMm - 3 }, humpExit, 8),
         sampleLine(humpExit, beadSeatOuter, 12),
-        sampleCubicBezier(beadSeatOuter, { xMm: rimR + 10, yMm: rimHalf + beadSeatLength * 0.20 }, { xMm: flangeRoot.xMm + 1, yMm: flangeRoot.yMm - 1 }, flangeRoot, 8),
-        sampleCubicBezier(flangeRoot, { xMm: rimR + 21, yMm: rimHalf + 9 }, { xMm: flangeBulge.xMm + 5, yMm: flangeBulge.yMm - 2 }, flangeBulge, 10),
-        sampleCubicBezier(flangeBulge, { xMm: rimR + 34, yMm: flangeHalf + 2 }, { xMm: rimR + 32, yMm: flangeHalf + 9 }, flangeTip, 10),
-        sampleCubicBezier(flangeTip, { xMm: rimR + 21, yMm: flangeHalf + 17 }, { xMm: rimR + 13, yMm: flangeHalf + 18 }, flangeReturn, 8),
+        sampleCubicBezier(beadSeatOuter, { xMm: beadSeatOuter.xMm + 1.2, yMm: rimHalf + 0.5 }, { xMm: flangeRoot.xMm + 1, yMm: flangeRoot.yMm - 1 }, flangeRoot, 8),
+        sampleCubicBezier(flangeRoot, { xMm: rimR + flangeHeight * 0.58, yMm: rimHalf + 4.5 }, { xMm: flangeBulge.xMm + 4, yMm: flangeBulge.yMm - 2 }, flangeBulge, 10),
+        sampleCubicBezier(flangeBulge, { xMm: rimR + flangeHeight * 1.10, yMm: flangeHalf - 1 }, { xMm: rimR + flangeHeight * 1.12, yMm: flangeHalf + 3 }, flangeTip, 10),
+        sampleCubicBezier(flangeTip, { xMm: rimR + flangeHeight * 0.82, yMm: flangeHalf + 8 }, { xMm: rimR + flangeHeight * 0.56, yMm: flangeHalf + 9 }, flangeReturn, 8),
       ]);
       const outerRows = mirrorGeneratorHalfProfile(rightProfile);
-      const innerRows = outerRows.map(row => ({
-        xMm: row.xMm - metalThickness * (Math.abs(row.yMm) > rimHalf ? 0.74 : 1),
-        yMm: row.yMm * 0.94,
-      }));
       const rightHump = joinGeneratorSegments([
-        sampleCubicBezier(humpEntry, { xMm: rimR + 6, yMm: humpEntry.yMm - 1 }, { xMm: rimR + 10, yMm: humpApex.yMm - 1 }, humpApex, 8),
-        sampleCubicBezier(humpApex, { xMm: rimR + 11, yMm: humpApex.yMm + 4 }, { xMm: rimR + 6, yMm: humpExit.yMm - 3 }, humpExit, 8),
+        sampleCubicBezier(humpEntry, { xMm: rimR + humpHeight * 0.45, yMm: humpEntry.yMm - 1.2 }, { xMm: rimR + humpHeight * 1.08, yMm: humpApex.yMm - 0.8 }, humpApex, 8),
+        sampleCubicBezier(humpApex, { xMm: rimR + humpHeight * 1.10, yMm: humpApex.yMm + 3.8 }, { xMm: rimR + humpHeight * 0.35, yMm: humpExit.yMm - 3 }, humpExit, 8),
       ]);
       const rightBeadSeat = sampleLine(humpExit, beadSeatOuter, 14);
       const rightFlangeLip = joinGeneratorSegments([
-        sampleCubicBezier(flangeRoot, { xMm: rimR + 21, yMm: rimHalf + 9 }, { xMm: flangeBulge.xMm + 5, yMm: flangeBulge.yMm - 2 }, flangeBulge, 10),
-        sampleCubicBezier(flangeBulge, { xMm: rimR + 34, yMm: flangeHalf + 2 }, { xMm: rimR + 32, yMm: flangeHalf + 9 }, flangeTip, 10),
-        sampleCubicBezier(flangeTip, { xMm: rimR + 21, yMm: flangeHalf + 17 }, { xMm: rimR + 13, yMm: flangeHalf + 18 }, flangeReturn, 8),
+        sampleCubicBezier(flangeRoot, { xMm: rimR + flangeHeight * 0.58, yMm: rimHalf + 4.5 }, { xMm: flangeBulge.xMm + 4, yMm: flangeBulge.yMm - 2 }, flangeBulge, 10),
+        sampleCubicBezier(flangeBulge, { xMm: rimR + flangeHeight * 1.10, yMm: flangeHalf - 1 }, { xMm: rimR + flangeHeight * 1.12, yMm: flangeHalf + 3 }, flangeTip, 10),
+        sampleCubicBezier(flangeTip, { xMm: rimR + flangeHeight * 0.82, yMm: flangeHalf + 8 }, { xMm: rimR + flangeHeight * 0.56, yMm: flangeHalf + 9 }, flangeReturn, 8),
       ]);
       return {
         outerRows,
-        innerRows,
         humps: [mirrorGeneratorRightFeature(rightHump), rightHump],
         beadSeats: [mirrorGeneratorRightFeature(rightBeadSeat), rightBeadSeat],
         flangeLips: [mirrorGeneratorRightFeature(rightFlangeLip), rightFlangeLip],
