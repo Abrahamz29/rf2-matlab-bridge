@@ -2694,11 +2694,7 @@
       const rightHump = sampleSmoothGeneratorProfile([humpEntry, humpApex, humpExit], 24, 0.38);
       const rightBeadSeat = sampleLine(humpExit, beadSeatOuter, 20);
       const rightFlangeLip = sampleSmoothGeneratorProfile([flangeRoot, flangeBulge, flangeTip, flangeReturn], 24, 0.38);
-      const fullRightBeadContact = joinGeneratorSegments([
-        sampleSmoothGeneratorProfile([flangeBulge, flangeRoot], 10, 0.2),
-        sampleLine(flangeRoot, beadSeatOuter, 6).slice(1),
-        sampleLine(beadSeatOuter, humpExit, 16).slice(1),
-      ]);
+      const fullRightBeadContact = sampleSmoothGeneratorProfile([flangeRoot, flangeBulge, flangeTip], 18, 0.36);
       const rightBeadContact = trimGeneratorPolylineByFraction(fullRightBeadContact, beadFollowPct / 100);
       return {
         contour: rimDims.profile,
@@ -2713,8 +2709,8 @@
         flangeLips: [mirrorGeneratorRightFeature(rightFlangeLip), rightFlangeLip],
         dropCenter: sampleLine({ xMm: dropCenterX, yMm: -centerWellHalf }, { xMm: dropCenterX, yMm: centerWellHalf }, 18),
         beadAnchors: {
-          left: { xMm: flangeBulge.xMm, yMm: -flangeBulge.yMm },
-          right: { xMm: flangeBulge.xMm, yMm: flangeBulge.yMm },
+          left: { xMm: rightBeadContact[0]?.xMm ?? flangeRoot.xMm, yMm: -(rightBeadContact[0]?.yMm ?? flangeRoot.yMm) },
+          right: { xMm: rightBeadContact[0]?.xMm ?? flangeRoot.xMm, yMm: rightBeadContact[0]?.yMm ?? flangeRoot.yMm },
         },
       };
     }
