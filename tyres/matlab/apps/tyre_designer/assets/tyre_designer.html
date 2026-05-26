@@ -1446,7 +1446,7 @@
               <div class="generator-control-group">
                 <h3>Profile shape</h3>
                 <div class="generator-field"><label for="generator-tread-width">Tread arc [mm]</label><div class="generator-value-row"><input data-generator-slider="treadArcWidthMm" type="range" min="40" max="240" step="1" value="205" aria-label="Tread arc width mm slider"><input id="generator-tread-width" data-generator-param="treadArcWidthMm" type="number" min="40" max="240" step="1" value="205"></div><div class="generator-range-meta" data-generator-range-label="treadArcWidthMm"></div></div>
-                <div class="generator-field"><label for="generator-crown-radius">Crown radius [mm]</label><div class="generator-value-row"><input data-generator-slider="crownRadiusMm" type="range" min="180" max="2500" step="10" value="900" aria-label="Crown radius mm slider"><input id="generator-crown-radius" data-generator-param="crownRadiusMm" type="number" min="180" max="2500" step="10" value="900"></div><div class="generator-range-meta" data-generator-range-label="crownRadiusMm"></div></div>
+                <div class="generator-field"><label for="generator-crown-radius">Crown radius [mm]</label><div class="generator-value-row"><input data-generator-slider="crownRadiusMm" data-generator-scale="log" type="range" min="2.255" max="6" step="0.001" value="2.954" aria-label="Crown radius mm logarithmic slider"><input id="generator-crown-radius" data-generator-param="crownRadiusMm" type="number" min="180" max="1000000" step="10" value="900"></div><div class="generator-range-meta" data-generator-range-label="crownRadiusMm"></div></div>
                 <div class="generator-field"><label for="generator-shoulder-radius">Shoulder radius [mm]</label><div class="generator-value-row"><input data-generator-slider="shoulderRadiusMm" type="range" min="5" max="180" step="1" value="55" aria-label="Shoulder radius mm slider"><input id="generator-shoulder-radius" data-generator-param="shoulderRadiusMm" type="number" min="5" max="180" step="1" value="55"></div><div class="generator-range-meta" data-generator-range-label="shoulderRadiusMm"></div></div>
                 <div class="generator-field"><label for="generator-sidewall-shape">Sidewall fullness [%]</label><div class="generator-value-row"><input data-generator-slider="sidewallShapePct" type="range" min="0" max="100" step="1" value="100" aria-label="Sidewall fullness percent slider"><input id="generator-sidewall-shape" data-generator-param="sidewallShapePct" type="number" min="0" max="100" step="1" value="100"></div><div class="generator-range-meta" data-generator-range-label="sidewallShapePct"></div></div>
                 <div class="generator-field"><label for="generator-bead-follow">Bead follow [%]</label><div class="generator-value-row"><input data-generator-slider="beadFollowPct" type="range" min="0" max="100" step="1" value="50" aria-label="Bead follow percent slider"><input id="generator-bead-follow" data-generator-param="beadFollowPct" type="number" min="0" max="100" step="1" value="50"></div><div class="generator-range-meta" data-generator-range-label="beadFollowPct"></div></div>
@@ -2054,10 +2054,9 @@
       const numberInput = generatorNumberInput(key);
       const sliderInput = generatorSliderInput(key);
       const referenceInput = control || numberInput || sliderInput;
-      const value = normalizedGeneratorControlValue(key, Number(control.value), referenceInput);
-      const text = generatorControlValueText(value, referenceInput?.getAttribute("step"));
-      if (numberInput && numberInput.value !== text) numberInput.value = text;
-      if (sliderInput && sliderInput.value !== text) sliderInput.value = text;
+      const boundsInput = generatorControlBoundsInput(key, referenceInput);
+      const value = normalizedGeneratorControlValue(key, generatorActualValueFromControl(control), boundsInput);
+      setGeneratorControlValue(key, value);
       if (options.commit !== false && GENERATOR_ETRTO_CONTROL_KEYS.has(key)) applyGeneratorEtrtoConstraints(key);
     }
 
@@ -2086,6 +2085,26 @@
       if (key === "sectionWidthMm") return nearestValue(next, ETRTO_SECTION_WIDTHS_MM);
       if (key === "maxSectionHeightPct") return nearestValue(next, ETRTO_ASPECT_RATIOS_PCT);
       return key === "nodeCount" ? Math.round(next) : next;
+    }
+
+    function generatorControlBoundsInput(key, input) {
+      return input?.dataset?.generatorScale === "log" ? (generatorNumberInput(key) || input) : input;
+    }
+
+    function generatorActualValueFromControl(control) {
+      const raw = Number(control?.value);
+      if (control?.dataset?.generatorScale === "log") return Math.pow(10, raw);
+      return raw;
+    }
+
+    function generatorRawValueForControl(key, value, input) {
+      if (input?.dataset?.generatorScale === "log") {
+        const numberInput = generatorNumberInput(key);
+        const min = Number(numberInput?.getAttribute("min"));
+        const safeMin = Number.isFinite(min) && min > 0 ? min : 1;
+        return Math.log10(Math.max(Number(value) || safeMin, safeMin));
+      }
+      return Number(value);
     }
 
     function applyGeneratorEtrtoConstraints(changedKey) {
@@ -2156,7 +2175,7 @@
       setGeneratorRangeLabel("actualSectionWidthMm", `${fmt(minActualWidth)}-${fmt(maxActualWidth)} mm`);
       setGeneratorRangeLabel("sectionPositionPct", "25-85 %");
       setGeneratorRangeLabel("treadArcWidthMm", `40-${fmt(maxTreadArc)} mm`);
-      setGeneratorRangeLabel("crownRadiusMm", "180-2500 mm");
+      setGeneratorRangeLabel("crownRadiusMm", "180-1000000 mm, log");
       setGeneratorRangeLabel("shoulderRadiusMm", "5-180 mm");
       setGeneratorRangeLabel("sidewallShapePct", "0-100 %");
       setGeneratorRangeLabel("beadFollowPct", "0-100 %");
@@ -2169,6 +2188,12 @@
     function setGeneratorControlRange(key, min, max, step) {
       [generatorNumberInput(key), generatorSliderInput(key)].forEach(input => {
         if (!input) return;
+        if (input.dataset?.generatorScale === "log") {
+          const logStep = input.getAttribute("step") || "0.001";
+          input.min = generatorControlValueText(Math.log10(Math.max(Number(min), 1)), logStep);
+          input.max = generatorControlValueText(Math.log10(Math.max(Number(max), 1)), logStep);
+          return;
+        }
         input.min = generatorControlValueText(min, String(step));
         input.max = generatorControlValueText(max, String(step));
         input.step = generatorControlValueText(step, String(step));
@@ -2178,10 +2203,11 @@
     function setGeneratorControlValue(key, value) {
       const input = generatorNumberInput(key);
       const slider = generatorSliderInput(key);
-      const stepText = input?.getAttribute("step") || slider?.getAttribute("step") || "";
-      const text = generatorControlValueText(value, stepText);
-      if (input && input.value !== text) input.value = text;
-      if (slider && slider.value !== text) slider.value = text;
+      const inputText = generatorControlValueText(value, input?.getAttribute("step") || "");
+      const sliderValue = generatorRawValueForControl(key, value, slider);
+      const sliderText = generatorControlValueText(sliderValue, slider?.getAttribute("step") || "");
+      if (input && input.value !== inputText) input.value = inputText;
+      if (slider && slider.value !== sliderText) slider.value = sliderText;
     }
 
     function setGeneratorRangeLabel(key, text) {
@@ -2508,7 +2534,7 @@
       const nodeThickness = clamp(Number(params.nodeThicknessMm), 0.5, Math.max(0.5, sectionHeight * 0.75));
       const treadDepth = clamp(Number(params.treadDepthMm), 0, nodeThickness);
       const nodeCount = Math.max(3, Math.round(Number(params.nodeCount) || GENERATOR_DEFAULT_PARAMS.nodeCount));
-      const crownSag = clamp((treadHalf * treadHalf) / (2 * crownRadius), 0.4, sectionHeight * 0.26);
+      const crownSag = clamp((treadHalf * treadHalf) / (2 * crownRadius), 0, sectionHeight * 0.26);
       const shoulderX = outerR - crownSag;
       const beadX = Number(beadAnchor.xMm);
       const beadY = clamp(Number(beadAnchor.yMm), 15, maxOverallHalf - 2);
