@@ -2559,12 +2559,40 @@
           <circle cx="${x1.toFixed(1)}" cy="${y1.toFixed(1)}" r="3" fill="${color}" stroke="#061016" stroke-width="1"></circle>
         `);
       });
+      (guide.markers || []).forEach(marker => {
+        drawGeneratorRadiusMarker(svg, frame, model, marker);
+      });
       const fallbackRows = rowsList[0] || [];
       const labelPoint = generatorDisplayPoint(guide.labelPoint || fallbackRows[Math.floor(fallbackRows.length / 2)], model);
       if (![labelPoint.xMm, labelPoint.yMm].every(Number.isFinite)) return;
       svg.insertAdjacentHTML("beforeend", `
         <text x="${frame.sx(labelPoint.xMm).toFixed(1)}" y="${frame.sy(labelPoint.yMm).toFixed(1)}" fill="${color}" text-anchor="middle" font-weight="700" paint-order="stroke" stroke="#061016" stroke-width="4">${escapeHtml(guide.label || "")}</text>
       `);
+    }
+
+    function drawGeneratorRadiusMarker(svg, frame, model, marker) {
+      const point = generatorDisplayPoint(marker?.point, model);
+      if (![point.xMm, point.yMm].every(Number.isFinite)) return;
+      const x = frame.sx(point.xMm);
+      const y = frame.sy(point.yMm);
+      const role = String(marker.role || "");
+      const isCenter = role === "center";
+      const fill = isCenter ? "#ffcf6b" : (role === "start" ? "#72b7ff" : "#6be675");
+      const label = marker.label || (isCenter ? "Center" : (role === "start" ? "Start" : "End"));
+      svg.insertAdjacentHTML("beforeend", `
+        <circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${isCenter ? "4.2" : "3.6"}" fill="${fill}" stroke="#061016" stroke-width="1.2"></circle>
+      `);
+      if (!pointInFrame(point, frame, 12)) return;
+      svg.insertAdjacentHTML("beforeend", `
+        <text x="${x.toFixed(1)}" y="${(y - 8).toFixed(1)}" fill="${fill}" text-anchor="middle" paint-order="stroke" stroke="#061016" stroke-width="3">${escapeHtml(label)}</text>
+      `);
+    }
+
+    function pointInFrame(point, frame, padding = 0) {
+      return Number(point.xMm) >= frame.minX - padding &&
+        Number(point.xMm) <= frame.maxX + padding &&
+        Number(point.yMm) >= frame.minY - padding &&
+        Number(point.yMm) <= frame.maxY + padding;
     }
 
     function generateTyreContour(inputParams) {
@@ -2664,12 +2692,21 @@
       const crownFullGuide = crown.slice().reverse().map(point => ({ xMm: point.xMm, yMm: -point.yMm }))
         .concat(crown.slice(1).map(point => ({ xMm: point.xMm, yMm: point.yMm })));
       const crownCenter = { xMm: outerR - crownRadius, yMm: 0 };
-      const crownCenterVisible = crownRadius <= sectionHeight * 4.5;
+      const crownStart = { xMm: shoulder.xMm, yMm: -shoulder.yMm };
+      const crownEnd = { xMm: shoulder.xMm, yMm: shoulder.yMm };
       const shoulderCenterRight = { xMm: shoulder.xMm - shoulderRadius, yMm: shoulder.yMm };
-      const shoulderArcRight = sampleCircularArc(shoulderCenterRight, shoulderRadius, -0.08, Math.PI * 0.62, 26);
-      const shoulderArcLeft = mirrorGeneratorRightFeature(shoulderArcRight);
+      const shoulderCenterLeft = { xMm: shoulderCenterRight.xMm, yMm: -shoulderCenterRight.yMm };
+      const shoulderSectionRight = upperSidewall;
+      const shoulderSectionLeft = mirrorGeneratorRightFeature(shoulderSectionRight);
+      const shoulderStartRight = shoulder;
+      const shoulderEndRight = { xMm: maxSectionX, yMm: maxSectionY };
+      const shoulderStartLeft = { xMm: shoulderStartRight.xMm, yMm: -shoulderStartRight.yMm };
+      const shoulderEndLeft = { xMm: shoulderEndRight.xMm, yMm: -shoulderEndRight.yMm };
       const beadRadiusGuideRight = sampleLine(beadContactEnd, beadFreePoint, 1);
       const beadRadiusGuideLeft = mirrorGeneratorRightFeature(beadRadiusGuideRight);
+      const beadCenterRight = beadContactEnd;
+      const beadCenterLeft = { xMm: beadCenterRight.xMm, yMm: -beadCenterRight.yMm };
+      const beadFreePointLeft = { xMm: beadFreePoint.xMm, yMm: -beadFreePoint.yMm };
 
       return {
         params,
@@ -2698,19 +2735,43 @@
             label: `Crown R ${fmt(crownRadius)} mm`,
             rows: [crownFullGuide],
             labelPoint: { xMm: outerR + 8, yMm: 0 },
-            spokes: crownCenterVisible ? [{ a: crownCenter, b: { xMm: outerR, yMm: 0 } }] : [],
+            spokes: [{ a: crownCenter, b: crownStart }, { a: crownCenter, b: crownEnd }],
+            markers: [
+              { role: "center", label: "Center", point: crownCenter },
+              { role: "start", label: "Start", point: crownStart },
+              { role: "end", label: "End", point: crownEnd },
+            ],
           },
           shoulderRadiusMm: {
             label: `Shoulder R ${fmt(shoulderRadius)} mm`,
-            rows: [shoulderArcLeft, shoulderArcRight],
+            rows: [shoulderSectionLeft, shoulderSectionRight],
             labelPoint: { xMm: shoulder.xMm - shoulderRadius * 0.52, yMm: shoulder.yMm + shoulderRadius * 0.82 },
-            spokes: [{ a: shoulderCenterRight, b: shoulder }],
+            spokes: [
+              { a: shoulderCenterLeft, b: shoulderStartLeft },
+              { a: shoulderCenterLeft, b: shoulderEndLeft },
+              { a: shoulderCenterRight, b: shoulderStartRight },
+              { a: shoulderCenterRight, b: shoulderEndRight },
+            ],
+            markers: [
+              { role: "center", label: "Center", point: shoulderCenterLeft },
+              { role: "start", label: "Start", point: shoulderStartLeft },
+              { role: "end", label: "End", point: shoulderEndLeft },
+              { role: "center", label: "Center", point: shoulderCenterRight },
+              { role: "start", label: "Start", point: shoulderStartRight },
+              { role: "end", label: "End", point: shoulderEndRight },
+            ],
           },
           beadRadiusMm: {
             label: `Bead transition R ${fmt(beadRadius)} mm`,
             rows: [beadRadiusGuideLeft, beadRadiusGuideRight],
             labelPoint: { xMm: (beadContactEnd.xMm + beadFreePoint.xMm) / 2, yMm: beadFreePoint.yMm + 10 },
-            spokes: [{ a: beadContactEnd, b: beadFreePoint }],
+            spokes: [{ a: beadCenterLeft, b: beadFreePointLeft }, { a: beadCenterRight, b: beadFreePoint }],
+            markers: [
+              { role: "center", label: "Center / Start", point: beadCenterLeft },
+              { role: "end", label: "End", point: beadFreePointLeft },
+              { role: "center", label: "Center / Start", point: beadCenterRight },
+              { role: "end", label: "End", point: beadFreePoint },
+            ],
           },
         },
         metrics: {
@@ -2874,21 +2935,6 @@
         points.push({
           xMm: p0.xMm + (p1.xMm - p0.xMm) * t,
           yMm: p0.yMm + (p1.yMm - p0.yMm) * t,
-        });
-      }
-      return points;
-    }
-
-    function sampleCircularArc(center, radius, startAngle, endAngle, steps) {
-      const points = [];
-      const count = Math.max(1, Math.round(Number(steps) || 1));
-      const r = Math.max(0, Number(radius) || 0);
-      for (let i = 0; i <= count; i++) {
-        const t = i / count;
-        const angle = Number(startAngle) + (Number(endAngle) - Number(startAngle)) * t;
-        points.push({
-          xMm: Number(center.xMm) + Math.cos(angle) * r,
-          yMm: Number(center.yMm) + Math.sin(angle) * r,
         });
       }
       return points;
