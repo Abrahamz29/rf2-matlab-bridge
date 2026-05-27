@@ -111,6 +111,8 @@ view = replace(view, " ", "-");
 switch view
     case {"node", "nodes", "node-explorer", "nodeexplorer"}
         view = "node-explorer";
+    case {"generator", "generate", "tyre-generator", "tire-generator"}
+        view = "generator";
     case {"reengineering", "reverse-engineering", "reverseengineering", "reengineer"}
         view = "reengineering";
     case {"material", "materials"}
