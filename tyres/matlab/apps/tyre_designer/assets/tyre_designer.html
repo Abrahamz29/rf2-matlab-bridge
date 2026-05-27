@@ -1450,7 +1450,7 @@
                 <div class="generator-field"><label for="generator-shoulder-radius">Shoulder radius [mm]</label><div class="generator-value-row"><input data-generator-slider="shoulderRadiusMm" type="range" min="5" max="180" step="1" value="55" aria-label="Shoulder radius mm slider"><input id="generator-shoulder-radius" data-generator-param="shoulderRadiusMm" type="number" min="5" max="180" step="1" value="55"></div><div class="generator-range-meta" data-generator-range-label="shoulderRadiusMm"></div></div>
                 <div class="generator-field"><label for="generator-sidewall-shape">Sidewall fullness [%]</label><div class="generator-value-row"><input data-generator-slider="sidewallShapePct" type="range" min="0" max="100" step="1" value="100" aria-label="Sidewall fullness percent slider"><input id="generator-sidewall-shape" data-generator-param="sidewallShapePct" type="number" min="0" max="100" step="1" value="100"></div><div class="generator-range-meta" data-generator-range-label="sidewallShapePct"></div></div>
                 <div class="generator-field"><label for="generator-bead-follow">Bead follow [%]</label><div class="generator-value-row"><input data-generator-slider="beadFollowPct" type="range" min="0" max="100" step="1" value="50" aria-label="Bead follow percent slider"><input id="generator-bead-follow" data-generator-param="beadFollowPct" type="number" min="0" max="100" step="1" value="50"></div><div class="generator-range-meta" data-generator-range-label="beadFollowPct"></div></div>
-                <div class="generator-field"><label for="generator-bead-radius">Bead transition radius [mm]</label><div class="generator-value-row"><input data-generator-slider="beadRadiusMm" type="range" min="2" max="60" step="1" value="12" aria-label="Bead transition radius mm slider"><input id="generator-bead-radius" data-generator-param="beadRadiusMm" type="number" min="2" max="60" step="1" value="12"></div><div class="generator-range-meta" data-generator-range-label="beadRadiusMm"></div></div>
+                <div class="generator-field"><label for="generator-bead-radius">Bead transition radius [mm]</label><div class="generator-value-row"><input data-generator-slider="beadRadiusMm" type="range" min="-60" max="60" step="1" value="12" aria-label="Bead transition radius mm slider"><input id="generator-bead-radius" data-generator-param="beadRadiusMm" type="number" min="-60" max="60" step="1" value="12"></div><div class="generator-range-meta" data-generator-range-label="beadRadiusMm"></div></div>
               </div>
               <div class="generator-control-group">
                 <h3>TGM nodes</h3>
@@ -2185,6 +2185,9 @@
 
       const sectionHeight = Math.max(18, actualOuterDiameter / 2 - Number(selected.rimDiameterIn) * 25.4 / 2);
       const maxNodeThickness = clamp(sectionHeight * 0.28, 8, 35);
+      const maxBeadRadius = clamp(sectionHeight / 2, 8, 60);
+      setGeneratorControlRange("beadRadiusMm", -maxBeadRadius, maxBeadRadius, 1);
+      setGeneratorControlValue("beadRadiusMm", clamp(Number(generatorNumberInput("beadRadiusMm")?.value), -maxBeadRadius, maxBeadRadius));
       setGeneratorControlRange("nodeThicknessMm", 1, maxNodeThickness, 0.1);
       setGeneratorControlValue("nodeThicknessMm", clamp(Number(generatorNumberInput("nodeThicknessMm")?.value), 1, maxNodeThickness));
       setGeneratorControlRange("treadDepthMm", 0, Math.min(16, maxNodeThickness), 0.1);
@@ -2207,7 +2210,7 @@
       setGeneratorRangeLabel("shoulderRadiusMm", "5-180 mm");
       setGeneratorRangeLabel("sidewallShapePct", "0-100 %");
       setGeneratorRangeLabel("beadFollowPct", "0-100 %");
-      setGeneratorRangeLabel("beadRadiusMm", "2-60 mm");
+      setGeneratorRangeLabel("beadRadiusMm", `${fmt(-maxBeadRadius)}-${fmt(maxBeadRadius)} mm`);
       setGeneratorRangeLabel("nodeThicknessMm", `1-${fmt(maxNodeThickness)} mm`);
       setGeneratorRangeLabel("treadDepthMm", `0-${fmt(Math.min(16, maxNodeThickness))} mm`);
       setGeneratorRangeLabel("nodeCount", "25-151");
@@ -2592,23 +2595,32 @@
       const treadHalf = clamp(Number(params.treadArcWidthMm) / 2, 15, Math.max(16, Math.min(sectionHalf - 3, maxOverallHalf - 4)));
       const crownRadius = Math.max(80, Number(params.crownRadiusMm) || GENERATOR_DEFAULT_PARAMS.crownRadiusMm);
       const shoulderRadius = clamp(Number(params.shoulderRadiusMm), 5, sectionHeight);
-      const beadRadius = clamp(Number(params.beadRadiusMm), 2, sectionHeight / 2);
+      const maxSignedBeadRadius = clamp(sectionHeight / 2, 8, 60);
+      const beadRadius = clamp(Number(params.beadRadiusMm), -maxSignedBeadRadius, maxSignedBeadRadius);
+      const beadRadiusMagnitude = Math.abs(beadRadius);
       const nodeThickness = clamp(Number(params.nodeThicknessMm), 0.5, Math.max(0.5, sectionHeight * 0.75));
       const treadDepth = clamp(Number(params.treadDepthMm), 0, nodeThickness);
       const nodeCount = Math.max(3, Math.round(Number(params.nodeCount) || GENERATOR_DEFAULT_PARAMS.nodeCount));
       const crownSag = clamp((treadHalf * treadHalf) / (2 * crownRadius), 0, sectionHeight * 0.26);
       const shoulderX = outerR - crownSag;
       const beadX = Number(beadAnchor.xMm);
-      const beadY = clamp(Number(beadAnchor.yMm), 15, maxOverallHalf - 2);
-      const beadToShoulderHeight = Math.max(12, shoulderX - beadX);
+      const beadY = Number(beadAnchor.yMm);
+      const beadContactEnd = rightBeadContact[rightBeadContact.length - 1] || beadAnchor;
+      const beadContactEndX = Number(beadContactEnd.xMm);
+      const beadContactEndY = Number(beadContactEnd.yMm);
+      const beadFreePoint = {
+        xMm: clamp(beadContactEndX + beadRadius, rimR - sectionHeight, shoulderX - 4),
+        yMm: beadContactEndY,
+      };
+      const beadToShoulderHeight = Math.max(12, shoulderX - beadFreePoint.xMm);
       const sectionPosition = clamp(Number(params.sectionPositionPct), 25, 85) / 100;
-      const maxSectionX = clamp(beadX + beadToShoulderHeight * sectionPosition, beadX + 6, shoulderX - 5);
+      const maxSectionX = clamp(beadFreePoint.xMm + beadToShoulderHeight * sectionPosition, beadFreePoint.xMm + 6, shoulderX - 5);
       const sidewallShape = clamp(Number(params.sidewallShapePct), 0, 100) / 100;
       const maxSectionY = sectionHalf;
       const shoulderBlendY = shoulderRadius * (0.22 + sidewallShape * 0.26);
       const sectionBlendY = (maxSectionY - treadHalf) * (0.06 + (1 - sidewallShape) * 0.12);
-      const lowerBlendY = (maxSectionY - beadY) * (0.02 + (1 - sidewallShape) * 0.16);
-      const beadBlendY = beadRadius * (0.45 + sidewallShape * 0.25);
+      const lowerBlendY = (maxSectionY - beadFreePoint.yMm) * (0.02 + (1 - sidewallShape) * 0.16);
+      const beadBlendY = Math.max(1, beadRadiusMagnitude) * (0.45 + sidewallShape * 0.25);
 
       const crown = [];
       const crownSteps = 18;
@@ -2628,12 +2640,13 @@
       const lowerSidewall = sampleCubicBezier(
         { xMm: maxSectionX, yMm: maxSectionY },
         { xMm: maxSectionX - shoulderRadius * (0.12 + (1 - sidewallShape) * 0.16), yMm: maxSectionY - lowerBlendY },
-        { xMm: beadX + beadRadius * (1.0 + sidewallShape * 0.35), yMm: beadY + beadBlendY },
-        { xMm: beadX, yMm: beadY },
+        { xMm: beadFreePoint.xMm + beadRadius * (0.25 + sidewallShape * 0.15), yMm: beadFreePoint.yMm + beadBlendY },
+        beadFreePoint,
         18
       );
 
-      const rightHalf = dedupeClosePoints(crown.concat(upperSidewall.slice(1), lowerSidewall.slice(1), rightBeadContact.slice(1)));
+      const rightBeadContactToStart = rightBeadContact.slice().reverse();
+      const rightHalf = dedupeClosePoints(crown.concat(upperSidewall.slice(1), lowerSidewall.slice(1), rightBeadContactToStart));
       const fullContour = rightHalf.slice().reverse().map(point => ({ xMm: point.xMm, yMm: -point.yMm }))
         .concat(rightHalf.slice(1).map(point => ({ xMm: point.xMm, yMm: point.yMm })));
       const sampled = resamplePolyline(fullContour, nodeCount).map((point, index) => ({
@@ -2655,10 +2668,8 @@
       const shoulderCenterRight = { xMm: shoulder.xMm - shoulderRadius, yMm: shoulder.yMm };
       const shoulderArcRight = sampleCircularArc(shoulderCenterRight, shoulderRadius, -0.08, Math.PI * 0.62, 26);
       const shoulderArcLeft = mirrorGeneratorRightFeature(shoulderArcRight);
-      const beadTargetRight = { xMm: beadX, yMm: beadY };
-      const beadCenterRight = { xMm: beadX + beadRadius, yMm: beadY };
-      const beadArcRight = sampleCircularArc(beadCenterRight, beadRadius, Math.PI, Math.PI * 0.5, 20);
-      const beadArcLeft = mirrorGeneratorRightFeature(beadArcRight);
+      const beadRadiusGuideRight = sampleLine(beadContactEnd, beadFreePoint, 1);
+      const beadRadiusGuideLeft = mirrorGeneratorRightFeature(beadRadiusGuideRight);
 
       return {
         params,
@@ -2697,9 +2708,9 @@
           },
           beadRadiusMm: {
             label: `Bead transition R ${fmt(beadRadius)} mm`,
-            rows: [beadArcLeft, beadArcRight],
-            labelPoint: { xMm: beadX + beadRadius * 0.68, yMm: beadY + beadRadius * 1.18 },
-            spokes: [{ a: beadCenterRight, b: beadTargetRight }],
+            rows: [beadRadiusGuideLeft, beadRadiusGuideRight],
+            labelPoint: { xMm: (beadContactEnd.xMm + beadFreePoint.xMm) / 2, yMm: beadFreePoint.yMm + 10 },
+            spokes: [{ a: beadContactEnd, b: beadFreePoint }],
           },
         },
         metrics: {
@@ -2724,7 +2735,12 @@
           rimContour: rimProfile.contour,
           beadAnchorXMm: beadX,
           beadAnchorYMm: beadY,
+          beadContactEndXMm: beadContactEndX,
+          beadContactEndYMm: beadContactEndY,
+          beadFreeXMm: beadFreePoint.xMm,
+          beadFreeYMm: beadFreePoint.yMm,
           beadFollowPct,
+          beadRadiusMm: beadRadius,
           beadContactLengthMm: polylineLength(rightBeadContact),
           rimContactNodeCount,
           sectionHeightMm: sectionHeight,
