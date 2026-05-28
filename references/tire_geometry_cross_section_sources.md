@@ -121,6 +121,61 @@ produce TGM node coordinates and construction-layer positions.
   URL: https://tires.costco.ca/TireGlossary?lang=en-ca
   Used only as plain-language terminology support.
 
+## Tool And Generator Search
+
+Retrieved: 2026-05-28
+
+- MegaRide, *RIDEtool*.
+  URL: https://www.megaride.eu/products/ridetool/
+  Used to identify a commercial tyre-digital-twin workflow that explicitly
+  includes tyre geometry, layer thicknesses, meridian profile, and
+  user-defined discretization level before structural parameterization.
+
+- Ansys Help, *Create the 2D Geometry for a Tire Cross-Section*, 2024 R2.
+  URL: https://ansyshelp.ansys.com/public/Views/Secured/corp/v242/en/ans_tire/tagmodelstep1.html
+  Used as a professional CAE workflow reference: tire FE setup starts from a
+  2D line/area diagram, with separate components for each cross-section part.
+
+- BRL-CAD, *Vehicle Tire and Wheel Creation in BRL-CAD*.
+  URL: https://brlcad.org/w/images/4/4f/Vehicle_Tire_and_Wheel_Creation_in_BRL-CAD.pdf
+  Used as an open-source dimensional tire/wheel generator reference. It is
+  useful for visual tire solids from standard dimensions, but not directly an
+  engineering construction-layer cross-section generator.
+
+- BikeCAD, *Tire Profile (Controlling the cross-sectional shape)*.
+  URL: https://www.bikecad.ca/tire_profile
+  Used as a compact example of an interactive tire profile control based on
+  the radial position of the maximum tire width.
+
+- meta-matic, *Wheel STEP File Generator*.
+  URL: https://meta-matic.com/en/3d/wheel/
+  Used as a generic browser STEP generator reference for simple wheel/tire
+  solids with outer diameter, tire thickness, width, and tire edge radius.
+
+- Yang, X.; Olatunbosun, O.; Bolarinwa, E., *Generation of tyre
+  cross-sectional geometry for FE tyre model using image processing
+  techniques*, International Journal of Engineering Simulation, 2009.
+  URL: https://research.birmingham.ac.uk/en/publications/generation-of-tyre-cross-sectional-geometry-for-fe-tyre-model-usi/
+  Used as evidence that FE tyre workflows often reconstruct cross-section
+  geometry from measured/cut-section images rather than purely scalar inputs.
+
+- Scientific.Net, *Design and Development of Automated Tire FE Modeling
+  Procedure*.
+  URL: https://www.scientific.net/AMM.635-637.493
+  Used as a reference for automated FE model generation starting from an
+  AutoCAD tire cross-section profile, with HyperMesh/TCL-TK automation and
+  Abaqus export.
+
+- CadQuery, *Create parametric CAD models with Python*.
+  URL: https://cadquery.github.io/
+  Used as a candidate open-source CAD-as-code backend for parametric profile
+  generation and CAD export if we later need STEP/DXF output.
+
+- build123d project page, Open CASCADE Technology.
+  URL: https://dev.opencascade.org/project/build123d
+  Used as a candidate Python/OpenCascade parametric CAD backend for creating
+  reusable 2D/3D profile geometry from scalar construction parameters.
+
 ## Design Implication For Our Generator
 
 The generator should start from standard visible dimensions, then add
