@@ -1486,6 +1486,10 @@
           <section class="generator-preview-panel" aria-label="Generated tyre contour">
             <div class="plot-toolbar">
               <span>Generated node contour</span>
+              <label class="toggle" for="generator-show-all-radii">
+                <input id="generator-show-all-radii" type="checkbox" />
+                Show all radii
+              </label>
             </div>
             <svg id="generator-plot" class="model-plot generator-plot" viewBox="0 0 1100 620" preserveAspectRatio="none" tabindex="0" aria-label="Generated tyre cross-section preview"></svg>
           </section>
@@ -1609,7 +1613,7 @@
     const materialHiddenSeries = new Set();
     const materialKindFilters = new Set(["TreadMaterial", "BulkMaterial", "PlyMaterial"]);
     const nodeSelectionDrag = { active: false, dragging: false, plotId: "", start: null, current: null, additive: false, suppressClick: false };
-    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0, materialCandidatePanelKind: "", selectedMaterialCandidateKey: "", materialCandidateDefaults: {}, plyFamilyDefaults: {}, reengineeringFamilyDefaults: {}, reengineeringFamilyKey: "", reengineeringNodeIndex: null, reengineeringPlyIndex: null, reengineeringStackKey: "", reengineeringSelectedCellKeys: [], reengineeringSelectionAnchorKey: "", reengineeringSelectionAnchorType: "cell", reengineeringCellOverrides: {}, reengineeringDbSearch: "", reengineeringDbCategory: "", reengineeringDbRoleFilter: true, reengineeringDbMaterialId: null, activeGeneratorControlKey: "" };
+    const viewState = { currentView: "model", layerExplode: 0, layerExplodeEnabled: true, nodeLayerSpread: 100, nodeShowLayers: true, nodeShowRest: true, selectedNodeIndex: null, selectedNodeIndices: [], focusKey: "", materialSearch: "", materialCategories: null, selectedMaterialIds: null, materialListScrollTop: 0, materialCandidatePanelKind: "", selectedMaterialCandidateKey: "", materialCandidateDefaults: {}, plyFamilyDefaults: {}, reengineeringFamilyDefaults: {}, reengineeringFamilyKey: "", reengineeringNodeIndex: null, reengineeringPlyIndex: null, reengineeringStackKey: "", reengineeringSelectedCellKeys: [], reengineeringSelectionAnchorKey: "", reengineeringSelectionAnchorType: "cell", reengineeringCellOverrides: {}, reengineeringDbSearch: "", reengineeringDbCategory: "", reengineeringDbRoleFilter: true, reengineeringDbMaterialId: null, activeGeneratorControlKey: "", showAllGeneratorRadii: false };
     const LAYER_EXPLODE_TARGET_MM = 30;
     const NODE_LAYER_SPREAD_TARGET_MM = 30;
     const NODE_REST_SPREAD_TARGET_MM = 30;
@@ -1735,6 +1739,10 @@
         viewState.nodeLayerSpread = clamp(Number(event.target.value), 0, 100);
         updateNodeLayerSpreadReadout();
         drawNodeExplorer();
+      });
+      document.getElementById("generator-show-all-radii")?.addEventListener("change", event => {
+        viewState.showAllGeneratorRadii = Boolean(event.target.checked);
+        drawGenerator({ constrain: false });
       });
       document.querySelectorAll("[data-node-display-target]").forEach(button => {
         button.addEventListener("click", () => {
@@ -2569,8 +2577,16 @@
     }
 
     function drawGeneratorActiveRadius(svg, frame, model) {
-      const key = activeGeneratorRadiusKey();
-      const guide = key ? model?.radiusGuides?.[key] : null;
+      if (viewState.showAllGeneratorRadii) {
+        GENERATOR_RADIUS_CONTROL_KEYS.forEach(key => {
+          drawGeneratorRadiusGuide(svg, frame, model, model?.radiusGuides?.[key]);
+        });
+        return;
+      }
+      drawGeneratorRadiusGuide(svg, frame, model, model?.radiusGuides?.[activeGeneratorRadiusKey()]);
+    }
+
+    function drawGeneratorRadiusGuide(svg, frame, model, guide) {
       if (!guide) return;
       const color = "#ffcf6b";
       const rowsList = (guide.rows || []).filter(rows => Array.isArray(rows) && rows.length > 1);
