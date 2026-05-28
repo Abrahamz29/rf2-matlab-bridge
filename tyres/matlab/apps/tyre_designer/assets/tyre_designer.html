@@ -2644,7 +2644,6 @@
       const maxSectionX = clamp(beadTransitionEnd.xMm + beadToShoulderHeight * sectionPosition, beadTransitionEnd.xMm + 6, shoulderX - 5);
       const sidewallShape = clamp(Number(params.sidewallShapePct), 0, 100) / 100;
       const maxSectionY = sectionHalf;
-      const shoulderBlendY = shoulderRadius * (0.22 + sidewallShape * 0.26);
       const sectionBlendY = (maxSectionY - treadHalf) * (0.06 + (1 - sidewallShape) * 0.12);
       const lowerBlendY = (maxSectionY - beadTransitionEnd.yMm) * (0.02 + (1 - sidewallShape) * 0.16);
       const beadBlendY = beadTransition.transitionLengthMm * (0.22 + sidewallShape * 0.18);
@@ -2657,12 +2656,27 @@
         crown.push({ xMm: outerR - (y * y) / (2 * crownRadius), yMm: y });
       }
       const shoulder = crown[crown.length - 1];
-      const upperSidewall = sampleCubicBezier(
+      const shoulderTransition = sampleGeneratorShoulderTransitionArc(
         shoulder,
-        { xMm: shoulder.xMm - shoulderRadius * 0.25, yMm: Math.min(maxSectionY, shoulder.yMm + shoulderBlendY) },
-        { xMm: maxSectionX + shoulderRadius * 0.18, yMm: Math.max(treadHalf, maxSectionY - sectionBlendY) },
+        crown[crown.length - 2] || { xMm: shoulder.xMm, yMm: shoulder.yMm - 1 },
+        shoulderRadius,
         { xMm: maxSectionX, yMm: maxSectionY },
+        sidewallShape,
         14
+      );
+      const shoulderArcRight = shoulderTransition.rows || [shoulder];
+      const shoulderArcEnd = shoulderTransition.end || shoulder;
+      const shoulderArcEndTangent = shoulderTransition.endTangent || { x: -0.4, y: 0.9 };
+      const shoulderSidewallHandle = Math.min(
+        shoulderRadius * (0.18 + sidewallShape * 0.12),
+        Math.max(8, Math.hypot(maxSectionX - shoulderArcEnd.xMm, maxSectionY - shoulderArcEnd.yMm) * 0.5)
+      );
+      const upperSidewall = sampleCubicBezier(
+        shoulderArcEnd,
+        { xMm: shoulderArcEnd.xMm + shoulderArcEndTangent.x * shoulderSidewallHandle, yMm: shoulderArcEnd.yMm + shoulderArcEndTangent.y * shoulderSidewallHandle },
+        { xMm: maxSectionX + shoulderRadius * 0.12, yMm: Math.max(treadHalf, maxSectionY - sectionBlendY) },
+        { xMm: maxSectionX, yMm: maxSectionY },
+        10
       );
       const lowerSidewall = sampleCubicBezier(
         { xMm: maxSectionX, yMm: maxSectionY },
@@ -2674,7 +2688,7 @@
 
       const rightBeadContactToStart = rightBeadContact.slice().reverse();
       const rightBeadArcToStart = beadArcRight.slice(0, -1).reverse();
-      const rightHalf = dedupeClosePoints(crown.concat(upperSidewall.slice(1), lowerSidewall.slice(1), rightBeadArcToStart, rightBeadContactToStart));
+      const rightHalf = dedupeClosePoints(crown.concat(shoulderArcRight.slice(1), upperSidewall.slice(1), lowerSidewall.slice(1), rightBeadArcToStart, rightBeadContactToStart));
       const fullContour = rightHalf.slice().reverse().map(point => ({ xMm: point.xMm, yMm: -point.yMm }))
         .concat(rightHalf.slice(1).map(point => ({ xMm: point.xMm, yMm: point.yMm })));
       let sampled = resamplePolyline(fullContour, nodeCount).map((point, index) => ({
@@ -2699,12 +2713,12 @@
       const crownCenter = { xMm: outerR - crownRadius, yMm: 0 };
       const crownStart = { xMm: shoulder.xMm, yMm: -shoulder.yMm };
       const crownEnd = { xMm: shoulder.xMm, yMm: shoulder.yMm };
-      const shoulderCenterRight = { xMm: shoulder.xMm - shoulderRadius, yMm: shoulder.yMm };
+      const shoulderCenterRight = shoulderTransition.center;
       const shoulderCenterLeft = { xMm: shoulderCenterRight.xMm, yMm: -shoulderCenterRight.yMm };
-      const shoulderSectionRight = upperSidewall;
+      const shoulderSectionRight = shoulderArcRight;
       const shoulderSectionLeft = mirrorGeneratorRightFeature(shoulderSectionRight);
       const shoulderStartRight = shoulder;
-      const shoulderEndRight = { xMm: maxSectionX, yMm: maxSectionY };
+      const shoulderEndRight = shoulderArcEnd;
       const shoulderStartLeft = { xMm: shoulderStartRight.xMm, yMm: -shoulderStartRight.yMm };
       const shoulderEndLeft = { xMm: shoulderEndRight.xMm, yMm: -shoulderEndRight.yMm };
       const beadRadiusGuideRight = beadArcRight;
@@ -2751,7 +2765,7 @@
           shoulderRadiusMm: {
             label: `Shoulder R ${fmt(shoulderRadius)} mm`,
             rows: [shoulderSectionLeft, shoulderSectionRight],
-            labelPoint: { xMm: shoulder.xMm - shoulderRadius * 0.52, yMm: shoulder.yMm + shoulderRadius * 0.82 },
+            labelPoint: { xMm: shoulderTransition.labelPoint.xMm, yMm: shoulderTransition.labelPoint.yMm },
             spokes: [
               { a: shoulderCenterLeft, b: shoulderStartLeft },
               { a: shoulderCenterLeft, b: shoulderEndLeft },
@@ -2953,6 +2967,87 @@
         });
       }
       return points;
+    }
+
+    function generatorNormalizeVector(vector, fallback = { x: 1, y: 0 }) {
+      const x = Number(vector?.x);
+      const y = Number(vector?.y);
+      const length = Math.hypot(x, y);
+      if (length > 1e-9) return { x: x / length, y: y / length };
+      const fallbackLength = Math.hypot(Number(fallback.x), Number(fallback.y));
+      return fallbackLength > 1e-9
+        ? { x: Number(fallback.x) / fallbackLength, y: Number(fallback.y) / fallbackLength }
+        : { x: 1, y: 0 };
+    }
+
+    function rotateGeneratorVector(vector, angleRad) {
+      const cos = Math.cos(Number(angleRad) || 0);
+      const sin = Math.sin(Number(angleRad) || 0);
+      return {
+        x: Number(vector.x) * cos - Number(vector.y) * sin,
+        y: Number(vector.x) * sin + Number(vector.y) * cos,
+      };
+    }
+
+    function generatorPointOnCircularArc(center, startVector, angleRad) {
+      const vector = rotateGeneratorVector(startVector, angleRad);
+      return {
+        xMm: Number(center.xMm) + vector.x,
+        yMm: Number(center.yMm) + vector.y,
+      };
+    }
+
+    function sampleGeneratorShoulderTransitionArc(start, previous, radiusMm, limitPoint, sidewallShape, steps) {
+      const radius = Math.max(1, Number(radiusMm) || 1);
+      const startPoint = { xMm: Number(start.xMm), yMm: Number(start.yMm) };
+      const tangent = generatorNormalizeVector({
+        x: Number(start.xMm) - Number(previous?.xMm),
+        y: Number(start.yMm) - Number(previous?.yMm),
+      }, { x: -0.08, y: 1 });
+      const outwardNormal = generatorNormalizeVector({ x: tangent.y, y: -tangent.x }, { x: 1, y: 0 });
+      const center = {
+        xMm: startPoint.xMm - outwardNormal.x * radius,
+        yMm: startPoint.yMm - outwardNormal.y * radius,
+      };
+      const startVector = {
+        x: startPoint.xMm - center.xMm,
+        y: startPoint.yMm - center.yMm,
+      };
+      const shape = clamp(Number(sidewallShape), 0, 1);
+      const desiredAngle = clamp(0.26 + shape * 0.24, 0.08, 0.62);
+      const yLimit = Math.max(startPoint.yMm + 2, Number(limitPoint.yMm) - 2);
+      const xLimit = Math.min(startPoint.xMm - 2, Number(limitPoint.xMm) + 4);
+      const isValidAngle = angle => {
+        const point = generatorPointOnCircularArc(center, startVector, angle);
+        return point.yMm <= yLimit && point.xMm >= xLimit;
+      };
+      let high = desiredAngle;
+      if (!isValidAngle(high)) {
+        let low = 0;
+        for (let i = 0; i < 32; i++) {
+          const mid = (low + high) / 2;
+          if (isValidAngle(mid)) low = mid;
+          else high = mid;
+        }
+        high = Math.max(low, 0.015);
+      }
+      const count = Math.max(4, Math.round(Number(steps) || 12));
+      const rows = [];
+      for (let i = 0; i <= count; i++) {
+        rows.push(generatorPointOnCircularArc(center, startVector, high * (i / count)));
+      }
+      const end = rows[rows.length - 1];
+      const endTangent = rotateGeneratorVector(tangent, high);
+      return {
+        rows: dedupeClosePoints(rows),
+        center,
+        start: startPoint,
+        end,
+        endTangent,
+        angleRad: high,
+        radiusMm: radius,
+        labelPoint: generatorPointOnCircularArc(center, startVector, high * 0.5),
+      };
     }
 
     function generatorRadiusMmFromCurvature(curvaturePerM) {
