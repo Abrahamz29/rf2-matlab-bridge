@@ -408,6 +408,9 @@
       font-size: 11px;
       line-height: 1.3;
     }
+    .generator-etrto-note.is-warning {
+      color: #ffcf6b;
+    }
     .generator-summary {
       display: flex;
       align-items: center;
@@ -1441,8 +1444,9 @@
             <div id="generator-derived" class="generator-derived-grid" aria-label="Derived generator values">
               <div class="generator-derived-item generator-output-field"><span>ETRTO size</span><output data-generator-output="tyreSize">315/35 R21</output></div>
               <div class="generator-derived-item generator-output-field"><span>Actual OD</span><output id="generator-outer-diameter" data-generator-output="outerDiameterMm">753 mm</output></div>
-              <div class="generator-derived-item generator-output-field"><span>Actual width</span><output data-generator-output="actualSectionWidthMm">320 mm</output></div>
-              <div class="generator-derived-item generator-output-field"><span>ETRTO box</span><output data-generator-output="etrtoDesignBox">W 320-333 | OD 753-761 mm</output></div>
+              <div class="generator-derived-item generator-output-field"><span>Actual width</span><output data-generator-output="actualSectionWidthMm">325 mm</output></div>
+              <div class="generator-derived-item generator-output-field"><span>ETRTO box @ measuring rim</span><output data-generator-output="referenceEtrtoBox">W 320-333 | OD 753-761 mm</output></div>
+              <div class="generator-derived-item generator-output-field"><span>Ported construction box</span><output data-generator-output="portedFitmentBox">W 325-338 | OD 752-760 mm</output></div>
               <div class="generator-derived-item generator-output-field"><span>Approved rim</span><output data-generator-output="approvedRimWidthIn">10.5-12.5 in</output></div>
             </div>
             <div class="generator-form">
@@ -1455,8 +1459,8 @@
               </div>
               <div class="generator-control-group">
                 <h3>Actual tyre</h3>
-                <div class="generator-field"><label for="generator-actual-outer-diameter">Outer diameter [mm]</label><div class="generator-value-row"><input data-generator-slider="actualOuterDiameterMm" type="range" min="753" max="761" step="1" value="753" aria-label="Actual outer diameter mm slider"><input id="generator-actual-outer-diameter" data-generator-param="actualOuterDiameterMm" type="number" min="753" max="761" step="1" value="753"></div><div class="generator-range-meta" data-generator-range-label="actualOuterDiameterMm"></div></div>
-                <div class="generator-field"><label for="generator-actual-section-width">Section width [mm]</label><div class="generator-value-row"><input data-generator-slider="actualSectionWidthMm" type="range" min="320" max="333" step="1" value="320" aria-label="Actual section width mm slider"><input id="generator-actual-section-width" data-generator-param="actualSectionWidthMm" type="number" min="320" max="333" step="1" value="320"></div><div class="generator-range-meta" data-generator-range-label="actualSectionWidthMm"></div></div>
+                <div class="generator-field"><label for="generator-actual-outer-diameter">Outer diameter [mm]</label><div class="generator-value-row"><input data-generator-slider="actualOuterDiameterMm" type="range" min="752" max="760" step="1" value="753" aria-label="Actual outer diameter mm slider"><input id="generator-actual-outer-diameter" data-generator-param="actualOuterDiameterMm" type="number" min="752" max="760" step="1" value="753"></div><div class="generator-range-meta" data-generator-range-label="actualOuterDiameterMm"></div></div>
+                <div class="generator-field"><label for="generator-actual-section-width">Section width [mm]</label><div class="generator-value-row"><input data-generator-slider="actualSectionWidthMm" type="range" min="325" max="338" step="1" value="325" aria-label="Actual section width mm slider"><input id="generator-actual-section-width" data-generator-param="actualSectionWidthMm" type="number" min="325" max="338" step="1" value="325"></div><div class="generator-range-meta" data-generator-range-label="actualSectionWidthMm"></div></div>
                 <div class="generator-field"><label for="generator-section-position">Section position [%]</label><div class="generator-value-row"><input data-generator-slider="sectionPositionPct" type="range" min="25" max="85" step="1" value="62" aria-label="Section position percent slider"><input id="generator-section-position" data-generator-param="sectionPositionPct" type="number" min="25" max="85" step="1" value="62"></div><div class="generator-range-meta" data-generator-range-label="sectionPositionPct"></div></div>
               </div>
               <div class="generator-control-group">
@@ -1630,7 +1634,7 @@
       sectionWidthMm: 315,
       rimWidthIn: 11.5,
       actualOuterDiameterMm: 753,
-      actualSectionWidthMm: 320,
+      actualSectionWidthMm: 325,
       sectionPositionPct: 62,
       treadArcWidthMm: 285,
       crownRadiusMm: 900,
@@ -2197,10 +2201,12 @@
       setGeneratorControlRange("rimWidthIn", approvedRimWidths[0], approvedRimWidths[approvedRimWidths.length - 1], 0.5);
       setGeneratorControlValue("rimWidthIn", rimWidth);
 
-      const minActualOuter = Number(selected.designOverallDiameterMm);
-      const maxActualOuter = Number(selected.maxOverallDiameterMm);
-      const minActualWidth = Number(selected.designSectionWidthMm);
-      const maxActualWidth = Number(selected.maxOverallWidthMm);
+      const referenceEtrtoBox = generatorReferenceEtrtoBox(selected);
+      const portedFitmentBox = generatorPortedFitmentBox(selected, rimWidth);
+      const minActualOuter = Number(portedFitmentBox.designOverallDiameterMm);
+      const maxActualOuter = Number(portedFitmentBox.maxOverallDiameterMm);
+      const minActualWidth = Number(portedFitmentBox.designSectionWidthMm);
+      const maxActualWidth = Number(portedFitmentBox.maxOverallWidthMm);
       setGeneratorControlRange("actualOuterDiameterMm", minActualOuter, maxActualOuter, 1);
       setGeneratorControlRange("actualSectionWidthMm", minActualWidth, maxActualWidth, 1);
       setGeneratorControlRange("sectionPositionPct", 25, 85, 1);
@@ -2235,7 +2241,9 @@
       const note = document.getElementById("generator-etrto-note");
       if (note) {
         const range = etrtoApprovedRimRange(selected.sectionWidthMm, selected.aspectRatioPct, selected.rimDiameterIn);
-        note.textContent = `ETRTO: ${selected.sectionWidthMm}/${selected.aspectRatioPct} R${selected.rimDiameterIn}, allowed actual box W ${fmt(minActualWidth)}-${fmt(maxActualWidth)} mm, OD ${fmt(minActualOuter)}-${fmt(maxActualOuter)} mm, J/H2 aluminium rim ${fmt(range.min)}-${fmt(range.max)} in.`;
+        const rimDeltaText = Math.abs(portedFitmentBox.rimDeltaMm) < 0.05 ? "reference rim" : `${portedFitmentBox.rimDeltaMm > 0 ? "+" : ""}${fmt(portedFitmentBox.rimDeltaMm)} mm bead-spacing transfer`;
+        note.classList.remove("is-warning");
+        note.textContent = `ETRTO reference box @ measuring rim ${fmt(referenceEtrtoBox.measuringRimWidthIn)}J: W ${fmt(referenceEtrtoBox.designSectionWidthMm)}-${fmt(referenceEtrtoBox.maxOverallWidthMm)} mm, OD ${fmt(referenceEtrtoBox.designOverallDiameterMm)}-${fmt(referenceEtrtoBox.maxOverallDiameterMm)} mm. Ported construction box @ selected rim ${fmt(rimWidth)}J: W ${fmt(minActualWidth)}-${fmt(maxActualWidth)} mm, OD ${fmt(minActualOuter)}-${fmt(maxActualOuter)} mm (${rimDeltaText}); approved J/H2 aluminium rim ${fmt(range.min)}-${fmt(range.max)} in.`;
       }
       setGeneratorRangeLabel("sectionWidthMm", `${fmt(widthRange[0])}-${fmt(widthRange[1])} mm`);
       setGeneratorRangeLabel("maxSectionHeightPct", `${fmt(ETRTO_ASPECT_RATIOS_PCT[0])}-${fmt(ETRTO_ASPECT_RATIOS_PCT[ETRTO_ASPECT_RATIOS_PCT.length - 1])} %`);
@@ -2345,6 +2353,65 @@
       return { min: values[0], max: values[values.length - 1], values, row };
     }
 
+    function generatorReferenceEtrtoBox(etrtoSize) {
+      const row = etrtoSize || ETRTO_PASSENGER_METRIC_SIZES[0] || {};
+      return {
+        tyreSizeLabel: `${fmt(row.sectionWidthMm)}/${fmt(row.aspectRatioPct)} R${fmt(row.rimDiameterIn)}`,
+        nominalSectionWidthMm: Number(row.sectionWidthMm),
+        aspectRatioPct: Number(row.aspectRatioPct),
+        rimDiameterIn: Number(row.rimDiameterIn),
+        measuringRimWidthIn: Number(row.measuringRimWidthIn),
+        designSectionWidthMm: Number(row.designSectionWidthMm),
+        maxOverallWidthMm: Number(row.maxOverallWidthMm),
+        designOverallDiameterMm: Number(row.designOverallDiameterMm),
+        maxOverallDiameterMm: Number(row.maxOverallDiameterMm),
+        approvedRimWidthsIn: row.approvedRimWidthsIn || [],
+        isPorted: false,
+      };
+    }
+
+    function generatorPortedFitmentBox(etrtoSize, rimWidthIn) {
+      const referenceEtrtoBox = generatorReferenceEtrtoBox(etrtoSize);
+      return generatorMountedEnvelopeFromBox(referenceEtrtoBox, referenceEtrtoBox.measuringRimWidthIn, rimWidthIn);
+    }
+
+    function generatorMountedEnvelopeFromBox(referenceBox, measuringRimWidthIn, rimWidthIn) {
+      const referenceEtrtoBox = referenceBox || {};
+      const measuringRim = Number(measuringRimWidthIn);
+      const selectedRim = Number(rimWidthIn);
+      const referenceRimMm = etrtoRimWidthMmFromCode(measuringRim);
+      const selectedRimMm = etrtoRimWidthMmFromCode(selectedRim);
+      const rimDeltaMm = selectedRimMm - referenceRimMm;
+      const widthDeltaMm = rimDeltaMm * 0.4;
+      const outerDiameterDeltaMm = -rimDeltaMm * 0.12;
+      const roundMm = value => Math.round(Number(value));
+      const portWidth = value => roundMm(Math.max(1, Number(value) + widthDeltaMm));
+      const portDiameter = value => roundMm(Math.max(Number(referenceEtrtoBox.rimDiameterIn) * 25.4 + 36, Number(value) + outerDiameterDeltaMm));
+      const designSectionWidthMm = portWidth(referenceEtrtoBox.designSectionWidthMm);
+      const maxOverallWidthMm = Math.max(designSectionWidthMm, portWidth(referenceEtrtoBox.maxOverallWidthMm));
+      const designOverallDiameterMm = portDiameter(referenceEtrtoBox.designOverallDiameterMm);
+      const maxOverallDiameterMm = Math.max(designOverallDiameterMm, portDiameter(referenceEtrtoBox.maxOverallDiameterMm));
+      return {
+        ...referenceEtrtoBox,
+        sourceDesignSectionWidthMm: Number(referenceEtrtoBox.designSectionWidthMm),
+        sourceMaxOverallWidthMm: Number(referenceEtrtoBox.maxOverallWidthMm),
+        sourceDesignOverallDiameterMm: Number(referenceEtrtoBox.designOverallDiameterMm),
+        sourceMaxOverallDiameterMm: Number(referenceEtrtoBox.maxOverallDiameterMm),
+        selectedRimWidthIn: selectedRim,
+        measuringRimWidthIn: measuringRim,
+        referenceRimWidthMm: referenceRimMm,
+        selectedRimWidthMm: selectedRimMm,
+        rimDeltaMm,
+        widthDeltaMm,
+        outerDiameterDeltaMm,
+        designSectionWidthMm,
+        maxOverallWidthMm,
+        designOverallDiameterMm,
+        maxOverallDiameterMm,
+        isPorted: Math.abs(rimDeltaMm) > 0.05,
+      };
+    }
+
     function etrtoOuterDiameterMm(sectionWidthMm, aspectPct, rimDiameterIn) {
       return etrtoSelectedTyreSize({ sectionWidthMm, maxSectionHeightPct: aspectPct, rimDiameterIn })?.designOverallDiameterMm ||
         Number(rimDiameterIn) * 25.4 + 2 * Number(sectionWidthMm) * Number(aspectPct) / 100;
@@ -2401,13 +2468,24 @@
         tyreSize: `${fmt(m.nominalSectionWidthMm)}/${fmt(m.aspectRatioPct)} R${fmt(m.rimDiameterIn)}`,
         outerDiameterMm: `${fmt(m.outerDiameterMm)} mm`,
         actualSectionWidthMm: `${fmt(m.actualSectionWidthMm)} mm`,
-        etrtoDesignBox: `W ${fmt(m.designSectionWidthMm)}-${fmt(m.maxOverallWidthMm)} | OD ${fmt(m.designOverallDiameterMm)}-${fmt(m.maxOverallDiameterMm)} mm`,
+        referenceEtrtoBox: `W ${fmt(m.referenceDesignSectionWidthMm)}-${fmt(m.referenceMaxOverallWidthMm)} | OD ${fmt(m.referenceDesignOverallDiameterMm)}-${fmt(m.referenceMaxOverallDiameterMm)} mm`,
+        portedFitmentBox: `W ${fmt(m.designSectionWidthMm)}-${fmt(m.maxOverallWidthMm)} | OD ${fmt(m.designOverallDiameterMm)}-${fmt(m.maxOverallDiameterMm)} mm`,
         approvedRimWidthIn: `${fmt(m.approvedRimWidthMinIn)}-${fmt(m.approvedRimWidthMaxIn)} in`,
       };
       Object.entries(outputs).forEach(([key, value]) => {
         const output = document.querySelector(`[data-generator-output="${key}"]`);
         if (output) output.textContent = value;
       });
+      const note = document.getElementById("generator-etrto-note");
+      if (note) {
+        const outside = Boolean(m.isOutsidePortedFitmentBox);
+        note.classList.toggle("is-warning", outside);
+        const rimDeltaText = Math.abs(Number(m.portedRimDeltaMm) || 0) < 0.05 ? "reference rim" : `${Number(m.portedRimDeltaMm) > 0 ? "+" : ""}${fmt(m.portedRimDeltaMm)} mm bead-spacing transfer`;
+        note.textContent = `ETRTO reference box @ measuring rim ${fmt(m.measuringRimWidthIn)}J: W ${fmt(m.referenceDesignSectionWidthMm)}-${fmt(m.referenceMaxOverallWidthMm)} mm, OD ${fmt(m.referenceDesignOverallDiameterMm)}-${fmt(m.referenceMaxOverallDiameterMm)} mm. Ported construction box @ selected rim ${fmt(m.rimWidthIn)}J: W ${fmt(m.designSectionWidthMm)}-${fmt(m.maxOverallWidthMm)} mm, OD ${fmt(m.designOverallDiameterMm)}-${fmt(m.maxOverallDiameterMm)} mm (${rimDeltaText}).`;
+        if (outside) {
+          note.textContent = `${note.textContent} Current contour is outside the ported construction box.`;
+        }
+      }
     }
 
     function drawGeneratorSummary(model) {
@@ -2419,7 +2497,8 @@
         ["Rim", `${fmt(m.rimWidthIn)}J x ${fmt(m.rimDiameterIn)}`],
         ["OD", `${fmt(m.outerDiameterMm)} mm`],
         ["Section", `${fmt(m.drawnSectionWidthMm)} / ${fmt(m.actualSectionWidthMm)} mm`],
-        ["ETRTO box", `W ${fmt(m.designSectionWidthMm)}-${fmt(m.maxOverallWidthMm)} | OD ${fmt(m.designOverallDiameterMm)}-${fmt(m.maxOverallDiameterMm)}`],
+        ["ETRTO box", `W ${fmt(m.referenceDesignSectionWidthMm)}-${fmt(m.referenceMaxOverallWidthMm)} | OD ${fmt(m.referenceDesignOverallDiameterMm)}-${fmt(m.referenceMaxOverallDiameterMm)}`],
+        ["Ported box", `W ${fmt(m.designSectionWidthMm)}-${fmt(m.maxOverallWidthMm)} | OD ${fmt(m.designOverallDiameterMm)}-${fmt(m.maxOverallDiameterMm)}`],
         ["Contact nodes", `${fmt(m.rimContactNodeCount)} / ${fmt(m.nodeCount)}`],
       ];
       summary.innerHTML = items.map(([label, value]) => `
@@ -2649,12 +2728,14 @@
       const params = { ...GENERATOR_DEFAULT_PARAMS, ...(inputParams || {}) };
       const etrtoSize = etrtoSelectedTyreSize(params);
       const rimWidthIn = nearestValue(Number(params.rimWidthIn), etrtoSize.approvedRimWidthsIn);
+      const referenceEtrtoBox = generatorReferenceEtrtoBox(etrtoSize);
+      const portedFitmentBox = generatorPortedFitmentBox(etrtoSize, rimWidthIn);
       const rimDiameterMm = Number(etrtoSize.rimDiameterIn) * 25.4;
       const rimWidthMm = etrtoRimWidthMmFromCode(rimWidthIn);
-      const designSectionWidth = Number(etrtoSize.designSectionWidthMm);
-      const maxOverallWidth = Number(etrtoSize.maxOverallWidthMm);
-      const designOverallDiameter = Number(etrtoSize.designOverallDiameterMm);
-      const maxOverallDiameter = Number(etrtoSize.maxOverallDiameterMm);
+      const designSectionWidth = Number(portedFitmentBox.designSectionWidthMm);
+      const maxOverallWidth = Number(portedFitmentBox.maxOverallWidthMm);
+      const designOverallDiameter = Number(portedFitmentBox.designOverallDiameterMm);
+      const maxOverallDiameter = Number(portedFitmentBox.maxOverallDiameterMm);
       const sectionWidth = clamp(Number(params.actualSectionWidthMm), designSectionWidth, maxOverallWidth);
       const aspectPct = Number(etrtoSize.aspectRatioPct);
       const outerDiameterMm = clamp(Number(params.actualOuterDiameterMm), designOverallDiameter, maxOverallDiameter);
@@ -2766,17 +2847,24 @@
       const rightHalf = dedupeClosePoints(crown.concat(shoulderArcRight.slice(1), upperSidewall.slice(1), sectionArcRight.slice(1), lowerSidewall.slice(1), rightBeadArcToStart, rightBeadContactToStart));
       const fullContour = rightHalf.slice().reverse().map(point => ({ xMm: point.xMm, yMm: -point.yMm }))
         .concat(rightHalf.slice(1).map(point => ({ xMm: point.xMm, yMm: point.yMm })));
-      let sampled = resamplePolyline(fullContour, nodeCount).map((point, index) => ({
-        nodeIndex: index + 1,
-        xMm: point.xMm,
-        yMm: point.yMm,
-      }));
-      sampled = applyGeneratorBeadTransitionNodeConstraints(sampled, beadAnchor, beadContactEnd, beadArcRight)
-        .map((point, index) => ({
-          ...point,
-          nodeIndex: index + 1,
-          rimContact: pointToPolylineDistance(point, beadContactPaths) <= 0.8,
-        }));
+      const referenceLengths = generatorConstructionRegionLengths({
+        crown,
+        shoulder: shoulderArcRight,
+        upperSidewall,
+        section: sectionArcRight,
+        lowerSidewall,
+        beadTransition: beadArcRight,
+        beadContact: rightBeadContact,
+      });
+      const relaxedContour = generatorRelaxConstructionContour(params, referenceLengths, {
+        fullContour,
+        nodeCount,
+        beadAnchor,
+        beadContactEnd,
+        beadArcRight,
+        beadContactPaths,
+      });
+      const sampled = relaxedContour.nodes;
       const rimContactNodeCount = sampled.filter(row => row.rimContact).length;
       const contourNormals = generatorInwardNormals(sampled);
       const innerNodes = offsetGeneratorRowsAlongNormals(sampled, contourNormals, nodeThickness);
@@ -2946,6 +3034,18 @@
           maxOverallDiameterMm: maxOverallDiameter,
           maxOverallWidthMm: maxOverallWidth,
           designSectionWidthMm: designSectionWidth,
+          referenceDesignOverallDiameterMm: Number(referenceEtrtoBox.designOverallDiameterMm),
+          referenceMaxOverallDiameterMm: Number(referenceEtrtoBox.maxOverallDiameterMm),
+          referenceMaxOverallWidthMm: Number(referenceEtrtoBox.maxOverallWidthMm),
+          referenceDesignSectionWidthMm: Number(referenceEtrtoBox.designSectionWidthMm),
+          portedRimDeltaMm: Number(portedFitmentBox.rimDeltaMm),
+          portedWidthDeltaMm: Number(portedFitmentBox.widthDeltaMm),
+          portedOuterDiameterDeltaMm: Number(portedFitmentBox.outerDiameterDeltaMm),
+          isPortedFitmentBox: Boolean(portedFitmentBox.isPorted),
+          isOutsidePortedFitmentBox: maxSectionY * 2 > maxOverallWidth + 0.5 ||
+            maxSectionY * 2 < designSectionWidth - 0.5 ||
+            outerDiameterMm > maxOverallDiameter + 0.5 ||
+            outerDiameterMm < designOverallDiameter - 0.5,
           actualSectionWidthMm: sectionWidth,
           drawnSectionWidthMm: maxSectionY * 2,
           nominalSectionWidthMm: Number(etrtoSize.sectionWidthMm),
@@ -2980,6 +3080,9 @@
           lowerSidewallCurvaturePerM,
           upperSidewallLengthMm: upperSidewallLength,
           lowerSidewallLengthMm: lowerSidewallLength,
+          constructionRegionLengthsMm: referenceLengths,
+          regionLengthMaxDeviationMm: relaxedContour.diagnostics.maxRegionLengthDeviationMm,
+          regionLengthMaxDeviationPct: relaxedContour.diagnostics.maxRegionLengthDeviationPct,
           sectionRoundStartXMm: sectionArcStart.xMm,
           sectionRoundStartYMm: sectionArcStart.yMm,
           sectionRoundEndXMm: sectionArcEnd.xMm,
@@ -2990,6 +3093,53 @@
           treadArcWidthMm: treadHalf * 2,
           treadDepthMm: treadDepth,
           rimWidthMm: rimHalf * 2,
+        },
+      };
+    }
+
+    function generatorConstructionRegionLengths(segments) {
+      const lengthOf = rows => polylineLength(dedupeClosePoints((rows || []).filter(row =>
+        Number.isFinite(Number(row.xMm)) && Number.isFinite(Number(row.yMm))
+      )));
+      return {
+        crownMm: lengthOf(segments?.crown) * 2,
+        shoulderMm: lengthOf(segments?.shoulder) * 2,
+        upperSidewallMm: lengthOf(segments?.upperSidewall) * 2,
+        sectionArcMm: lengthOf(segments?.section) * 2,
+        lowerSidewallMm: lengthOf(segments?.lowerSidewall) * 2,
+        beadTransitionMm: lengthOf(segments?.beadTransition) * 2,
+        beadContactMm: lengthOf(segments?.beadContact) * 2,
+      };
+    }
+
+    function generatorRelaxConstructionContour(params, referenceLengths, constraints) {
+      const nodeCount = Math.max(3, Math.round(Number(constraints?.nodeCount) || Number(params?.nodeCount) || GENERATOR_DEFAULT_PARAMS.nodeCount));
+      const fullContour = dedupeClosePoints((constraints?.fullContour || []).filter(row =>
+        Number.isFinite(Number(row.xMm)) && Number.isFinite(Number(row.yMm))
+      ));
+      let nodes = resamplePolyline(fullContour, nodeCount).map((point, index) => ({
+        nodeIndex: index + 1,
+        xMm: point.xMm,
+        yMm: point.yMm,
+      }));
+      nodes = applyGeneratorBeadTransitionNodeConstraints(nodes, constraints?.beadAnchor, constraints?.beadContactEnd, constraints?.beadArcRight)
+        .map((point, index) => ({
+          ...point,
+          nodeIndex: index + 1,
+          rimContact: pointToPolylineDistance(point, constraints?.beadContactPaths || []) <= 0.8,
+        }));
+      const referenceTotal = Object.values(referenceLengths || {}).reduce((sum, value) => sum + (Number(value) || 0), 0);
+      const nodeTotal = polylineLength(nodes);
+      const totalDeviation = nodeTotal - referenceTotal;
+      const maxRegionLengthDeviationMm = Math.abs(totalDeviation);
+      const maxRegionLengthDeviationPct = referenceTotal > 1e-9 ? Math.abs(totalDeviation) / referenceTotal * 100 : 0;
+      return {
+        nodes,
+        diagnostics: {
+          referenceTotalLengthMm: referenceTotal,
+          relaxedTotalLengthMm: nodeTotal,
+          maxRegionLengthDeviationMm,
+          maxRegionLengthDeviationPct,
         },
       };
     }

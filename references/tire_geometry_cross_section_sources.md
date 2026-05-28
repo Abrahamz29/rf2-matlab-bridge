@@ -71,6 +71,10 @@ produce TGM node coordinates and construction-layer positions.
   metric passenger-car tyre size, design overall diameter, design/max service
   section dimensions, measuring rim width, and approved J/H2 aluminium rim
   widths through exact per-size lookups extracted from the local PDF.
+  Implementation note, 2026-05-28: the table dimensions are treated as
+  reference values on the measuring rim. For other approved rim widths, the
+  generator creates a separate ported construction box as an orientation aid,
+  not as a replacement ETRTO limit.
 
 - ISO 4000-2:2007 preview, *Passenger car tyres and rims - Part 2: Rims*.
   URL: https://cdn.standards.iteh.ai/samples/45065/af0a2a7d31c54b2b83542ce98527664b/ISO-4000-2-2007.pdf
