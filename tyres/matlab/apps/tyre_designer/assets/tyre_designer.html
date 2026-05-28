@@ -1466,7 +1466,7 @@
                 <div class="generator-field"><label for="generator-shoulder-radius">Shoulder radius [mm]</label><div class="generator-value-row"><input data-generator-slider="shoulderRadiusMm" type="range" min="5" max="180" step="1" value="55" aria-label="Shoulder radius mm slider"><input id="generator-shoulder-radius" data-generator-param="shoulderRadiusMm" type="number" min="5" max="180" step="1" value="55"></div><div class="generator-range-meta" data-generator-range-label="shoulderRadiusMm"></div></div>
                 <div class="generator-field"><label for="generator-section-curvature">Section width curvature [1/m]</label><div class="generator-value-row"><input data-generator-slider="sectionCurvaturePerM" type="range" min="0" max="80" step="1" value="28" aria-label="Section width curvature inverse meter slider"><input id="generator-section-curvature" data-generator-param="sectionCurvaturePerM" type="number" min="0" max="80" step="1" value="28"></div><div class="generator-range-meta" data-generator-range-label="sectionCurvaturePerM"></div></div>
                 <div class="generator-field"><label for="generator-upper-sidewall-curvature">Upper sidewall curvature [1/m]</label><div class="generator-value-row"><input data-generator-slider="upperSidewallCurvaturePerM" type="range" min="0" max="80" step="1" value="24" aria-label="Upper sidewall curvature inverse meter slider"><input id="generator-upper-sidewall-curvature" data-generator-param="upperSidewallCurvaturePerM" type="number" min="0" max="80" step="1" value="24"></div><div class="generator-range-meta" data-generator-range-label="upperSidewallCurvaturePerM"></div></div>
-                <div class="generator-field"><label for="generator-lower-sidewall-curvature">Lower sidewall curvature [1/m]</label><div class="generator-value-row"><input data-generator-slider="lowerSidewallCurvaturePerM" type="range" min="0" max="80" step="1" value="18" aria-label="Lower sidewall curvature inverse meter slider"><input id="generator-lower-sidewall-curvature" data-generator-param="lowerSidewallCurvaturePerM" type="number" min="0" max="80" step="1" value="18"></div><div class="generator-range-meta" data-generator-range-label="lowerSidewallCurvaturePerM"></div></div>
+                <div class="generator-field"><label for="generator-lower-sidewall-curvature">Lower sidewall curvature [1/m]</label><div class="generator-value-row"><input data-generator-slider="lowerSidewallCurvaturePerM" type="range" min="-80" max="80" step="1" value="18" aria-label="Lower sidewall curvature inverse meter slider"><input id="generator-lower-sidewall-curvature" data-generator-param="lowerSidewallCurvaturePerM" type="number" min="-80" max="80" step="1" value="18"></div><div class="generator-range-meta" data-generator-range-label="lowerSidewallCurvaturePerM"></div></div>
                 <div class="generator-field"><label for="generator-bead-follow">Bead follow [%]</label><div class="generator-value-row"><input data-generator-slider="beadFollowPct" type="range" min="0" max="100" step="1" value="50" aria-label="Bead follow percent slider"><input id="generator-bead-follow" data-generator-param="beadFollowPct" type="number" min="0" max="100" step="1" value="50"></div><div class="generator-range-meta" data-generator-range-label="beadFollowPct"></div></div>
                 <div class="generator-field"><label for="generator-bead-curvature">Bead transition curvature [1/m]</label><div class="generator-value-row"><input data-generator-slider="beadCurvaturePerM" type="range" min="-125" max="125" step="1" value="83" aria-label="Bead transition curvature inverse meter slider"><input id="generator-bead-curvature" data-generator-param="beadCurvaturePerM" type="number" min="-125" max="125" step="1" value="83"></div><div class="generator-range-meta" data-generator-range-label="beadCurvaturePerM"></div></div>
                 <div class="generator-field"><label for="generator-bead-arc-length">Bead arc length [mm]</label><div class="generator-value-row"><input data-generator-slider="beadArcLengthMm" type="range" min="8" max="60" step="1" value="22" aria-label="Bead arc length mm slider"><input id="generator-bead-arc-length" data-generator-param="beadArcLengthMm" type="number" min="8" max="60" step="1" value="22"></div><div class="generator-range-meta" data-generator-range-label="beadArcLengthMm"></div></div>
@@ -2217,8 +2217,8 @@
       setGeneratorControlValue("sectionCurvaturePerM", clamp(Number(generatorNumberInput("sectionCurvaturePerM")?.value), 0, 80));
       setGeneratorControlRange("upperSidewallCurvaturePerM", 0, 80, 1);
       setGeneratorControlValue("upperSidewallCurvaturePerM", clamp(Number(generatorNumberInput("upperSidewallCurvaturePerM")?.value), 0, 80));
-      setGeneratorControlRange("lowerSidewallCurvaturePerM", 0, 80, 1);
-      setGeneratorControlValue("lowerSidewallCurvaturePerM", clamp(Number(generatorNumberInput("lowerSidewallCurvaturePerM")?.value), 0, 80));
+      setGeneratorControlRange("lowerSidewallCurvaturePerM", -80, 80, 1);
+      setGeneratorControlValue("lowerSidewallCurvaturePerM", clamp(Number(generatorNumberInput("lowerSidewallCurvaturePerM")?.value), -80, 80));
       setGeneratorControlRange("nodeThicknessMm", 1, maxNodeThickness, 0.1);
       setGeneratorControlValue("nodeThicknessMm", clamp(Number(generatorNumberInput("nodeThicknessMm")?.value), 1, maxNodeThickness));
       setGeneratorControlRange("treadDepthMm", 0, Math.min(16, maxNodeThickness), 0.1);
@@ -2241,7 +2241,7 @@
       setGeneratorRangeLabel("shoulderRadiusMm", "5-180 mm");
       setGeneratorRangeLabel("sectionCurvaturePerM", "0-80 1/m, 0 = flat");
       setGeneratorRangeLabel("upperSidewallCurvaturePerM", "0-80 1/m");
-      setGeneratorRangeLabel("lowerSidewallCurvaturePerM", "0-80 1/m");
+      setGeneratorRangeLabel("lowerSidewallCurvaturePerM", "-80-80 1/m");
       setGeneratorRangeLabel("beadFollowPct", "0-100 %");
       setGeneratorRangeLabel("beadCurvaturePerM", `${fmt(-GENERATOR_BEAD_CURVATURE_LIMIT_PER_M)}-${fmt(GENERATOR_BEAD_CURVATURE_LIMIT_PER_M)} 1/m, 0 = straight`);
       setGeneratorRangeLabel("beadArcLengthMm", `8-${fmt(maxBeadArcLength)} mm`);
@@ -2660,7 +2660,7 @@
       const sectionCurvaturePerM = clamp(Number(params.sectionCurvaturePerM), 0, 80);
       const sectionRadius = generatorRadiusMmFromCurvature(sectionCurvaturePerM);
       const upperSidewallCurvaturePerM = clamp(Number(params.upperSidewallCurvaturePerM), 0, 80);
-      const lowerSidewallCurvaturePerM = clamp(Number(params.lowerSidewallCurvaturePerM), 0, 80);
+      const lowerSidewallCurvaturePerM = clamp(Number(params.lowerSidewallCurvaturePerM), -80, 80);
       const beadCurvaturePerM = clamp(Number(params.beadCurvaturePerM), -GENERATOR_BEAD_CURVATURE_LIMIT_PER_M, GENERATOR_BEAD_CURVATURE_LIMIT_PER_M);
       const beadRadius = generatorRadiusMmFromCurvature(beadCurvaturePerM);
       const beadArcLength = generatorBeadTransitionLengthMm(params.beadArcLengthMm, sectionHeight);
@@ -2722,6 +2722,8 @@
       const beadForwardTangent = generatorPolylineEndTangent(beadArcRight, { x: 0, y: -1 });
       const beadReturnTangent = { x: -beadForwardTangent.x, y: -beadForwardTangent.y };
       const beadSidewallHandle = generatorSidewallHandleLength(lowerSidewallLength, lowerSidewallCurvaturePerM, 0.18, 0.5);
+      const lowerSidewallNormal = generatorRightSideOutwardNormal(sectionArcEnd, beadTransitionEnd);
+      const lowerSidewallBulge = lowerSidewallLength * clamp(lowerSidewallCurvaturePerM / 80, -1, 1) * 0.22;
       const upperSidewall = sampleCubicBezier(
         shoulderArcEnd,
         { xMm: shoulderArcEnd.xMm + shoulderArcEndTangent.x * shoulderSidewallHandle, yMm: shoulderArcEnd.yMm + shoulderArcEndTangent.y * shoulderSidewallHandle },
@@ -2731,8 +2733,14 @@
       );
       const lowerSidewall = sampleCubicBezier(
         sectionArcEnd,
-        { xMm: sectionArcEnd.xMm + sectionEndTangent.x * sectionLowerHandle, yMm: sectionArcEnd.yMm + sectionEndTangent.y * sectionLowerHandle },
-        { xMm: beadTransitionEnd.xMm - beadReturnTangent.x * beadSidewallHandle, yMm: beadTransitionEnd.yMm - beadReturnTangent.y * beadSidewallHandle },
+        {
+          xMm: sectionArcEnd.xMm + sectionEndTangent.x * sectionLowerHandle + lowerSidewallNormal.x * lowerSidewallBulge,
+          yMm: sectionArcEnd.yMm + sectionEndTangent.y * sectionLowerHandle + lowerSidewallNormal.y * lowerSidewallBulge,
+        },
+        {
+          xMm: beadTransitionEnd.xMm - beadReturnTangent.x * beadSidewallHandle + lowerSidewallNormal.x * lowerSidewallBulge,
+          yMm: beadTransitionEnd.yMm - beadReturnTangent.y * beadSidewallHandle + lowerSidewallNormal.y * lowerSidewallBulge,
+        },
         beadTransitionEnd,
         18
       );
@@ -3220,6 +3228,14 @@
       const k = Number(curvaturePerM);
       if (!Number.isFinite(k) || Math.abs(k) < 1e-9) return Infinity;
       return 1000 / k;
+    }
+
+    function generatorRightSideOutwardNormal(start, end) {
+      const dx = Number(end?.xMm) - Number(start?.xMm);
+      const dy = Number(end?.yMm) - Number(start?.yMm);
+      const left = generatorNormalizeVector({ x: -dy, y: dx }, { x: 0, y: 1 });
+      const right = generatorNormalizeVector({ x: dy, y: -dx }, { x: 0, y: 1 });
+      return right.y >= left.y ? right : left;
     }
 
     function generatorSidewallHandleLength(distanceMm, curvaturePerM, minFactor, maxFactor) {
