@@ -1,13 +1,29 @@
-# MATLAB Run Selected
+# MATLAB File Runner
 
-Local VS Code extension that adds this command to `.m` files:
+Portable VS Code extension for running selected MATLAB `.m` files from the
+Explorer or the active editor.
+
+## Commands
 
 ```text
-MATLAB: Run Selected MATLAB File
+MATLAB: Run Selected File(s)
+MATLAB: Run Current File
 ```
 
-The command starts MATLAB with `-r` from a visible VS Code terminal. MATLAB
-opens normally with its desktop UI; it is not launched with `-batch`.
+## Build
+
+```powershell
+npm install
+npm run compile
+npm test
+npm run package
+```
+
+The package command creates:
+
+```text
+matlab-file-runner-0.2.0.vsix
+```
 
 ## Install
 
@@ -17,12 +33,24 @@ From this extension folder:
 .\install.ps1
 ```
 
-Then reload VS Code with `Developer: Reload Window`.
+Or install the package directly:
+
+```powershell
+code --install-extension .\matlab-file-runner-0.2.0.vsix --force
+```
+
+## Settings
+
+- `matlabFileRunner.executable`: MATLAB executable or full path to `matlab.exe`.
+- `matlabFileRunner.launchMode`: `desktop` or `batch`.
+- `matlabFileRunner.terminalMode`: `visible` or `detached`.
+- `matlabFileRunner.stopOnError`: stop the selected sequence after an error.
+- `matlabFileRunner.addFileDirectoryToPath`: add each file directory to the MATLAB path before execution.
 
 ## Behavior
 
-- Scripts are launched with `run('selected-file.m')`.
-- Function files are launched with `feval('functionName')`.
-- The selected file's folder is added to the MATLAB path before execution.
-- Configure the executable with `matlabRunSelected.executable` if `matlab` is
-  not on `PATH`.
+- Scripts are launched with `run(filePath)`.
+- Function files are launched with `feval(functionName)`.
+- Multiple selected `.m` files run sequentially in one MATLAB invocation.
+- Non-MATLAB files are ignored when multiple files are selected.
+- Errors are written with MATLAB's extended error report.

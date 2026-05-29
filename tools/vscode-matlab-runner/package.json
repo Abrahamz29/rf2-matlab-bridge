@@ -1,9 +1,13 @@
 {
-  "name": "matlab-run-selected",
-  "displayName": "MATLAB Run Selected",
-  "description": "Run selected MATLAB .m files from the VS Code explorer using a visible MATLAB desktop launch.",
-  "version": "0.1.0",
-  "publisher": "rf2",
+  "name": "matlab-file-runner",
+  "displayName": "MATLAB File Runner",
+  "description": "Run selected MATLAB .m files from VS Code with configurable desktop or batch launch.",
+  "version": "0.2.0",
+  "publisher": "internal-tools",
+  "author": {
+    "name": "Victor Kräh"
+  },
+  "license": "UNLICENSED",
   "engines": {
     "vscode": "^1.85.0"
   },
@@ -11,52 +15,94 @@
     "Other"
   ],
   "activationEvents": [
-    "onCommand:matlabRunSelected.runFile"
+    "onCommand:matlabFileRunner.runSelectedFiles",
+    "onCommand:matlabFileRunner.runCurrentFile"
   ],
-  "main": "./extension.js",
+  "main": "./out/src/extension.js",
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node --test \"out/test/**/*.test.js\"",
+    "package": "npm run compile && vsce package --allow-missing-repository --out matlab-file-runner-0.2.0.vsix"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.10",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^3.2.1",
+    "typescript": "^5.7.2"
+  },
   "contributes": {
     "commands": [
       {
-        "command": "matlabRunSelected.runFile",
-        "title": "MATLAB: Run Selected MATLAB File",
+        "command": "matlabFileRunner.runSelectedFiles",
+        "title": "MATLAB: Run Selected File(s)",
+        "category": "MATLAB"
+      },
+      {
+        "command": "matlabFileRunner.runCurrentFile",
+        "title": "MATLAB: Run Current File",
         "category": "MATLAB"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "command": "matlabRunSelected.runFile",
+          "command": "matlabFileRunner.runSelectedFiles",
           "when": "resourceExtname == .m",
           "group": "navigation@90"
         }
       ],
       "editor/context": [
         {
-          "command": "matlabRunSelected.runFile",
+          "command": "matlabFileRunner.runCurrentFile",
           "when": "resourceExtname == .m",
           "group": "navigation@90"
         }
       ],
       "editor/title/context": [
         {
-          "command": "matlabRunSelected.runFile",
+          "command": "matlabFileRunner.runCurrentFile",
           "when": "resourceExtname == .m",
           "group": "navigation@90"
         }
       ]
     },
     "configuration": {
-      "title": "MATLAB Run Selected",
+      "title": "MATLAB File Runner",
       "properties": {
-        "matlabRunSelected.executable": {
+        "matlabFileRunner.executable": {
           "type": "string",
           "default": "matlab",
           "description": "MATLAB executable or full path to matlab.exe."
         },
-        "matlabRunSelected.showTerminal": {
+        "matlabFileRunner.launchMode": {
+          "type": "string",
+          "enum": [
+            "desktop",
+            "batch"
+          ],
+          "default": "desktop",
+          "description": "Choose whether MATLAB starts with its desktop or runs the command in batch mode."
+        },
+        "matlabFileRunner.terminalMode": {
+          "type": "string",
+          "enum": [
+            "visible",
+            "detached"
+          ],
+          "default": "visible",
+          "description": "Choose whether MATLAB is launched from a visible VS Code terminal or as a detached process."
+        },
+        "matlabFileRunner.stopOnError": {
           "type": "boolean",
           "default": true,
-          "description": "Start MATLAB from a visible VS Code terminal."
+          "description": "Stop the selected file sequence when a MATLAB error occurs."
+        },
+        "matlabFileRunner.addFileDirectoryToPath": {
+          "type": "boolean",
+          "default": true,
+          "description": "Add each selected file's directory to the MATLAB path before running it."
         }
       }
     }

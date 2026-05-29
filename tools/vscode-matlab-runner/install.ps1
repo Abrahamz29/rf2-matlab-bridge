@@ -1,5 +1,6 @@
 [CmdletBinding()]
 param(
+    [string]$VsixPath,
     [string]$ExtensionsRoot = (Join-Path $env:USERPROFILE ".vscode\extensions")
 )
 
@@ -7,21 +8,48 @@ $ErrorActionPreference = "Stop"
 
 $source = $PSScriptRoot
 $manifest = Get-Content -Raw -LiteralPath (Join-Path $source "package.json") | ConvertFrom-Json
-$targetName = "$($manifest.publisher).$($manifest.name)-$($manifest.version)"
-$target = Join-Path $ExtensionsRoot $targetName
+$packageName = "$($manifest.name)-$($manifest.version).vsix"
 
-if (-not (Test-Path -LiteralPath $ExtensionsRoot)) {
-    New-Item -ItemType Directory -Force -Path $ExtensionsRoot | Out-Null
+if (-not $VsixPath) {
+    $VsixPath = Join-Path $source $packageName
 }
 
-if (Test-Path -LiteralPath $target) {
-    Remove-Item -LiteralPath $target -Recurse -Force
+if (-not (Test-Path -LiteralPath $VsixPath)) {
+    Push-Location $source
+    try {
+        npm install
+        npm run package
+    }
+    finally {
+        Pop-Location
+    }
 }
 
-New-Item -ItemType Directory -Force -Path $target | Out-Null
-Copy-Item -LiteralPath (Join-Path $source "package.json") -Destination $target
-Copy-Item -LiteralPath (Join-Path $source "extension.js") -Destination $target
-Copy-Item -LiteralPath (Join-Path $source "README.md") -Destination $target
+if (-not (Test-Path -LiteralPath $VsixPath)) {
+    throw "Extension package not found: $VsixPath"
+}
 
-Write-Host "Installed VS Code extension to: $target"
+$codeCommand = Get-Command code -ErrorAction SilentlyContinue
+if (-not $codeCommand) {
+    throw "VS Code command line tool was not found on PATH: code"
+}
+
+$legacyPublisher = -join ([char[]](114, 102, 50))
+$legacyExtensionId = "$legacyPublisher.matlab-run-selected"
+
+try {
+    & $codeCommand.Source --uninstall-extension $legacyExtensionId *> $null
+}
+catch {
+    Write-Verbose "Legacy extension uninstall command did not complete: $($_.Exception.Message)"
+}
+
+if (Test-Path -LiteralPath $ExtensionsRoot) {
+    Get-ChildItem -LiteralPath $ExtensionsRoot -Directory -Filter "$legacyExtensionId-*" |
+        Remove-Item -Recurse -Force
+}
+
+& $codeCommand.Source --install-extension $VsixPath --force | Out-Host
+
+Write-Host "Installed VS Code extension package: $VsixPath"
 Write-Host "Reload VS Code to activate: Developer: Reload Window"
