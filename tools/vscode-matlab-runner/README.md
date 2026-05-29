@@ -7,7 +7,11 @@ Explorer or the active editor.
 
 ```text
 MATLAB: Run Selected File(s)
+MATLAB: Run Selected File(s) with Desktop
+MATLAB: Run Selected File(s) Headless
 MATLAB: Run Current File
+MATLAB: Run Current File with Desktop
+MATLAB: Run Current File Headless
 ```
 
 ## Build
@@ -22,7 +26,7 @@ npm run package
 The package command creates:
 
 ```text
-matlab-file-runner-0.2.0.vsix
+matlab-file-runner-0.2.1.vsix
 ```
 
 ## Install
@@ -36,13 +40,13 @@ From this extension folder:
 Or install the package directly:
 
 ```powershell
-code --install-extension .\matlab-file-runner-0.2.0.vsix --force
+code --install-extension .\matlab-file-runner-0.2.1.vsix --force
 ```
 
 ## Settings
 
 - `matlabFileRunner.executable`: MATLAB executable or full path to `matlab.exe`.
-- `matlabFileRunner.launchMode`: `desktop` or `batch`.
+- `matlabFileRunner.launchMode`: `desktop` or `batch` for the generic commands.
 - `matlabFileRunner.terminalMode`: `visible` or `detached`.
 - `matlabFileRunner.stopOnError`: stop the selected sequence after an error.
 - `matlabFileRunner.addFileDirectoryToPath`: add each file directory to the MATLAB path before execution.
@@ -52,5 +56,7 @@ code --install-extension .\matlab-file-runner-0.2.0.vsix --force
 - Scripts are launched with `run(filePath)`.
 - Function files are launched with `feval(functionName)`.
 - Multiple selected `.m` files run sequentially in one MATLAB invocation.
+- Desktop menu entries start MATLAB with `-r`.
+- Headless menu entries start MATLAB with `-batch`.
 - Non-MATLAB files are ignored when multiple files are selected.
 - Errors are written with MATLAB's extended error report.

@@ -1,6 +1,6 @@
 import * as cp from "child_process";
 import * as vscode from "vscode";
-import { getRunnerConfiguration } from "./config";
+import { getRunnerConfiguration, type LaunchMode } from "./config";
 import { buildInvocation, readMatlabFileEntry } from "./invocation";
 import { collectMatlabFilePaths } from "./selection";
 import { formatShellCommand } from "./shell";
@@ -17,34 +17,55 @@ export function activate(context: vscode.ExtensionContext): void {
             async (uri?: vscode.Uri, selectedUris?: vscode.Uri[]) => runSelectedFiles(uri, selectedUris)
         ),
         vscode.commands.registerCommand(
+            "matlabFileRunner.runSelectedFilesDesktop",
+            async (uri?: vscode.Uri, selectedUris?: vscode.Uri[]) => runSelectedFiles(uri, selectedUris, "desktop")
+        ),
+        vscode.commands.registerCommand(
+            "matlabFileRunner.runSelectedFilesHeadless",
+            async (uri?: vscode.Uri, selectedUris?: vscode.Uri[]) => runSelectedFiles(uri, selectedUris, "batch")
+        ),
+        vscode.commands.registerCommand(
             "matlabFileRunner.runCurrentFile",
             async () => runCurrentFile()
+        ),
+        vscode.commands.registerCommand(
+            "matlabFileRunner.runCurrentFileDesktop",
+            async () => runCurrentFile("desktop")
+        ),
+        vscode.commands.registerCommand(
+            "matlabFileRunner.runCurrentFileHeadless",
+            async () => runCurrentFile("batch")
         )
     );
 }
 
-async function runSelectedFiles(uri?: vscode.Uri, selectedUris?: vscode.Uri[]): Promise<void> {
+async function runSelectedFiles(
+    uri?: vscode.Uri,
+    selectedUris?: vscode.Uri[],
+    launchModeOverride?: LaunchMode
+): Promise<void> {
     const filePaths = collectMatlabFilePaths(
         Array.isArray(selectedUris) && selectedUris.length > 0 ? selectedUris : uri ? [uri] : [],
         getActiveEditorUri()
     );
 
-    await runMatlabFiles(filePaths);
+    await runMatlabFiles(filePaths, launchModeOverride);
 }
 
-async function runCurrentFile(): Promise<void> {
+async function runCurrentFile(launchModeOverride?: LaunchMode): Promise<void> {
     const activeUri = getActiveEditorUri();
     const filePaths = collectMatlabFilePaths(activeUri ? [activeUri] : [], undefined);
-    await runMatlabFiles(filePaths);
+    await runMatlabFiles(filePaths, launchModeOverride);
 }
 
-async function runMatlabFiles(filePaths: string[]): Promise<void> {
+async function runMatlabFiles(filePaths: string[], launchModeOverride?: LaunchMode): Promise<void> {
     if (filePaths.length === 0) {
         vscode.window.showWarningMessage("No MATLAB .m file selected.");
         return;
     }
 
     const configuration = getRunnerConfiguration();
+    const launchMode = launchModeOverride ?? configuration.launchMode;
 
     try {
         const entries = [];
@@ -53,13 +74,13 @@ async function runMatlabFiles(filePaths: string[]): Promise<void> {
         }
 
         const invocation = buildInvocation(entries, {
-            launchMode: configuration.launchMode,
+            launchMode,
             stopOnError: configuration.stopOnError,
             addFileDirectoryToPath: configuration.addFileDirectoryToPath
         });
 
         outputChannel.appendLine(`Starting MATLAB with ${entries.length} file(s).`);
-        outputChannel.appendLine(`Mode: ${configuration.launchMode}; terminal: ${configuration.terminalMode}`);
+        outputChannel.appendLine(`Mode: ${launchMode}; terminal: ${configuration.terminalMode}`);
         for (const entry of entries) {
             outputChannel.appendLine(`- ${entry.filePath}`);
         }
@@ -70,12 +91,16 @@ async function runMatlabFiles(filePaths: string[]): Promise<void> {
             launchDetached(configuration.executable, invocation.args, invocation.cwd);
         }
 
-        vscode.window.showInformationMessage(`Starting MATLAB: ${entries.length} file(s)`);
+        vscode.window.showInformationMessage(`Starting MATLAB ${displayLaunchMode(launchMode)}: ${entries.length} file(s)`);
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         outputChannel.appendLine(`Error: ${message}`);
         vscode.window.showErrorMessage(`Could not start MATLAB: ${message}`);
     }
+}
+
+function displayLaunchMode(launchMode: LaunchMode): string {
+    return launchMode === "batch" ? "headless" : "with desktop";
 }
 
 function getActiveEditorUri(): vscode.Uri | undefined {

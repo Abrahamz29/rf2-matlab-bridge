@@ -9,6 +9,8 @@ $ErrorActionPreference = "Stop"
 $source = $PSScriptRoot
 $manifest = Get-Content -Raw -LiteralPath (Join-Path $source "package.json") | ConvertFrom-Json
 $packageName = "$($manifest.name)-$($manifest.version).vsix"
+$extensionId = "$($manifest.publisher).$($manifest.name)"
+$extensionFolderName = "$extensionId-$($manifest.version)"
 
 if (-not $VsixPath) {
     $VsixPath = Join-Path $source $packageName
@@ -46,6 +48,9 @@ catch {
 
 if (Test-Path -LiteralPath $ExtensionsRoot) {
     Get-ChildItem -LiteralPath $ExtensionsRoot -Directory -Filter "$legacyExtensionId-*" |
+        Remove-Item -Recurse -Force
+    Get-ChildItem -LiteralPath $ExtensionsRoot -Directory -Filter "$extensionId-*" |
+        Where-Object { $_.Name -ne $extensionFolderName } |
         Remove-Item -Recurse -Force
 }
 

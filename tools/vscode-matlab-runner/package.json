@@ -1,8 +1,8 @@
 {
   "name": "matlab-file-runner",
   "displayName": "MATLAB File Runner",
-  "description": "Run selected MATLAB .m files from VS Code with configurable desktop or batch launch.",
-  "version": "0.2.0",
+  "description": "Run selected MATLAB .m files from VS Code with desktop or headless launch commands.",
+  "version": "0.2.1",
   "publisher": "internal-tools",
   "author": {
     "name": "Victor Kräh"
@@ -17,7 +17,11 @@
   ],
   "activationEvents": [
     "onCommand:matlabFileRunner.runSelectedFiles",
-    "onCommand:matlabFileRunner.runCurrentFile"
+    "onCommand:matlabFileRunner.runSelectedFilesDesktop",
+    "onCommand:matlabFileRunner.runSelectedFilesHeadless",
+    "onCommand:matlabFileRunner.runCurrentFile",
+    "onCommand:matlabFileRunner.runCurrentFileDesktop",
+    "onCommand:matlabFileRunner.runCurrentFileHeadless"
   ],
   "main": "./out/src/extension.js",
   "scripts": {
@@ -25,7 +29,7 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "test": "npm run compile && node --test \"out/test/**/*.test.js\"",
-    "package": "npm run compile && vsce package --allow-missing-repository --out matlab-file-runner-0.2.0.vsix"
+    "package": "npm run compile && vsce package --allow-missing-repository --out matlab-file-runner-0.2.1.vsix"
   },
   "devDependencies": {
     "@types/node": "^20.17.10",
@@ -41,31 +45,66 @@
         "category": "MATLAB"
       },
       {
+        "command": "matlabFileRunner.runSelectedFilesDesktop",
+        "title": "MATLAB: Run Selected File(s) with Desktop",
+        "category": "MATLAB"
+      },
+      {
+        "command": "matlabFileRunner.runSelectedFilesHeadless",
+        "title": "MATLAB: Run Selected File(s) Headless",
+        "category": "MATLAB"
+      },
+      {
         "command": "matlabFileRunner.runCurrentFile",
         "title": "MATLAB: Run Current File",
+        "category": "MATLAB"
+      },
+      {
+        "command": "matlabFileRunner.runCurrentFileDesktop",
+        "title": "MATLAB: Run Current File with Desktop",
+        "category": "MATLAB"
+      },
+      {
+        "command": "matlabFileRunner.runCurrentFileHeadless",
+        "title": "MATLAB: Run Current File Headless",
         "category": "MATLAB"
       }
     ],
     "menus": {
       "explorer/context": [
         {
-          "command": "matlabFileRunner.runSelectedFiles",
+          "command": "matlabFileRunner.runSelectedFilesDesktop",
           "when": "resourceExtname == .m",
           "group": "navigation@90"
+        },
+        {
+          "command": "matlabFileRunner.runSelectedFilesHeadless",
+          "when": "resourceExtname == .m",
+          "group": "navigation@91"
         }
       ],
       "editor/context": [
         {
-          "command": "matlabFileRunner.runCurrentFile",
+          "command": "matlabFileRunner.runCurrentFileDesktop",
           "when": "resourceExtname == .m",
           "group": "navigation@90"
+        },
+        {
+          "command": "matlabFileRunner.runCurrentFileHeadless",
+          "when": "resourceExtname == .m",
+          "group": "navigation@91"
         }
       ],
       "editor/title/context": [
         {
-          "command": "matlabFileRunner.runCurrentFile",
+          "command": "matlabFileRunner.runCurrentFileDesktop",
           "when": "resourceExtname == .m",
           "group": "navigation@90"
+        },
+        {
+          "command": "matlabFileRunner.runCurrentFileHeadless",
+          "when": "resourceExtname == .m",
+          "group": "navigation@91"
         }
       ]
     },
