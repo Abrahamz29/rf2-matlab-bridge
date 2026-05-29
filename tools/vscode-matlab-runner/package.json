@@ -7,6 +7,7 @@
   "author": {
     "name": "Victor Kräh"
   },
+  "icon": "media/icon.png",
   "license": "UNLICENSED",
   "engines": {
     "vscode": "^1.85.0"
