@@ -1,0 +1,62 @@
+{
+  "generatedBy": "tyres/tools/build_tyre_designer_etrto_rim_artifacts.py",
+  "sourceHtml": "tyres/matlab/apps/tyre_designer/assets/tyre_designer.html",
+  "sourceHtmlSha256": "a6487dba0cdfda555b887cb5124bee17539d39d3f7e5a5659f3df83dc274f9dc",
+  "notes": "Pixel residuals measure the current affine visual placement against black pixels in the scanned ETRTO detail crops. The scans are schematic, so these are diagnostics, not dimension gates.",
+  "r8": {
+    "diagram": "tyres/analysis/_etrto_rim_reference/etrto_R8_diagram.png",
+    "overlay": "tyres/analysis/_etrto_rim_reference/etrto_R8_bitmap_overlay.png",
+    "geometry": "R.8 basic rim contour without H hump",
+    "transform": [
+      5.171974522292992,
+      -6.560693641618492,
+      -830.982658959536,
+      0.06369426751592351,
+      6.5028901734104,
+      2082.4277456647387
+    ],
+    "distancePx": {
+      "pointCount": 217,
+      "hitCount": 200,
+      "missCount": 17,
+      "meanPx": 33.080408737546435,
+      "p90Px": 79.61730354214212,
+      "maxPx": 115.22110435158967,
+      "roi": [
+        0,
+        0,
+        2265,
+        780
+      ],
+      "searchRadiusPx": 120
+    }
+  },
+  "r11": {
+    "diagram": "tyres/analysis/_etrto_rim_reference/etrto_R11_diagram.png",
+    "overlay": "tyres/analysis/_etrto_rim_reference/etrto_R11_bitmap_overlay.png",
+    "geometry": "R.11 H hump radius and bead-seat continuation",
+    "transform": [
+      19.822525455872373,
+      -38.510807877460834,
+      -12429.526625403254,
+      -0.13214753626777664,
+      16.534519130398824,
+      4921.733356000534
+    ],
+    "distancePx": {
+      "pointCount": 65,
+      "hitCount": 65,
+      "missCount": 0,
+      "meanPx": 3.086358013029224,
+      "p90Px": 8.237041835073583,
+      "maxPx": 18.657922916399258,
+      "roi": [
+        120,
+        330,
+        850,
+        580
+      ],
+      "searchRadiusPx": 120
+    }
+  }
+}
